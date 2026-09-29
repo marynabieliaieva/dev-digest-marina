@@ -1,0 +1,29 @@
+{
+  "name": "Conventions: render seeded candidates, accept two, merge into a skill",
+  "description": "From the seeded payments-api repo, open Conventions via the sidebar nav (repo-scoped route, so the id must be resolved through the active-repo context rather than hardcoded), confirm the 4 seeded candidates render, accept two of them, open the Create skill modal, confirm the merged draft, save, and land on the new skill's detail page. Read-only seeded data (no model call) — see server/src/db/seed-conventions.ts. Assumes a freshly-seeded DB where acme/payments-api is the first repo, per e2e-web.yml.",
+  "steps": [
+    { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
+    { "cmd": ["wait", "--url", "/pulls"], "label": "land on the PR list for the default repo" },
+    { "cmd": ["find", "text", "Conventions", "click"], "label": "open Conventions from the sidebar" },
+    { "cmd": ["wait", "--url", "/conventions"], "label": "conventions route reached" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "conventions fetch settles" },
+    { "cmd": ["wait", "--text", "Conventions in acme/payments-api"], "label": "page heading shows the repo name" },
+    { "cmd": ["wait", "--text", "4 candidates"], "label": "seeded candidate count is rendered" },
+    { "cmd": ["wait", "--text", "Config values are read once into a frozen"], "label": "a seeded rule renders" },
+    { "cmd": ["wait", "--text", "src/config.ts:8"], "label": "its evidence chip shows path:line" },
+
+    { "cmd": ["find", "role", "button", "click", "--name", "Accept", "--exact"], "label": "accept the first candidate" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Accept", "--exact"], "label": "accept the second candidate" },
+    { "cmd": ["wait", "--text", "2 of 4 accepted"], "label": "toolbar count reflects both accepts" },
+
+    { "cmd": ["find", "role", "button", "click", "--name", "Create skill"], "label": "open the create-skill modal" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "skill-preview draft fetch settles" },
+    { "cmd": ["wait", "--text", "Merged from 2 accepted conventions"], "label": "modal subtitle confirms the merge count" },
+    { "cmd": ["wait", "--fn", "document.querySelector('input[type=text]')?.value === 'payments-api-conventions'"], "label": "draft name is pre-filled from the repo" },
+
+    { "cmd": ["find", "role", "button", "click", "--name", "Create skill"], "label": "save the merged skill" },
+    { "cmd": ["wait", "--url", "/skills/"], "label": "navigated to the new skill's detail page" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "skill detail fetch settles" },
+    { "cmd": ["wait", "--text", "payments-api-conventions"], "label": "the new skill's name renders on its detail page" }
+  ]
+}
