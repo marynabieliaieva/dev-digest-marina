@@ -12,6 +12,7 @@ import {
 } from './seed-prompts.js';
 import { SEED_SKILLS } from './seed-skills.js';
 import { CONTROL_PRS } from './seed-control-prs.js';
+import { SEED_CONVENTIONS, SEED_EXTRACTION } from './seed-conventions.js';
 
 /**
  * Which starter skills each built-in agent links to, in prompt order. Named
@@ -22,7 +23,16 @@ const AGENT_SKILL_LINKS: Record<string, string[]> = {
   'General Reviewer': ['pr-quality-rubric', 'no-then-chains'],
   'Security Reviewer': ['secret-leakage-gate', 'lethal-trifecta', 'phantom-api-gate'],
   'Test Quality Reviewer': ['test-quality-rubric'],
-  'API Contract Reviewer': ['api-contract-gate'],
+  // Part 3 split: the four granular skills replace the single api-contract-gate
+  // on this agent. `breaking-change` is loaded by hand through the skills
+  // import flow (not seeded), so a fresh workspace links only the three that
+  // exist yet — the missing one is skipped by seedAgentSkillLinks below.
+  'API Contract Reviewer': [
+    'breaking-change',
+    'response-schema',
+    'semver-discipline',
+    'deprecation-policy',
+  ],
 };
 
 /** Default provider/model for the built-in reviewer agents. */
@@ -263,6 +273,7 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
   await seedSkills(db, workspaceId);
   await seedAgentSkillLinks(db, workspaceId);
   await seedControlPrs(db, workspaceId, repoId);
+  await seedConventions(db, workspaceId, repoId);
 
   return { workspaceId, userId };
 }
@@ -380,6 +391,49 @@ async function seedControlPrs(db: Db, workspaceId: string, repoId: string): Prom
       author: spec.author,
     });
   }
+}
+
+/**
+ * A `done` extraction + its accepted-none candidates, so `/repos/:id/conventions`
+ * renders (and the e2e flow has something to accept) with no API key. Idempotent:
+ * skipped once payments-api already has an extraction row.
+ */
+async function seedConventions(db: Db, workspaceId: string, repoId: string): Promise<void> {
+  const [existing] = await db
+    .select()
+    .from(t.conventionExtractions)
+    .where(and(eq(t.conventionExtractions.workspaceId, workspaceId), eq(t.conventionExtractions.repoId, repoId)));
+  if (existing) return;
+
+  const [extraction] = await db
+    .insert(t.conventionExtractions)
+    .values({
+      workspaceId,
+      repoId,
+      status: 'done',
+      sampledFiles: SEED_EXTRACTION.sampledFiles,
+      candidatesRaw: SEED_EXTRACTION.candidatesRaw,
+      candidatesKept: SEED_EXTRACTION.candidatesKept,
+      provider: SEED_EXTRACTION.provider,
+      model: SEED_EXTRACTION.model,
+      finishedAt: new Date(),
+    })
+    .returning();
+
+  await db.insert(t.conventions).values(
+    SEED_CONVENTIONS.map((c) => ({
+      workspaceId,
+      repoId,
+      extractionId: extraction!.id,
+      category: c.category,
+      rule: c.rule,
+      evidencePath: c.evidencePath,
+      evidenceLine: c.evidenceLine,
+      evidenceSnippet: c.evidenceSnippet,
+      confidence: c.confidence,
+      status: 'pending' as const,
+    })),
+  );
 }
 
 // CLI entrypoint. Compares real filesystem paths (not raw URL strings) so

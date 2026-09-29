@@ -65,6 +65,23 @@ non-obvious; never rewritten, only appended to.
 
 ## Recurring Errors & Fixes
 
+- 2026-09-21: Calling a `useMutation().mutate()` inside a mount-only
+  `useEffect(() => {...}, [])` guarded by a `useRef` "call once ever" flag
+  silently breaks under React 18/19 dev Strict Mode. Strict Mode runs the
+  effect → cleanup → effect again on the same instance; the ref survives that
+  cycle, so the guard lets the FIRST invocation's `mutate()` fire and blocks
+  the second. But the first invocation is the one Strict Mode tears down —
+  its `onSuccess`/`onError` never lands on the live component, even though the
+  network request completes with 200 (confirmed live: `CreateSkillModal`'s
+  skill-preview call fired, server returned the correct draft, and the modal
+  sat on its loading state forever with zero console errors). Fix: drop the
+  "once" guard for any mutation that's side-effect-free/idempotent (a preview/
+  read call) and let Strict Mode's double-fire happen — it's harmless there.
+  For a mutation with a REAL side effect, don't call `.mutate()` from an
+  effect at all; trigger it from a user action instead. Unit tests that mock
+  the hook module (`vi.mock(".../hooks/conventions")`) never exercise this —
+  they resolve synchronously and can't reproduce the Strict Mode timing, so
+  this class of bug only shows up against the real dev server.
 - 2026-09-21: The app declared **no `color-scheme`** anywhere, so in dark mode a
   native `<select>` popup was drawn light by the OS while its `<option>`s
   inherited the select's near-white `--text-primary` — white on white, unreadable.

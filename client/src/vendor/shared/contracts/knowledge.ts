@@ -186,15 +186,60 @@ export const CommunitySkill = z.object({
 export type CommunitySkill = z.infer<typeof CommunitySkill>;
 
 // ---- Conventions ----
+export const ConventionStatus = z.enum(['pending', 'accepted', 'rejected']);
+export type ConventionStatus = z.infer<typeof ConventionStatus>;
+
+export const ConventionCategory = z.enum([
+  'naming',
+  'error_handling',
+  'module_structure',
+  'async_style',
+  'imports',
+  'validation',
+  'logging',
+  'testing',
+  'other',
+]);
+export type ConventionCategory = z.infer<typeof ConventionCategory>;
+
 export const ConventionCandidate = z.object({
   id: z.string(),
+  category: ConventionCategory,
   rule: z.string(),
   evidence_path: z.string(),
+  evidence_line: z.number().int().nullable(),
   evidence_snippet: z.string(),
   confidence: z.number().min(0).max(1),
-  accepted: z.boolean(),
+  status: ConventionStatus,
+  edited: z.boolean(),
+  skill_id: z.string().nullish(),
 });
 export type ConventionCandidate = z.infer<typeof ConventionCandidate>;
+
+export const ConventionExtractionStatus = z.enum(['running', 'done', 'failed']);
+export type ConventionExtractionStatus = z.infer<typeof ConventionExtractionStatus>;
+
+/** One scan run's header — "Detected from N sample files · last scan …". */
+export const ConventionExtractionSummary = z.object({
+  id: z.string(),
+  status: ConventionExtractionStatus,
+  sampled_files: z.number().int(),
+  candidates_raw: z.number().int(),
+  candidates_kept: z.number().int(),
+  provider: z.string().nullish(),
+  model: z.string().nullish(),
+  error: z.string().nullish(),
+  created_at: z.string(),
+  finished_at: z.string().nullish(),
+});
+export type ConventionExtractionSummary = z.infer<typeof ConventionExtractionSummary>;
+
+/** GET /repos/:id/conventions response — the latest extraction + its candidates. */
+export const ConventionsPage = z.object({
+  extraction: ConventionExtractionSummary.nullable(),
+  candidates: z.array(ConventionCandidate),
+});
+export type ConventionsPage = z.infer<typeof ConventionsPage>;
 
 // ---- Agents ----
 export const Provider = z.enum(['openai', 'anthropic', 'openrouter']);

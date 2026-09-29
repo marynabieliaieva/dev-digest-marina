@@ -17,10 +17,47 @@
     },
     "candidateCount": "{count, plural, one {# candidate} other {# candidates}} · grounded against sampled files"
   },
+  "toolbar": {
+    "selectAll": "Select all",
+    "deselectAll": "Deselect all",
+    "acceptedOf": "{accepted} of {total} accepted",
+    "createSkill": "Create skill"
+  },
   "card": {
     "confidence": "Confidence",
+    "accept": "Accept",
     "accepted": "Accepted",
     "accepting": "Accepting…",
-    "acceptAsSkill": "Accept as Skill"
+    "reject": "Reject",
+    "rejected": "Rejected",
+    "rejecting": "Rejecting…",
+    "undo": "Undo",
+    "edit": "Edit",
+    "editing": "Editing…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "evidence": "Evidence",
+    "copy": "Copy",
+    "copied": "Copied",
+    "github": "GitHub"
+  },
+  "grounding": {
+    "dropped": "{count, plural, one {# candidate was} other {# candidates were}} dropped — evidence could not be verified against the sampled files."
+  },
+  "modal": {
+    "title": "Create skill",
+    "mergedFrom": "Merged from {count, plural, one {# accepted convention} other {# accepted conventions}}",
+    "fields": {
+      "name": "Name",
+      "description": "Description",
+      "type": "Type",
+      "enabled": "Enabled",
+      "body": "Body"
+    },
+    "tokenCount": "{count} tokens",
+    "footerSaved": "Saved as v1 · added to Skills Lab",
+    "cancel": "Cancel",
+    "create": "Create skill",
+    "creating": "Creating…"
   }
 }

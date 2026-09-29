@@ -41,6 +41,12 @@ export DATABASE_URL="postgres://${PG_USER}:${PG_PASS}@127.0.0.1:${PG_PORT}/${PG_
 export API_PORT WEB_PORT
 export NEXT_PUBLIC_API_BASE="http://localhost:${API_PORT}"
 export E2E_BASE_URL="http://localhost:${WEB_PORT}"
+# A separate build dir (see client/next.config.mjs) so this run's `next dev`
+# never shares .next with a dev server already running on :3000 — two `next
+# dev` processes writing the same .next corrupt each other's compiled chunks,
+# which silently serves the WRONG NEXT_PUBLIC_API_BASE to whichever server
+# compiles second.
+export NEXT_DIST_DIR=".next-e2e"
 
 log()  { printf '\033[1;36m▸ %s\033[0m\n' "$*"; }
 warn() { printf '\033[1;33m! %s\033[0m\n' "$*"; }
@@ -77,6 +83,7 @@ cleanup() {
     [ -n "$pids" ] && kill $pids 2>/dev/null || true
   done
   docker rm -f "$PG_CONTAINER" >/dev/null 2>&1 || true
+  rm -rf "$ROOT/client/$NEXT_DIST_DIR"
   exit "$code"
 }
 trap cleanup EXIT INT TERM

@@ -155,4 +155,53 @@ const BREAKING_SIGNATURE_PR: SeedPr = {
   ],
 };
 
-export const CONTROL_PRS: SeedPr[] = [HAPPY_PATH_ONLY_PR, BREAKING_SIGNATURE_PR];
+/**
+ * PR #485 — API Contract, part 3 experiment control. Two breaks in one small
+ * diff: the `status` query param goes from optional to required, and the
+ * response field `total` is renamed to `count`. Framed as a harmless tidy-up
+ * (same as #484) — this is the PR the with/without-skills experiment in
+ * docs/features/conventions/experiment.md is run against.
+ */
+const QUERY_AND_RESPONSE_RENAME_PR: SeedPr = {
+  number: 485,
+  title: 'Clean up the payments list endpoint',
+  author: 'yusuf.demir',
+  branch: 'chore/payments-list-cleanup',
+  base: 'main',
+  headSha: 'd91a4f0c88be',
+  body:
+    'Tidies up the payments list endpoint: explicit query validation and a ' +
+    'clearer response field name. No behavior change for existing clients.',
+  commitMessage: 'Clean up payments list query + response shape',
+  files: [
+    {
+      path: 'src/api/payments/list.ts',
+      additions: 2,
+      deletions: 2,
+      patch: `@@ -1,13 +1,13 @@ import { PaymentService } from './service';
+
+ const ListPaymentsQuery = z.object({
+-  status: z.enum(['pending', 'captured', 'refunded']).optional(),
++  status: z.enum(['pending', 'captured', 'refunded']),
+   limit: z.coerce.number().int().min(1).max(100).default(20),
+ });
+
+ export default async function listPaymentsRoute(app: FastifyInstance) {
+   const service = new PaymentService(app.container);
+
+   app.get('/payments', { schema: { querystring: ListPaymentsQuery } }, async (req) => {
+     const { status, limit } = req.query;
+     const rows = await service.list({ status, limit });
+-    return { results: rows.items, total: rows.total };
++    return { results: rows.items, count: rows.total };
+   });
+ }`,
+    },
+  ],
+};
+
+export const CONTROL_PRS: SeedPr[] = [
+  HAPPY_PATH_ONLY_PR,
+  BREAKING_SIGNATURE_PR,
+  QUERY_AND_RESPONSE_RENAME_PR,
+];

@@ -11,6 +11,13 @@ import type { SkillSource, SkillType } from '@devdigest/shared';
  *
  * `test-coverage-nudge` from the design mock is deliberately NOT seeded: it is
  * the one created by hand in the UI, so the create path gets exercised for real.
+ *
+ * Same reasoning for `breaking-change` (part 3, API Contract Reviewer split):
+ * it is loaded through the skills IMPORT flow by hand instead of being seeded
+ * here, so that path gets exercised for real too. Its three siblings
+ * (`response-schema`, `semver-discipline`, `deprecation-policy`) are seeded
+ * below and replace the old single `api-contract-gate` on the agent's Skills
+ * tab — kept here only as the pre-split artifact, no longer linked.
  */
 
 export interface SeedSkill {
@@ -183,5 +190,81 @@ Always name the caller that breaks and how, e.g. "a client that omits \`currency
 now receives 422 where it previously defaulted to USD". Offer the compatible
 alternative: keep it optional with the old default, add a field alongside rather
 than renaming, or version the route.`,
+  },
+  {
+    name: 'response-schema',
+    description:
+      "Compare the response shape and status code an endpoint returns against its previous contract.",
+    type: 'convention',
+    source: 'manual',
+    body: `# Response schema stability
+
+A caller binds to the RESPONSE shape as tightly as to the request. For every
+route the diff touches, diff the OLD response against the NEW one:
+
+- **CRITICAL** — a response field is removed, renamed, or changes type; a
+  success status code changes (200 → 201, 200 → 204); a field that was always
+  present becomes conditionally absent; an array becomes wrapped in an object
+  or vice versa.
+- **WARNING** — a new field is added inside an object a caller might
+  destructure with a strict shape check, or nesting changes in a way that is
+  additive but still surprising (e.g. flattening one level deeper).
+- **Safe** — a genuinely new, additional field on an existing response; a new
+  endpoint's response shape (nothing depended on it yet).
+
+Call out each break separately with the exact old field/status and the exact
+new one, and suggest keeping the old shape available (a new field alongside,
+or a new route/version) rather than replacing it in place.`,
+  },
+  {
+    name: 'semver-discipline',
+    description:
+      'A breaking change must ship behind a version bump or a new route, never as a silent edit to the current one.',
+    type: 'convention',
+    source: 'manual',
+    body: `# Semver discipline
+
+This API has no runtime version negotiation — "the contract" is whatever the
+current route currently returns, so a breaking change with no version signal
+is invisible until a caller breaks in production. When the diff contains a
+breaking change, check HOW it ships:
+
+- **CRITICAL** — the breaking change lands as an in-place edit to an existing,
+  unversioned route/schema, with nothing in the diff that lets an existing
+  caller opt out (no new path, no new field, no header-based negotiation).
+- **WARNING** — a version bump or new route exists, but the old one is removed
+  in the SAME diff instead of being kept alive for a transition window.
+- **Safe** — the breaking change is confined to a newly introduced
+  \`/v2/...\` route (or equivalent), and the old route is untouched by this diff.
+
+State plainly when the diff has no version escape hatch, and suggest the
+concrete alternative: a new route/version, a request header that opts into the
+new shape, or reverting the field to optional until a version boundary exists.`,
+  },
+  {
+    name: 'deprecation-policy',
+    description: 'Anything removed from a public contract needs a deprecation window, not a disappearance.',
+    type: 'convention',
+    source: 'manual',
+    body: `# Deprecation policy
+
+A field, parameter, enum member, or route that this diff removes must have
+been given a chance to die gracefully. Check the diff (and, if visible, recent
+history) for evidence of a deprecation step BEFORE the removal:
+
+- **CRITICAL** — a public field/parameter/route is removed in this diff with
+  no prior deprecation: no \`deprecated\` marker, no warning response header, no
+  changelog/doc entry, no grace-period window that shipped earlier.
+- **WARNING** — a deprecation marker exists, but the diff removes the thing
+  before the stated sunset date, or removes it for all callers at once instead
+  of behind a flag/cohort.
+- **Safe** — the diff only ADDS a deprecation marker (marks something
+  deprecated but keeps it working), or removes something that was never part
+  of the public contract (internal-only, never released).
+
+In the finding, say what evidence of a deprecation period is missing and
+suggest the minimal fix: reintroduce the field as deprecated-but-present, add a
+\`Deprecation\`/\`Sunset\` response header, or note the required lead time before
+it can be removed for real.`,
   },
 ];
