@@ -56,13 +56,24 @@
   },
   "smartDiff": {
     "coreLabel": "Core",
+    "testsLabel": "Tests",
     "wiringLabel": "Wiring",
+    "docsLabel": "Docs",
     "boilerplateLabel": "Boilerplate",
     "largeTitle": "This PR is large ({lines} changed lines)",
     "largeBody": "Consider splitting it into smaller, focused PRs for easier review:",
     "filesCount": "{count} files",
     "findingLines": "{count} finding-lines",
-    "groupedByRole": "Smart Diff · grouped by role"
+    "groupedByRole": "Smart Diff · grouped by role",
+    "smartOrder": "Smart order",
+    "originalOrder": "Original order",
+    "noReviewYet": "No review yet — run a review to see findings in the diff.",
+    "reviewerOrdered": "REVIEWER-ORDERED DIFF",
+    "coreDesc": "Business logic and primary changes",
+    "testsDesc": "Tests and fixtures",
+    "wiringDesc": "Config, routing and registration",
+    "docsDesc": "Documentation",
+    "boilerplateDesc": "Lock files and generated output"
   },
   "list": {
     "breadcrumb": "Pull Requests",

@@ -56,6 +56,10 @@ export default function PRDetailPage() {
   const invalidateRunHistory = () => {
     if (prId) qc.invalidateQueries({ queryKey: ["pr-runs", prId] });
   };
+  // The Files-changed Smart Diff shows finding counters — refresh with the run.
+  const invalidateSmartDiff = () => {
+    if (prId) qc.invalidateQueries({ queryKey: ["smart-diff", prId] });
+  };
 
   const tab = search.get("tab") ?? "overview";
   const traceRunId = search.get("trace");
@@ -156,6 +160,7 @@ export default function PRDetailPage() {
             onRunDone={() => {
               invalidateActiveRuns();
               invalidateRunHistory();
+              invalidateSmartDiff();
               refetchReviews();
             }}
           />
@@ -167,6 +172,8 @@ export default function PRDetailPage() {
             filesCount={pr.files_count}
             files={pr.files}
             canComment={pr.status === "open"}
+            repoFullName={repoFullName}
+            headSha={pr.head_sha}
           />
         )}
       </div>
