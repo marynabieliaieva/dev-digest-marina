@@ -67,6 +67,12 @@ export interface StructuredRequest<T> {
    * the `session_id` body field; ignored by providers that don't support it.
    */
   sessionId?: string;
+  /**
+   * OpenRouter only: send `provider: { require_parameters: true }` so the request
+   * is routed only to upstream providers that honour every parameter (notably
+   * strict `json_schema` response_format). Ignored by other providers.
+   */
+  requireParameters?: boolean;
 }
 
 export interface StructuredResult<T> {
@@ -163,6 +169,15 @@ export interface CommitFilesPayload {
   files: CommitFile[];
 }
 
+/** A single UTF-8 text file read from a repo at a given ref. */
+export interface RepoFileContent {
+  path: string;
+  ref: string;
+  text: string;
+  /** Size in bytes as reported by GitHub. */
+  size: number;
+}
+
 export interface GitHubClient {
   listPullRequests(repo: RepoRef): Promise<PrMeta[]>;
   getPullRequest(repo: RepoRef, n: number): Promise<PrDetail>;
@@ -185,6 +200,11 @@ export interface GitHubClient {
   /** The open PR whose head is `branch`, if any (so re-publish reuses it). */
   findOpenPr(repo: RepoRef, branch: string): Promise<{ url: string } | null>;
   getIssue(repo: RepoRef, n: number): Promise<IssueMeta>;
+  /**
+   * Read one text file at `ref`. Throws on directories, binary content, files
+   * over 256 KB, and paths containing `..` or starting with `/`.
+   */
+  getFileContent(repo: RepoRef, path: string, ref: string): Promise<RepoFileContent>;
   /** GET /user — for "posting as @user". */
   currentLogin(): Promise<string>;
 }

@@ -54,6 +54,15 @@ export {
   type ToReviewOptions,
 } from './output/to-review.js';
 
+// Intent classifier (pure): outline (headers only) → prompt → classify → finalize.
+export { outlineFromDiff, outlineFromPatches, type FileOutline } from './intent/outline.js';
+export { sectionStats } from './intent/composition.js';
+export { buildIntentPrompt, type IntentDoc, type IntentPromptInput } from './intent/prompt.js';
+export { classifyIntent, type ClassifyIntentArgs } from './intent/classify.js';
+export { finalizeIntent } from './intent/finalize.js';
+export { renderIntentBlock } from './intent/render.js';
+export { applyIntentScope, type ScopeFilterResult } from './intent/scope-filter.js';
+
 // The single OpenAI-compatible structured provider (OpenRouter), shared by the
 // CI runner and the server's openrouter path. Owns session grouping + guards.
 export { OpenRouterProvider, type OpenRouterProviderOptions } from './llm/openrouter.js';

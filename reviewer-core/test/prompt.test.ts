@@ -32,6 +32,55 @@ describe('assemblePrompt — shared injection guard (server + CI)', () => {
   });
 });
 
+describe('assemblePrompt — ## Derived intent', () => {
+  it('renders after PR description, before Skills, untrusted-wrapped, with scope instruction', () => {
+    const { messages, assembly } = assemblePrompt({
+      system: 'sys',
+      diff: 'DIFF',
+      prDescription: 'body',
+      skills: ['SKILL'],
+      intent: 'Summary: add limiter',
+    });
+    const user = messages[1]!.content;
+    expect(user.indexOf('## PR description')).toBeLessThan(user.indexOf('## Derived intent'));
+    expect(user.indexOf('## Derived intent')).toBeLessThan(user.indexOf('## Skills / rules'));
+    expect(user).toContain('<untrusted source="derived-intent">');
+    expect(user).toContain('set each finding\'s `scope`');
+    expect(assembly.intent).toBe('Summary: add limiter');
+  });
+
+  it('without intent the user message is byte-identical to the legacy layout', () => {
+    const user = userOf({
+      system: 'sys',
+      task: 'TASK',
+      prDescription: 'body',
+      skills: ['S1'],
+      memory: ['m1'],
+      diff: 'DIFF',
+    });
+    expect(user).toBe(
+      [
+        'TASK',
+        '## PR description\n<untrusted source="pr-description">\nbody\n</untrusted>',
+        '## Skills / rules\nS1',
+        '## Relevant memory\n- m1',
+        '## Diff to review\n<untrusted source="diff">\nDIFF\n</untrusted>',
+      ].join('\n\n'),
+    );
+    expect(userOf({ system: 'sys', diff: 'D', intent: '  ' })).not.toContain('## Derived intent');
+  });
+
+  it('composition lists only present sections, stats only', () => {
+    const { composition } = assemblePrompt({ system: 'sys', diff: 'DIFF', intent: 'I' });
+    expect(composition.map((s) => s.name)).toEqual(['system', 'intent', 'diff']);
+    for (const s of composition) {
+      expect(s.sha256).toMatch(/^[0-9a-f]{64}$/);
+      expect(s.est_tokens).toBe(Math.ceil(s.chars / 4));
+      expect(Object.keys(s).sort()).toEqual(['chars', 'est_tokens', 'name', 'sha256']);
+    }
+  });
+});
+
 describe('assemblePrompt — ## PR description', () => {
   it('renders the section (untrusted-wrapped) before the diff when present', () => {
     const { messages, assembly } = assemblePrompt({

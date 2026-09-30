@@ -2,6 +2,7 @@ import type {
   Finding,
   LLMProvider,
   PromptAssembly,
+  PromptSectionStat,
   Review,
   RunEventKind,
   UnifiedDiff,
@@ -9,6 +10,7 @@ import type {
 import { Review as ReviewSchema } from '@devdigest/shared';
 import { assemblePrompt } from '../prompt.js';
 import { groundFindings, groundingSummary } from '../grounding.js';
+import { applyIntentScope } from '../intent/scope-filter.js';
 import { reduceReviews, scoreFromFindings, sliceDiff } from './reduce.js';
 
 /**
@@ -73,6 +75,12 @@ export interface ReviewInput {
   prDescription?: string;
   /** Task framing line, e.g. "Review PR #482 …". */
   task?: string;
+  /**
+   * Derived PR intent (pure data, produced by the caller). `block` is the
+   * pre-rendered text (see `renderIntentBlock`); `filterEnabled` turns on the
+   * out-of-scope filter. Undefined → no intent section, no filtering.
+   */
+  intent?: { block: string; filterEnabled: boolean };
   /** Override the structured-output retry budget. */
   maxRetries?: number;
   /** Override the map-reduce line threshold. */
@@ -110,6 +118,10 @@ export interface ReviewOutcome {
   costUsd: number | null;
   /** Joined raw model outputs (for the run trace). */
   raw: string;
+  /** Findings removed by the intent scope filter (empty when the filter is off). */
+  scopeSuppressed: { finding: Finding; reason: string }[];
+  /** Prompt composition stats (single-pass: the one call; map-reduce: whole-diff). No text. */
+  composition: PromptSectionStat[];
 }
 
 function selectMode(strategy: ReviewStrategy, diff: UnifiedDiff, threshold: number): ReviewMode {
@@ -135,11 +147,14 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
     callers: input.callers,
     repoMap: input.repoMap,
     prDescription: input.prDescription,
+    intent: input.intent?.block,
     task: input.task,
   };
 
   // Whole-diff assembly is the trace default; overwritten below for single-pass.
-  let assembly: PromptAssembly = assemblePrompt({ ...promptParts, diff: input.diff.raw }).assembly;
+  const whole = assemblePrompt({ ...promptParts, diff: input.diff.raw });
+  let assembly: PromptAssembly = whole.assembly;
+  let composition: PromptSectionStat[] = whole.composition;
 
   const chunks =
     mode === 'map-reduce'
@@ -170,7 +185,27 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
       { file: chunk.label },
     );
     const a = assemblePrompt({ ...promptParts, diff: chunk.diffText });
-    if (mode === 'single-pass') assembly = a.assembly;
+    if (mode === 'single-pass') {
+      assembly = a.assembly;
+      composition = a.composition;
+    }
+    const totalChars = a.composition.reduce((n, s) => n + s.chars, 0);
+    const estTokens = a.composition.reduce((n, s) => n + s.est_tokens, 0);
+    // Stats only (names/sizes) — never section text, diff lines, or secrets.
+    emit(
+      'tool',
+      `review: main request — provider=${input.llm.id} model=${input.model} ` +
+        `sections=[${a.composition.map((s) => `${s.name}:${s.chars}c`).join(', ')}] ~${estTokens} tok`,
+      {
+        call: 'review',
+        provider: input.llm.id,
+        model: input.model,
+        chunk: chunk.label,
+        sections: a.composition,
+        total_chars: totalChars,
+        est_tokens: estTokens,
+      },
+    );
     const res = await input.llm.completeStructured<Review>({
       model: input.model,
       schema: ReviewSchema,
@@ -201,11 +236,27 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
   }
   emit('result', `Citation grounding: ${grounding}`);
 
-  // Score is derived from the findings that SURVIVED grounding (not the model's
-  // self-reported number, and not the pre-grounding set) so the score, the
-  // findings list, and the deterministic event always agree.
+  // Intent scope filter (after grounding). Disabled → passthrough.
+  const scoped = applyIntentScope(ground.kept, { enabled: input.intent?.filterEnabled === true });
+  if (input.intent?.filterEnabled) {
+    emit(
+      'info',
+      `Scope filter: kept ${scoped.kept.length}, suppressed ${scoped.suppressed.length}, signal ${scoped.signal ? 1 : 0}`,
+      {
+        suppressed: scoped.suppressed.map((s) => ({
+          title: s.finding.title,
+          severity: s.finding.severity,
+          reason: s.reason,
+        })),
+      },
+    );
+  }
+
+  // Score is derived from the findings that SURVIVED grounding AND the scope
+  // filter (not the model's self-reported number) so the score, the findings
+  // list, and the deterministic event always agree.
   return {
-    review: { ...merged, findings: ground.kept, score: scoreFromFindings(ground.kept) },
+    review: { ...merged, findings: scoped.kept, score: scoreFromFindings(scoped.kept) },
     grounding,
     dropped: ground.dropped,
     mode,
@@ -215,5 +266,7 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
     tokensOut,
     costUsd,
     raw: raws.join('\n---\n'),
+    scopeSuppressed: scoped.suppressed,
+    composition,
   };
 }

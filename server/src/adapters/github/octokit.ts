@@ -11,10 +11,12 @@ import type {
   OpenPrPayload,
   CommitFilesPayload,
   IssueMeta,
+  RepoFileContent,
 } from '@devdigest/shared';
 import { withRetry, withTimeout } from '../../platform/resilience.js';
 
 const TIMEOUT = 30_000;
+const MAX_FILE_BYTES = 256 * 1024;
 
 function mapStatus(state: string, merged: boolean | undefined): PrStatus {
   if (merged) return 'merged';
@@ -361,6 +363,34 @@ export class OctokitGitHubClient implements GitHubClient {
       body: res.data.body,
       state: res.data.state,
     };
+  }
+
+  async getFileContent(repo: RepoRef, path: string, ref: string): Promise<RepoFileContent> {
+    if (!path || path.startsWith('/') || path.split(/[\\/]/).includes('..')) {
+      throw new Error('Invalid file path');
+    }
+    const res = await withRetry(() =>
+      withTimeout(
+        this.octokit.rest.repos.getContent({ owner: repo.owner, repo: repo.name, path, ref }),
+        TIMEOUT,
+      ),
+    );
+    const data = res.data as unknown;
+    if (
+      Array.isArray(data) ||
+      !data ||
+      (data as { type?: string }).type !== 'file'
+    ) {
+      throw new Error('Path is not a file');
+    }
+    const file = data as { size: number; content?: string; encoding?: string };
+    if (file.size > MAX_FILE_BYTES) throw new Error('File too large');
+    if (file.encoding !== 'base64' || typeof file.content !== 'string') {
+      throw new Error('Unsupported file encoding');
+    }
+    const text = Buffer.from(file.content, 'base64').toString('utf8');
+    if (text.includes('\u0000')) throw new Error('Binary file');
+    return { path, ref, text, size: file.size };
   }
 
   async currentLogin(): Promise<string> {

@@ -37,6 +37,15 @@ export const ToolCall = z.object({
 });
 export type ToolCall = z.infer<typeof ToolCall>;
 
+/** Per-section prompt stats. Stats only: never the section text. */
+export const PromptSectionStat = z.object({
+  name: z.string(),
+  chars: z.number().int(),
+  est_tokens: z.number().int(),
+  sha256: z.string(),
+});
+export type PromptSectionStat = z.infer<typeof PromptSectionStat>;
+
 export const PromptAssembly = z.object({
   system: z.string(),
   skills: z.string().nullish(),
@@ -48,6 +57,8 @@ export const PromptAssembly = z.object({
   repo_map: z.string().nullish(),
   /** PR author's description/body (truncated); null when absent. */
   pr_description: z.string().nullish(),
+  /** Rendered derived-intent block; null when absent. */
+  intent: z.string().nullish(),
   user: z.string(),
 });
 export type PromptAssembly = z.infer<typeof PromptAssembly>;

@@ -9,6 +9,7 @@ import { REVIEW_STRATEGY } from './constants.js';
 import { renderSkillBlocks, selectActiveSkills, taskLine } from './helpers.js';
 import { toSkillDto } from '../skills/helpers.js';
 import { loadDiff } from './diff-loader.js';
+import { IntentService, type EnsuredIntent } from '../intent/service.js';
 
 /** Thrown by a run when the user cancels it mid-flight (between map files). */
 export class RunCancelledError extends Error {
@@ -105,6 +106,17 @@ export class ReviewRunExecutor {
     }
     runLog.info(`Diff ready — ${diff.files.length} changed file(s); starting ${jobs.length} agent run(s)`);
 
+    // Intent is derived (or reused) ONCE per batch, not per agent. It uses the
+    // fan-out logger so its lines land in every run's buffer/persisted trace.
+    // ensureForReview never throws; null = no intent block and no scope filter.
+    const intent = await new IntentService(this.container).ensureForReview(
+      workspaceId,
+      pull,
+      repo,
+      diff,
+      runLog,
+    );
+
     for (const { agent, runId } of jobs) {
       const agentStart = Date.now();
       logger?.info(
@@ -112,7 +124,7 @@ export class ReviewRunExecutor {
         `review: agent "${agent.name}" started (${agent.provider}/${agent.model})`,
       );
       try {
-        const outcome = await this.runOneAgent(workspaceId, pull, repo, diff, agent, runId, runLog);
+        const outcome = await this.runOneAgent(workspaceId, pull, repo, diff, agent, runId, runLog, intent);
         logger?.info(
           {
             runId,
@@ -144,6 +156,7 @@ export class ReviewRunExecutor {
     agent: AgentRow,
     runId: string,
     parentLog: RunLogger,
+    intent: EnsuredIntent | null,
   ): Promise<RunOutcome> {
     const start = Date.now();
     // Narrow the fanned-out pre-work logger to THIS run; the shared diff/intent
@@ -213,6 +226,9 @@ export class ReviewRunExecutor {
         // PR author's description/body — untrusted; assemblePrompt wraps +
         // truncates it. Omitted when the PR has no body.
         ...(pull.body ? { prDescription: pull.body } : {}),
+        // Derived intent (untrusted; reviewer-core wraps it) + scope-filter
+        // switch. Omitted when intent is missing/failed → today's exact prompt.
+        ...(intent ? { intent: { block: intent.block, filterEnabled: intent.filterEnabled } } : {}),
         task,
         sessionId: `${repo.owner}/${repo.name}#${pull.number}:${agent.name}`,
         onEvent: (e) => runLog.event(e.kind, e.msg, e.data),

@@ -26,9 +26,16 @@ const EnvSchema = z.object({
   // Note: even when on, sections only populate once the repo is indexed; an
   // unindexed repo degrades gracefully. Per-agent override: agents.repo_intel.
   REPO_INTEL_ENABLED: z.string().optional(),
+  // Intent layer: fetch non-GitHub https links found in a PR body (via the
+  // SSRF-guarded WebFetcher). Default ON — set INTENT_EXTERNAL_FETCH=false on a
+  // shared/multi-tenant deployment; such links are then recorded `unsupported`.
+  INTENT_EXTERNAL_FETCH: z.string().optional(),
   API_PORT: z.coerce.number().int().default(3001),
   WEB_PORT: z.coerce.number().int().default(3000),
   DEVDIGEST_CLONE_DIR: z.string().optional(),
+  // Override for the BYO-keys store (default ~/.devdigest/secrets.json). Tests
+  // point it at an empty temp file so they never pick up a developer's keys.
+  DEVDIGEST_SECRETS_PATH: z.string().optional(),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   // `.env` (and .env.example) ship `LOG_LEVEL=` empty; an empty string is not a
   // valid enum member, so coerce '' → undefined to fall through to the default.
@@ -59,6 +66,12 @@ export type AppConfig = {
    * EXACTLY like the ripgrep-only baseline.
    */
   repoIntelEnabled: boolean;
+  /**
+   * Whether the intent layer may fetch external (non-GitHub) https links from a
+   * PR body. Default ON — set INTENT_EXTERNAL_FETCH=false to opt out (links are
+   * then recorded `unsupported`, with no request made).
+   */
+  intentExternalFetch: boolean;
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -71,11 +84,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     apiPort: parsed.API_PORT,
     webPort: parsed.WEB_PORT,
     cloneDir,
-    secretsPath: join(homedir(), '.devdigest', 'secrets.json'),
+    secretsPath: parsed.DEVDIGEST_SECRETS_PATH || join(homedir(), '.devdigest', 'secrets.json'),
     nodeEnv: parsed.NODE_ENV,
     logLevel: parsed.LOG_LEVEL ?? (parsed.NODE_ENV === 'test' ? 'silent' : 'info'),
     webOrigin: `http://localhost:${parsed.WEB_PORT}`,
     embeddingsEnabled: parsed.EMBEDDINGS_ENABLED === 'true',
     repoIntelEnabled: parsed.REPO_INTEL_ENABLED !== 'false',
+    intentExternalFetch: parsed.INTENT_EXTERNAL_FETCH !== 'false',
   };
 }

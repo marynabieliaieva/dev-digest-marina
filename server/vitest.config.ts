@@ -12,6 +12,8 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['test/**/*.test.ts', 'src/**/*.test.ts'],
+    // Isolate tests from the developer's real API keys / ~/.devdigest secrets.
+    setupFiles: ['test/setup-env.ts'],
     // Testcontainers integration tests can be slow to spin up Postgres.
     testTimeout: 120_000,
     hookTimeout: 120_000,

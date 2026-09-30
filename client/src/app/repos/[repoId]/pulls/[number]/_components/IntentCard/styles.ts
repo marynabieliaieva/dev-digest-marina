@@ -1,0 +1,118 @@
+import type { CSSProperties } from "react";
+
+export const s = {
+  card: {
+    border: "1px solid var(--border)",
+    borderRadius: 8,
+    background: "var(--bg-elevated)",
+    padding: "16px 18px",
+    display: "flex",
+    flexDirection: "column",
+    gap: 14,
+  } satisfies CSSProperties,
+  headerRight: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    fontSize: 12,
+    color: "var(--text-muted)",
+  } satisfies CSSProperties,
+  summary: {
+    margin: 0,
+    fontSize: 14,
+    lineHeight: 1.55,
+    color: "var(--text-primary)",
+  } satisfies CSSProperties,
+  columns: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 16,
+  } satisfies CSSProperties,
+  scopeList: {
+    margin: 0,
+    padding: 0,
+    listStyle: "none",
+    display: "flex",
+    flexDirection: "column",
+    gap: 7,
+    fontSize: 13,
+    color: "var(--text-secondary)",
+    lineHeight: 1.45,
+  } satisfies CSSProperties,
+  scopeItem: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: 9,
+  } satisfies CSSProperties,
+  scopeMark: {
+    flexShrink: 0,
+    marginTop: 2,
+  } satisfies CSSProperties,
+  heading: {
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: "0.07em",
+    textTransform: "uppercase",
+    color: "var(--text-muted)",
+    margin: "0 0 8px",
+  } satisfies CSSProperties,
+  list: {
+    margin: 0,
+    paddingLeft: 18,
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+    fontSize: 13.5,
+    color: "var(--text-secondary)",
+    lineHeight: 1.5,
+  } satisfies CSSProperties,
+  chips: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 6,
+  } satisfies CSSProperties,
+  chip: {
+    padding: "3px 10px",
+    borderRadius: 6,
+    border: "1px solid var(--border)",
+    fontSize: 12.5,
+    color: "var(--text-secondary)",
+  } satisfies CSSProperties,
+  sourceRow: {
+    display: "flex",
+    alignItems: "baseline",
+    gap: 8,
+    fontSize: 12.5,
+    color: "var(--text-secondary)",
+  } satisfies CSSProperties,
+  sourceRef: {
+    fontFamily: "var(--font-mono, monospace)",
+    wordBreak: "break-all",
+  } satisfies CSSProperties,
+  sourceStatus: {
+    fontSize: 11.5,
+    color: "var(--text-muted)",
+  } satisfies CSSProperties,
+  warning: {
+    border: "1px solid var(--border-strong)",
+    borderRadius: 6,
+    background: "var(--bg-hover)",
+    padding: "10px 12px",
+    fontSize: 13,
+    color: "var(--text-secondary)",
+  } satisfies CSSProperties,
+  error: {
+    fontSize: 13.5,
+    color: "var(--crit)",
+    wordBreak: "break-word",
+  } satisfies CSSProperties,
+  muted: {
+    fontSize: 13.5,
+    color: "var(--text-muted)",
+  } satisfies CSSProperties,
+  actions: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+  } satisfies CSSProperties,
+} as const;
