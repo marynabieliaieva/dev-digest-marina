@@ -108,10 +108,10 @@ describe("DiffTab smart diff", () => {
         expect(groups[i - 1]!.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       }
     });
-    expect(within(groups[0]!).getByText("Core")).toBeInTheDocument();
-    expect(within(groups[0]!).getByText("1 files")).toBeInTheDocument();
-    expect(within(groups[1]!).getByText("Tests")).toBeInTheDocument();
-    expect(within(groups[3]!).getByText("Docs")).toBeInTheDocument();
+    ["Core", "Tests", "Wiring", "Docs", "Boilerplate"].forEach((label, i) => {
+      expect(within(groups[i]!).getByText(label)).toBeInTheDocument();
+      expect(within(groups[i]!).getByText("1 files")).toBeInTheDocument();
+    });
 
     // lock file lives in boilerplate; docs/boilerplate collapsed, core expanded
     expect(within(groups[4]!).getByRole("button", { name: "Boilerplate" })).toHaveAttribute("aria-expanded", "false");
@@ -126,9 +126,11 @@ describe("DiffTab smart diff", () => {
     expect(screen.getAllByTestId("file-finding-dot")).toHaveLength(1);
     expect(screen.queryByText(prReview.smartDiff.noReviewYet)).not.toBeInTheDocument();
 
-    // findings hidden until the comments toggle is switched on
-    expect(screen.queryByText("Null deref")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Show comments/ }));
+    // expanding boilerplate reveals the lock file inside that group
+    fireEvent.click(within(groups[4]!).getByRole("button", { name: "Boilerplate" }));
+    expect(within(groups[4]!).getByText("pnpm-lock.yaml")).toBeInTheDocument();
+
+    // findings are visible by default (review has findings), no extra click
     expect(screen.getByText("Null deref")).toBeInTheDocument();
     expect(screen.getByText("why f1")).toBeInTheDocument();
 
@@ -137,6 +139,8 @@ describe("DiffTab smart diff", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Hide comments/ }));
     expect(screen.queryByText("Null deref")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Show comments/ }));
+    expect(screen.getByText("Null deref")).toBeInTheDocument();
   });
 
   it("switches to original order without group headers and back", () => {
@@ -144,7 +148,7 @@ describe("DiffTab smart diff", () => {
     fireEvent.click(screen.getByRole("button", { name: "Original order" }));
     expect(screen.queryByTestId("smart-diff-group-core")).not.toBeInTheDocument();
     const paths = screen
-      .getAllByText(/^(src\/.*|README\.md|pnpm-lock\.yaml)$/)
+      .getAllByText(/^(src\/[^:]*|README\.md|pnpm-lock\.yaml)$/)
       .map((el) => el.textContent);
     expect(paths).toEqual(FILES.map((f) => f.path));
 

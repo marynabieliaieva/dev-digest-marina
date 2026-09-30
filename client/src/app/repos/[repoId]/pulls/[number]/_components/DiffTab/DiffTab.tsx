@@ -38,7 +38,8 @@ export function DiffTab({ prId, filesCount, files, canComment, repoFullName, hea
   const create = useCreatePrComment(prId);
   const findingAction = useFindingAction();
   // Comments start hidden so the diff is clean by default — toggle to reveal.
-  const [showComments, setShowComments] = React.useState(false);
+  // undefined = untouched: findings default to visible, GitHub comments to hidden.
+  const [showOverride, setShowOverride] = React.useState<boolean | undefined>(undefined);
   const [order, setOrder] = React.useState<Order>("smart");
 
   const commentCount = comments?.length ?? 0;
@@ -46,16 +47,17 @@ export function DiffTab({ prId, filesCount, files, canComment, repoFullName, hea
   const byId = React.useMemo(() => new Map(findings.map((f) => [f.id, f])), [findings]);
   const byPath = React.useMemo(() => findingsByPath(findings), [findings]);
   const hasReview = (reviews ?? []).some((r) => r.kind === "review");
+  const findingsShown = showOverride ?? findings.length > 0;
 
   const commenting: DiffCommentApi = {
     comments: comments ?? [],
     canComment: !!canComment && !!prId,
-    showComments,
+    showComments: showOverride ?? false,
     posting: create.isPending,
     onSubmit: async (input) => {
       try {
         const res = await create.mutateAsync(input);
-        setShowComments(true); // a just-posted comment shouldn't stay hidden
+        setShowOverride(true); // a just-posted comment shouldn't stay hidden
         return res;
       } catch (err) {
         notify.error(err instanceof Error ? err.message : "Couldn't post the comment to GitHub.");
@@ -66,7 +68,7 @@ export function DiffTab({ prId, filesCount, files, canComment, repoFullName, hea
 
   const findingApi: DiffFindingApi = {
     byPath,
-    show: showComments,
+    show: findingsShown,
     renderFinding: (d: DiffFinding) => {
       const rec = byId.get(d.id);
       if (!rec) return null;
@@ -100,10 +102,10 @@ export function DiffTab({ prId, filesCount, files, canComment, repoFullName, hea
             <Button
               kind="ghost"
               size="sm"
-              icon={showComments ? "EyeOff" : "Eye"}
-              onClick={() => setShowComments((v) => !v)}
+              icon={findingsShown ? "EyeOff" : "Eye"}
+              onClick={() => setShowOverride(!(findingsShown))}
             >
-              {showComments ? "Hide comments" : "Show comments"} ({toggleCount})
+              {findingsShown ? "Hide comments" : "Show comments"} ({toggleCount})
             </Button>
           ) : undefined
         }
