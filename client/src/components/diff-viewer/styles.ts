@@ -90,3 +90,49 @@ export function lineSignFor(kind: Line["kind"]): CSSProperties {
     flexShrink: 0,
   };
 }
+
+/** Finding UI styles (severity colours come from the shared SEV tokens). */
+export const fs = {
+  dot: { width: 8, height: 8, borderRadius: "50%", flexShrink: 0, display: "inline-block" } satisfies CSSProperties,
+  label: {
+    fontSize: 11,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
+    padding: "0 8px",
+    flexShrink: 0,
+  } satisfies CSSProperties,
+  inline: { margin: "6px 14px 8px 58px", display: "flex", flexDirection: "column", gap: 4 } satisfies CSSProperties,
+  toggle: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    background: "none",
+    border: "none",
+    padding: 0,
+    cursor: "pointer",
+    fontSize: 12,
+    color: "var(--text-muted)",
+    textAlign: "left",
+  } satisfies CSSProperties,
+  outsideWrap: {
+    borderTop: "1px solid var(--border)",
+    margin: "4px 14px 4px 58px",
+    paddingTop: 10,
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+  } satisfies CSSProperties,
+  outsideTitle: {
+    fontSize: 11,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "var(--text-muted)",
+  } satisfies CSSProperties,
+} as const;
+
+/** Row accent for a finding-marked line: coloured left stripe. */
+export function findingStripe(color: string): CSSProperties {
+  return { borderLeft: `3px solid ${color}` };
+}
