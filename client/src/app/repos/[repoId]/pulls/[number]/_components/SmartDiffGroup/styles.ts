@@ -4,13 +4,13 @@ export const s = {
   wrap: { display: "flex", flexDirection: "column", gap: 8 } satisfies CSSProperties,
   header: {
     position: "sticky",
-    top: 0,
-    zIndex: 1,
+    top: "var(--pr-header-height, 132px)", // below the sticky PrDetailHeader (z 5)
+    zIndex: 4,
     display: "flex",
     alignItems: "center",
     gap: 10,
     padding: "8px 4px",
-    background: "var(--bg)",
+    background: "var(--bg-primary)",
     borderBottom: "1px solid var(--border)",
   } satisfies CSSProperties,
   toggle: {

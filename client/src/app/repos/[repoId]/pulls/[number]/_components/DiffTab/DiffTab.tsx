@@ -15,7 +15,7 @@ import { notify } from "@/lib/toast";
 import type { PrFile } from "@devdigest/shared";
 import { FindingCard } from "../FindingCard";
 import { SmartDiffGroup } from "../SmartDiffGroup";
-import { findingsByPath, selectLatestFindings } from "./helpers";
+import { filesForGroup, findingsByPath, selectLatestFindings } from "./helpers";
 import { s } from "./styles";
 
 interface DiffTabProps {
@@ -47,7 +47,8 @@ export function DiffTab({ prId, filesCount, files, canComment, repoFullName, hea
   const byId = React.useMemo(() => new Map(findings.map((f) => [f.id, f])), [findings]);
   const byPath = React.useMemo(() => findingsByPath(findings), [findings]);
   const hasReview = (reviews ?? []).some((r) => r.kind === "review");
-  const findingsShown = showOverride ?? findings.length > 0;
+  // One effective state drives the label, the next click, findings AND (after a click) comments.
+  const effectiveShow = showOverride ?? findings.length > 0;
 
   const commenting: DiffCommentApi = {
     comments: comments ?? [],
@@ -68,7 +69,7 @@ export function DiffTab({ prId, filesCount, files, canComment, repoFullName, hea
 
   const findingApi: DiffFindingApi = {
     byPath,
-    show: findingsShown,
+    show: effectiveShow,
     renderFinding: (d: DiffFinding) => {
       const rec = byId.get(d.id);
       if (!rec) return null;
@@ -88,7 +89,10 @@ export function DiffTab({ prId, filesCount, files, canComment, repoFullName, hea
   };
 
   const filesByPath = new Map(files.map((f) => [f.path, f]));
-  const groups = order === "smart" ? (smartDiff?.groups ?? null) : null;
+  const groups = order === "smart" && smartDiff?.groups.length ? smartDiff.groups : null;
+  // PR files no group lists (smart-diff can lag the PR detail) still render, under core.
+  const listed = new Set((smartDiff?.groups ?? []).flatMap((g) => g.files.map((f) => f.path)));
+  const unlisted = files.filter((f) => !listed.has(f.path));
   const totalAdd = files.reduce((n, f) => n + f.additions, 0);
   const totalDel = files.reduce((n, f) => n + f.deletions, 0);
   const toggleCount = commentCount + findings.length;
@@ -102,10 +106,10 @@ export function DiffTab({ prId, filesCount, files, canComment, repoFullName, hea
             <Button
               kind="ghost"
               size="sm"
-              icon={findingsShown ? "EyeOff" : "Eye"}
-              onClick={() => setShowOverride(!(findingsShown))}
+              icon={effectiveShow ? "EyeOff" : "Eye"}
+              onClick={() => setShowOverride(!effectiveShow)}
             >
-              {findingsShown ? "Hide comments" : "Show comments"} ({toggleCount})
+              {effectiveShow ? "Hide comments" : "Show comments"} ({toggleCount})
             </Button>
           ) : undefined
         }
@@ -148,7 +152,7 @@ export function DiffTab({ prId, filesCount, files, canComment, repoFullName, hea
             <SmartDiffGroup
               key={g.role}
               role={g.role}
-              files={g.files.flatMap((f) => filesByPath.get(f.path) ?? [])}
+              files={filesForGroup(g.role, g.files, filesByPath, unlisted)}
               findingFileCount={g.files.filter((f) => f.finding_lines.length > 0).length}
               hasReview={hasReview}
               commenting={commenting}

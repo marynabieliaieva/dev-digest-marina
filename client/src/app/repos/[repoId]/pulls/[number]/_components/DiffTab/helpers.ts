@@ -1,4 +1,4 @@
-import type { FindingRecord, ReviewRecord } from "@devdigest/shared";
+import type { FindingRecord, PrFile, ReviewRecord } from "@devdigest/shared";
 import type { DiffFinding } from "@/components/diff-viewer";
 
 /**
@@ -35,4 +35,18 @@ export function findingsByPath(findings: readonly FindingRecord[]): Map<string, 
   }
   for (const list of out.values()) list.sort((a, b) => a.start_line - b.start_line);
   return out;
+}
+
+/**
+ * Patch-bearing files for one smart-diff group, in server order. Unlisted PR
+ * files (no group claims them) are appended to `core` so nothing is dropped.
+ */
+export function filesForGroup(
+  role: string,
+  groupFiles: readonly { path: string }[],
+  filesByPath: ReadonlyMap<string, PrFile>,
+  unlisted: readonly PrFile[],
+): PrFile[] {
+  const own = groupFiles.flatMap((f) => filesByPath.get(f.path) ?? []);
+  return role === "core" ? [...own, ...unlisted] : own;
 }

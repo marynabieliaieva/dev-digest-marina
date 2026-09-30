@@ -8,11 +8,12 @@ import shell from "../../../../../../../../messages/en/shell.json";
 const mocks = vi.hoisted(() => ({
   reviews: [] as unknown[],
   smartDiff: undefined as unknown,
+  comments: [] as unknown[],
   mutate: vi.fn(),
 }));
 
 vi.mock("@/lib/hooks/reviews", () => ({
-  usePrComments: () => ({ data: [] }),
+  usePrComments: () => ({ data: mocks.comments }),
   useCreatePrComment: () => ({ isPending: false, mutateAsync: vi.fn() }),
   usePrReviews: () => ({ data: mocks.reviews }),
   useSmartDiff: () => ({ data: mocks.smartDiff }),
@@ -93,6 +94,7 @@ const ROLES = ["core", "tests", "wiring", "docs", "boilerplate"];
 beforeEach(() => {
   mocks.reviews = [REVIEW];
   mocks.smartDiff = SMART;
+  mocks.comments = [];
   mocks.mutate.mockClear();
 });
 afterEach(cleanup);
@@ -162,5 +164,48 @@ describe("DiffTab smart diff", () => {
     ROLES.forEach((r) => expect(screen.getByTestId(`smart-diff-group-${r}`)).toBeInTheDocument());
     expect(screen.getByText(prReview.smartDiff.noReviewYet)).toBeInTheDocument();
     expect(screen.queryByTestId("smart-diff-group-findings")).not.toBeInTheDocument();
+  });
+});
+
+describe("DiffTab robustness", () => {
+  it("renders PR files that no smart-diff group lists (under core)", () => {
+    mocks.smartDiff = {
+      ...SMART,
+      groups: SMART.groups.map((g) => (g.role === "core" ? { ...g, files: [] } : g)),
+    };
+    renderTab();
+    const core = screen.getByTestId("smart-diff-group-core");
+    // src/a.ts is in the PR but no group lists it -> still shown in core
+    expect(within(core).getByText("src/a.ts")).toBeInTheDocument();
+  });
+
+  it("one toggle click flips findings and GitHub comments together", () => {
+    mocks.comments = [
+      {
+        id: 1,
+        path: "src/a.ts",
+        line: 3,
+        original_line: 3,
+        side: "RIGHT",
+        body: "gh comment body",
+        user: "bob",
+        created_at: "2026-01-01T00:00:00Z",
+        html_url: "https://example.test/c/1",
+        in_reply_to_id: null,
+        is_outdated: false,
+      },
+    ];
+    renderTab();
+    // default: findings visible, GitHub comments hidden, label offers to hide
+    expect(screen.getByText("Null deref")).toBeInTheDocument();
+    expect(screen.queryByText("gh comment body")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Hide comments/ }));
+    expect(screen.queryByText("Null deref")).not.toBeInTheDocument();
+    expect(screen.queryByText("gh comment body")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Show comments/ }));
+    expect(screen.getByText("Null deref")).toBeInTheDocument();
+    expect(screen.getByText("gh comment body")).toBeInTheDocument();
   });
 });

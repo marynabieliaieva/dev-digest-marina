@@ -19,7 +19,7 @@ export const ROLE_RULES: RoleRule[] = [
     patterns: [
       /\.lock$/,
       /(^|\/)(pnpm-lock\.yaml|package-lock\.json|yarn\.lock)$/,
-      /(^|\/)(dist|build)\//,
+      /^([^/]+\/)?(dist|build)\//,
       /(^|\/)__snapshots__\//,
       /\.snap$/,
       /\.generated\./,
@@ -29,7 +29,7 @@ export const ROLE_RULES: RoleRule[] = [
   {
     role: 'tests',
     patterns: [
-      /\.(test|spec)\.tsx?$/,
+      /\.(test|spec)\.[cm]?[jt]sx?$/,
       /(^|\/)(test|tests|__tests__)\//,
       /^e2e\//,
     ],
