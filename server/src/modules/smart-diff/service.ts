@@ -1,6 +1,7 @@
 import { SmartDiffResponse } from '@devdigest/shared';
 import { NotFoundError } from '../../platform/errors.js';
-import type { SmartDiffRepository } from './repository.js';
+import type { Container } from '../../platform/container.js';
+import { SmartDiffRepository } from './repository.js';
 import { buildSmartDiff, selectLatestReviews } from './helpers.js';
 
 /**
@@ -9,6 +10,10 @@ import { buildSmartDiff, selectLatestReviews } from './helpers.js';
  */
 export class SmartDiffService {
   constructor(private repo: SmartDiffRepository) {}
+
+  static fromContainer(container: Container): SmartDiffService {
+    return new SmartDiffService(new SmartDiffRepository(container.db));
+  }
 
   async getSmartDiff(workspaceId: string, prId: string): Promise<SmartDiffResponse> {
     if (!(await this.repo.pullExists(workspaceId, prId))) {
