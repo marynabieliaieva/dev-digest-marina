@@ -32,12 +32,13 @@ export {
 } from './llm/structured.js';
 
 // Map-reduce helpers (reduce partials, slice a file's diff).
-export { reduceReviews, sliceDiff } from './review/reduce.js';
+export { reduceReviews, sliceDiff, packChunks, estimateTokens } from './review/reduce.js';
 
 // The engine entry point: given (diff + resolved agent inputs + LLM) → grounded Review.
 export {
   reviewPullRequest,
   DEFAULT_MAP_THRESHOLD_LINES,
+  DEFAULT_MAX_SINGLE_PASS_TOKENS,
   DEFAULT_REVIEW_MAX_RETRIES,
   type ReviewInput,
   type ReviewOutcome,

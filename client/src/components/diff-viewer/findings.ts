@@ -30,6 +30,17 @@ const SEVERITY_RANK: Record<DiffFindingSeverity, number> = {
 };
 
 /** The most severe severity among the findings, or null when empty. */
+/** Per-severity counts for a file's findings, worst first; severities with none are omitted. */
+export function countBySeverity(
+  findings: readonly DiffFinding[],
+): { severity: DiffFindingSeverity; count: number }[] {
+  const counts = new Map<DiffFindingSeverity, number>();
+  for (const f of findings) counts.set(f.severity, (counts.get(f.severity) ?? 0) + 1);
+  return [...counts.entries()]
+    .map(([severity, count]) => ({ severity, count }))
+    .sort((a, b) => SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity]);
+}
+
 export function topSeverity(findings: readonly DiffFinding[]): DiffFindingSeverity | null {
   let best: DiffFindingSeverity | null = null;
   for (const f of findings) {

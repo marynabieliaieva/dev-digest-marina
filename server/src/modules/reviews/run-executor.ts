@@ -6,7 +6,7 @@ import * as schema from '../../db/schema.js';
 import type { AgentRow } from '../../db/rows.js';
 import type { ReviewRepository, FindingRow, PullRow, ReviewRow } from './repository.js';
 import { REVIEW_STRATEGY } from './constants.js';
-import { renderSkillBlocks, selectActiveSkills, taskLine } from './helpers.js';
+import { filterReviewableDiff, renderSkillBlocks, selectActiveSkills, taskLine } from './helpers.js';
 import { toSkillDto } from '../skills/helpers.js';
 import { loadDiff } from './diff-loader.js';
 import { IntentService, type EnsuredIntent } from '../intent/service.js';
@@ -117,6 +117,16 @@ export class ReviewRunExecutor {
       runLog,
     );
 
+    // Smart Diff role filter: boilerplate/docs files never reach the model.
+    // Intent above deliberately sees the full diff; only the review prompt shrinks.
+    const { diff: reviewDiff, skipped } = filterReviewableDiff(diff);
+    if (skipped.length > 0) {
+      runLog.info(
+        `Role filter: skipped ${skipped.length} boilerplate/docs file(s), reviewing ${reviewDiff.files.length}`,
+        { skipped },
+      );
+    }
+
     for (const { agent, runId } of jobs) {
       const agentStart = Date.now();
       logger?.info(
@@ -124,7 +134,7 @@ export class ReviewRunExecutor {
         `review: agent "${agent.name}" started (${agent.provider}/${agent.model})`,
       );
       try {
-        const outcome = await this.runOneAgent(workspaceId, pull, repo, diff, agent, runId, runLog, intent);
+        const outcome = await this.runOneAgent(workspaceId, pull, repo, reviewDiff, agent, runId, runLog, intent);
         logger?.info(
           {
             runId,

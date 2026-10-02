@@ -1,4 +1,4 @@
-import type { FindingRecord, PrFile, ReviewRecord } from "@devdigest/shared";
+import type { FindingRecord, PrFile, ReviewRecord, RunSummary } from "@devdigest/shared";
 import type { DiffFinding } from "@/components/diff-viewer";
 
 /**
@@ -49,4 +49,44 @@ export function filesForGroup(
 ): PrFile[] {
   const own = groupFiles.flatMap((f) => filesByPath.get(f.path) ?? []);
   return role === "core" ? [...own, ...unlisted] : own;
+}
+
+export type SeverityCounts = Record<DiffFinding["severity"], number>;
+
+/** Findings per severity across the given file paths (a Smart Diff group's files). */
+export function severityCounts(paths: readonly string[], byPath: ReadonlyMap<string, DiffFinding[]>): SeverityCounts {
+  const out: SeverityCounts = { CRITICAL: 0, WARNING: 0, SUGGESTION: 0 };
+  for (const p of paths) for (const f of byPath.get(p) ?? []) out[f.severity] += 1;
+  return out;
+}
+
+export interface RunUsage {
+  tokensIn: number;
+  tokensOut: number;
+  /** null when no included run reported a cost (unknown, never 0). */
+  costUsd: number | null;
+  runs: number;
+}
+
+/**
+ * Tokens/cost of the latest review: the newest finished run per agent (same
+ * "latest per agent" rule as selectLatestFindings). null when nothing finished.
+ */
+export function selectLatestRunUsage(runs: readonly RunSummary[]): RunUsage | null {
+  const newest = new Map<string | null, RunSummary>();
+  for (const r of runs) {
+    if (r.status !== "done") continue;
+    const cur = newest.get(r.agent_id);
+    if (!cur || (r.ran_at ?? "") > (cur.ran_at ?? "")) newest.set(r.agent_id, r);
+  }
+  if (newest.size === 0) return null;
+  let costUsd: number | null = null;
+  let tokensIn = 0;
+  let tokensOut = 0;
+  for (const r of newest.values()) {
+    tokensIn += r.tokens_in ?? 0;
+    tokensOut += r.tokens_out ?? 0;
+    if (r.cost_usd != null) costUsd = (costUsd ?? 0) + r.cost_usd;
+  }
+  return { tokensIn, tokensOut, costUsd, runs: newest.size };
 }

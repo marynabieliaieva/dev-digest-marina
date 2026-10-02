@@ -5,3 +5,4 @@ export { DiffViewer } from "./DiffViewer";
 export type { DiffCommentApi } from "./comments";
 export type { DiffFinding, DiffFindingApi, DiffFindingSeverity } from "./findings";
 export { partitionFindings } from "./findings";
+export type { DiffExpandSignal } from "./expand";

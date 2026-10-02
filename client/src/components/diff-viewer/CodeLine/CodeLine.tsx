@@ -6,7 +6,6 @@
 import React from "react";
 import { SEV } from "@devdigest/ui";
 import { commentTargetFor, type CommentThread, type DiffCommentApi, cs } from "../comments";
-import { FINDING_LINE_LABEL } from "../constants";
 import { topSeverity, type DiffFinding, type DiffFindingApi } from "../findings";
 import { type Line } from "../helpers";
 import { s, fs, lineRowFor, lineSignFor, findingStripe } from "../styles";
@@ -78,11 +77,6 @@ export function CodeLine({
         <span className="mono" style={s.lineText}>
           {ln.text || " "}
         </span>
-        {severity && accent && (
-          <span data-testid="finding-line-label" style={{ ...fs.label, color: accent }}>
-            {FINDING_LINE_LABEL[severity]}
-          </span>
-        )}
       </div>
 
       {findings &&

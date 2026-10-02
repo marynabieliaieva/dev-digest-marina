@@ -22,6 +22,7 @@ export async function classifyIntent(args: ClassifyIntentArgs) {
     maxRetries: 2,
     maxTokens: 1200,
     requireParameters: true,
+    reasoning: 'off',
     ...(args.sessionId ? { sessionId: args.sessionId } : {}),
   });
   return {

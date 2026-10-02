@@ -52,7 +52,7 @@ function renderCard(findings?: DiffFindingApi, file: PrFile = FILE, commenting?:
 }
 
 describe("FileCard findings", () => {
-  it("shows a number-less dot only for files with findings, independent of the comment counter", () => {
+  it("shows severity icon + count only for files with findings, independent of the comment counter", () => {
     renderCard(api([f("a", 2, "WARNING"), f("b", 22, "SUGGESTION")]), FILE, {
       ...COMMENTING,
       comments: [
@@ -70,7 +70,9 @@ describe("FileCard findings", () => {
     });
     const dot = screen.getByTestId("file-finding-dot");
     expect(screen.getAllByTestId("file-finding-dot")).toHaveLength(1);
-    expect(dot.textContent).not.toMatch(/\d/);
+    // severity icon + count
+    expect(dot.textContent).toMatch(/\d/);
+    expect(dot.querySelector("svg")).not.toBeNull();
     // comment counter still rendered separately
     expect(document.querySelector(".lucide-message-square")?.parentElement).toHaveTextContent("1");
 
@@ -79,19 +81,20 @@ describe("FileCard findings", () => {
     expect(screen.queryByTestId("file-finding-dot")).not.toBeInTheDocument();
   });
 
-  it("renders inline cards under the line with stripe + label, collapsible, and outside findings", () => {
+  it("renders inline cards under the line with a severity stripe, collapsible, and outside findings", () => {
     renderCard(api([f("w", 2, "WARNING"), f("c", 22, "CRITICAL"), f("gone", 99, "WARNING")]));
 
     const warnRow = screen.getByText("two").closest("[data-finding-severity]") as HTMLElement;
     expect(warnRow).toHaveAttribute("data-finding-severity", "WARNING");
-    expect(within(warnRow).getByTestId("finding-line-label")).toHaveTextContent("warning");
+    // the type lives on the card itself, not at the end of the code line
+    expect(within(warnRow).queryByTestId("finding-line-label")).not.toBeInTheDocument();
     // card is the next sibling of the row
     const inline = warnRow.nextElementSibling as HTMLElement;
     expect(inline).toHaveAttribute("data-testid", "diff-finding-inline");
     expect(within(inline).getByText("Rationale for w")).toBeInTheDocument();
 
     const critRow = screen.getByText("twenty-two").closest("[data-finding-severity]") as HTMLElement;
-    expect(within(critRow).getByTestId("finding-line-label")).toHaveTextContent("blocker");
+    expect(critRow).toHaveAttribute("data-finding-severity", "CRITICAL");
 
     const outside = screen.getByTestId("diff-findings-outside");
     expect(within(outside).getByText("Rationale for gone")).toBeInTheDocument();

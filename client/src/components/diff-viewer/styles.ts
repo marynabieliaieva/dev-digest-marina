@@ -93,15 +93,9 @@ export function lineSignFor(kind: Line["kind"]): CSSProperties {
 
 /** Finding UI styles (severity colours come from the shared SEV tokens). */
 export const fs = {
+  badges: { display: "inline-flex", alignItems: "center", gap: 8 } satisfies CSSProperties,
+  badge: { display: "inline-flex", alignItems: "center", gap: 3, fontSize: 12, fontWeight: 600 } satisfies CSSProperties,
   dot: { width: 8, height: 8, borderRadius: "50%", flexShrink: 0, display: "inline-block" } satisfies CSSProperties,
-  label: {
-    fontSize: 11,
-    fontWeight: 700,
-    textTransform: "uppercase",
-    letterSpacing: "0.04em",
-    padding: "0 8px",
-    flexShrink: 0,
-  } satisfies CSSProperties,
   inline: { margin: "6px 14px 8px 58px", display: "flex", flexDirection: "column", gap: 4 } satisfies CSSProperties,
   toggle: {
     display: "flex",

@@ -73,6 +73,12 @@ export interface StructuredRequest<T> {
    * strict `json_schema` response_format). Ignored by other providers.
    */
   requireParameters?: boolean;
+  /**
+   * OpenRouter only: 'off' sends `reasoning: { enabled: false }` so reasoning
+   * models skip hidden "thinking" tokens (fast structured extraction). Omitted
+   * → the model's default. Ignored by other providers.
+   */
+  reasoning?: 'off';
 }
 
 export interface StructuredResult<T> {

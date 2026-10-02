@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { FindingRecord, ReviewRecord } from "@devdigest/shared";
-import { selectLatestFindings, findingsByPath } from "./helpers";
+import { selectLatestFindings, findingsByPath, severityCounts } from "./helpers";
 
 function finding(id: string, file = "src/a.ts", line = 1): FindingRecord {
   return {
@@ -70,5 +70,20 @@ describe("findingsByPath", () => {
     const map = findingsByPath([finding("b", "x.ts", 9), finding("a", "x.ts", 2), finding("c", "y.ts", 1)]);
     expect(map.get("x.ts")!.map((f) => f.id)).toEqual(["a", "b"]);
     expect(map.get("y.ts")!.map((f) => f.id)).toEqual(["c"]);
+  });
+});
+
+describe("severityCounts", () => {
+  it("counts findings per severity across only the given paths", () => {
+    const rec = (id: string, file: string, severity: FindingRecord["severity"]) =>
+      ({ ...finding(id, file), severity }) as FindingRecord;
+    const byPath = findingsByPath([
+      rec("a", "src/a.ts", "CRITICAL"),
+      rec("b", "src/a.ts", "WARNING"),
+      rec("c", "src/b.ts", "WARNING"),
+      rec("d", "src/other.ts", "SUGGESTION"),
+    ]);
+    expect(severityCounts(["src/a.ts", "src/b.ts"], byPath)).toEqual({ CRITICAL: 1, WARNING: 2, SUGGESTION: 0 });
+    expect(severityCounts([], byPath)).toEqual({ CRITICAL: 0, WARNING: 0, SUGGESTION: 0 });
   });
 });

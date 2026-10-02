@@ -27,3 +27,10 @@ export const ROLE_DESC_KEY = {
   docs: "docsDesc",
   boilerplate: "boilerplateDesc",
 } as const satisfies Record<SmartDiffRole, string>;
+
+/** Group-header finding chips: severity → reviewer-facing word (colour + icon come from SEV) (CRITICAL reads as "blocker"). */
+export const SEVERITY_CHIPS = [
+  { severity: "CRITICAL", word: "blocker" },
+  { severity: "WARNING", word: "warning" },
+  { severity: "SUGGESTION", word: "suggestion" },
+] as const;

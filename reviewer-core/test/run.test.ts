@@ -136,3 +136,31 @@ describe('reviewPullRequest (engine)', () => {
     expect(seen.every((s) => s === 'sess-abc')).toBe(true);
   });
 });
+
+describe('reviewPullRequest reasoning', () => {
+  it('asks the provider to skip reasoning (fast structured extraction)', async () => {
+    const seen: (string | undefined)[] = [];
+    const llm: LLMProvider = {
+      id: 'openrouter',
+      async completeStructured<T>(req): Promise<StructuredResult<T>> {
+        seen.push(req.reasoning);
+        return {
+          data: { verdict: 'approve', summary: '', score: 100, findings: [] } as unknown as T,
+          model: req.model,
+          tokensIn: 0,
+          tokensOut: 0,
+          costUsd: 0,
+          raw: '',
+          attempts: 1,
+        };
+      },
+    } as LLMProvider;
+    await reviewPullRequest({
+      systemPrompt: 's',
+      model: 'm',
+      diff: await new MockGitClient().diff(),
+      llm,
+    });
+    expect(seen).toEqual(['off']);
+  });
+});

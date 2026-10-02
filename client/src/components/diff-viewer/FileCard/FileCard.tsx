@@ -15,7 +15,8 @@ import {
   type CommentThread,
   type DiffCommentApi,
 } from "../comments";
-import { partitionFindings, topSeverity, type DiffFinding, type DiffFindingApi } from "../findings";
+import { countBySeverity, partitionFindings, type DiffFinding, type DiffFindingApi } from "../findings";
+import type { DiffExpandSignal } from "../expand";
 import { s, fs, chevronFor } from "../styles";
 import { CodeLine } from "../CodeLine";
 import { OutdatedComments } from "../OutdatedComments";
@@ -44,15 +45,21 @@ export function FileCard({
   file,
   commenting,
   findings,
+  expandSignal,
 }: {
   file: PrFile;
   commenting?: DiffCommentApi;
   findings?: DiffFindingApi;
+  expandSignal?: DiffExpandSignal;
 }) {
   const t = useTranslations("shell");
   const [open, setOpen] = React.useState(
     (file.additions ?? 0) + (file.deletions ?? 0) <= AUTO_EXPAND_MAX_LINES
   );
+  // "Expand/collapse all" command from the parent (nonce 0 = none issued yet).
+  React.useEffect(() => {
+    if (expandSignal && expandSignal.nonce > 0) setOpen(expandSignal.open);
+  }, [expandSignal]);
   const lines = React.useMemo(() => parsePatch(file.patch), [file.patch]);
 
   // Group this file's comments into threads, then split into ones we can anchor
@@ -71,7 +78,7 @@ export function FileCard({
     () => partitionFindings(fileFindings, lines),
     [fileFindings, lines],
   );
-  const dotSeverity = topSeverity(fileFindings);
+  const severityChips = countBySeverity(fileFindings);
 
   const commentCount = commenting
     ? commenting.comments.filter((c) => c.path === file.path).length
@@ -97,13 +104,23 @@ export function FileCard({
             {commentCount}
           </span>
         )}
-        {dotSeverity && (
-          <span
-            data-testid="file-finding-dot"
-            role="img"
-            aria-label="Has review findings"
-            style={{ ...fs.dot, background: SEV[dotSeverity].c }}
-          />
+        {severityChips.length > 0 && (
+          <span data-testid="file-finding-dot" role="img" aria-label="Has review findings" style={fs.badges}>
+            {severityChips.map(({ severity, count }) => {
+              const I = Icon[SEV[severity].icon];
+              return (
+                <span
+                  key={severity}
+                  data-severity={severity}
+                  title={`${count} ${SEV[severity].label.toLowerCase()}${count === 1 ? "" : "s"}`}
+                  style={{ ...fs.badge, color: SEV[severity].c }}
+                >
+                  <I size={12} />
+                  {count}
+                </span>
+              );
+            })}
+          </span>
         )}
       </div>
       {open && (

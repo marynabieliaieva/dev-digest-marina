@@ -31,6 +31,13 @@ export const s = {
   }),
   label: { fontSize: 13, fontWeight: 600 } satisfies CSSProperties,
   desc: { fontSize: 12, color: "var(--text-muted)", flex: 1 } satisfies CSSProperties,
-  findings: { fontSize: 12, color: "var(--text-muted)" } satisfies CSSProperties,
+  findings: { display: "inline-flex", gap: 8, fontSize: 12, color: "var(--text-muted)" } satisfies CSSProperties,
+  chip: (color: string): CSSProperties => ({
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 3,
+    color,
+    fontWeight: 600,
+  }),
   count: { fontSize: 12, color: "var(--text-muted)" } satisfies CSSProperties,
 };

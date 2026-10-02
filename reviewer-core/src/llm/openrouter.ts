@@ -22,6 +22,16 @@ import { toJsonSchema, parseWithRepair } from './structured.js';
  * free of a pricing table — the server passes its own, the runner passes none.
  */
 
+/**
+ * Hard wall-clock deadline per LLM attempt. The SDK's own `timeout` only covers
+ * the time until response HEADERS: OpenRouter answers 200 immediately and then
+ * keeps the body open (keep-alive whitespace) until the upstream model finishes,
+ * so a stalled upstream hung the run forever. An AbortSignal also covers the body.
+ */
+const DEFAULT_DEADLINE_MS = 90_000;
+/** Attempts per structured call when the deadline fires (stalled upstream). */
+const DEADLINE_ATTEMPTS = 2;
+
 const NOT_SUPPORTED = 'OpenRouterProvider only implements completeStructured';
 
 export interface OpenRouterProviderOptions {
@@ -39,6 +49,7 @@ export interface OpenRouterProviderOptions {
 export class OpenRouterProvider implements LLMProvider {
   readonly id: 'openai' | 'openrouter';
   private client: OpenAI;
+  private timeoutMs: number;
   private baseURL: string;
   private apiKey: string;
   private estimateCost?: OpenRouterProviderOptions['estimateCost'];
@@ -48,10 +59,11 @@ export class OpenRouterProvider implements LLMProvider {
     this.apiKey = apiKey;
     this.baseURL = opts.baseURL ?? 'https://openrouter.ai/api/v1';
     this.estimateCost = opts.estimateCost;
+    this.timeoutMs = opts.timeoutMs ?? DEFAULT_DEADLINE_MS;
     this.client = new OpenAI({
       apiKey,
       baseURL: this.baseURL,
-      timeout: opts.timeoutMs ?? 90_000,
+      timeout: this.timeoutMs,
       maxRetries: opts.maxRetries ?? 2,
     });
   }
@@ -66,7 +78,7 @@ export class OpenRouterProvider implements LLMProvider {
     let lastRaw = '';
 
     for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
-      const res = await this.client.chat.completions.create({
+      const res = await this.createWithDeadline(req.timeoutMs ?? this.timeoutMs, {
         model: req.model,
         messages,
         temperature: req.temperature ?? 0,
@@ -81,6 +93,9 @@ export class OpenRouterProvider implements LLMProvider {
         // OpenRouter usage accounting — ask it to return the REAL generation
         // cost (USD) in `usage.cost`, instead of estimating from a price book.
         ...(this.id === 'openrouter' ? { usage: { include: true } } : {}),
+        // Opt-in per call: hidden "thinking" tokens made a 17k-token review
+        // prompt take >80s (vs ~16s with reasoning off).
+        ...(this.id === 'openrouter' && req.reasoning === 'off' ? { reasoning: { enabled: false } } : {}),
         // Route only to upstream providers that support every parameter (strict
         // json_schema). OpenRouter-specific body field.
         ...(this.id === 'openrouter' && req.requireParameters === true
@@ -118,6 +133,37 @@ export class OpenRouterProvider implements LLMProvider {
       messages.push({ role: 'user', content: parsed.repromptMessage });
     }
     throw new Error(`OpenRouter structured output failed schema validation for ${req.schemaName}`);
+  }
+
+  /** One chat completion with a hard deadline covering headers AND body; retried on stall. */
+  private async createWithDeadline(
+    deadlineMs: number,
+    body: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
+  ): Promise<OpenAI.Chat.ChatCompletion> {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await this.client.chat.completions.create(body, {
+          signal: AbortSignal.timeout(deadlineMs),
+        });
+      } catch (err) {
+        // Some models make reasoning mandatory and reject `enabled:false` with a
+        // 400 — drop the field and retry (not counted as a stalled attempt).
+        const e = err as { status?: number; message?: string };
+        if ('reasoning' in body && e.status === 400 && /reasoning/i.test(e.message ?? '')) {
+          delete (body as { reasoning?: unknown }).reasoning;
+          attempt--;
+          continue;
+        }
+        const name = (err as Error).name;
+        const stalled = name === 'TimeoutError' || name === 'AbortError' || name === 'APIUserAbortError';
+        if (!stalled) throw err;
+        if (attempt >= DEADLINE_ATTEMPTS) {
+          throw new Error(
+            `OpenRouter request for ${body.model} stalled: no complete response within ${Math.round(deadlineMs / 1000)}s (${attempt} attempt(s))`,
+          );
+        }
+      }
+    }
   }
 
   /**

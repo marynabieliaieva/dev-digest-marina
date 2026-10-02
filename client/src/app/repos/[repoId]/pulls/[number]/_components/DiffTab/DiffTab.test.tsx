@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   reviews: [] as unknown[],
   smartDiff: undefined as unknown,
   comments: [] as unknown[],
+  runs: [] as unknown[],
   mutate: vi.fn(),
 }));
 
@@ -16,6 +17,7 @@ vi.mock("@/lib/hooks/reviews", () => ({
   usePrComments: () => ({ data: mocks.comments }),
   useCreatePrComment: () => ({ isPending: false, mutateAsync: vi.fn() }),
   usePrReviews: () => ({ data: mocks.reviews }),
+  usePrRuns: () => ({ data: mocks.runs }),
   useSmartDiff: () => ({ data: mocks.smartDiff }),
   useFindingAction: () => ({ isPending: false, mutate: mocks.mutate }),
 }));
@@ -95,6 +97,7 @@ beforeEach(() => {
   mocks.reviews = [REVIEW];
   mocks.smartDiff = SMART;
   mocks.comments = [];
+  mocks.runs = [];
   mocks.mutate.mockClear();
 });
 afterEach(cleanup);
@@ -102,6 +105,7 @@ afterEach(cleanup);
 describe("DiffTab smart diff", () => {
   it("groups files by role, counts finding files, and shows findings under the line", () => {
     renderTab();
+    fireEvent.click(screen.getByRole("button", { name: "Smart order" }));
 
     const groups = ROLES.map((r) => screen.getByTestId(`smart-diff-group-${r}`));
     // DOM order == ROLE_ORDER
@@ -124,7 +128,12 @@ describe("DiffTab smart diff", () => {
     expect(within(groups[0]!).getByText("src/a.ts")).toBeInTheDocument();
 
     // two finding lines in one file -> counter 1; dot on the file card
-    expect(within(groups[0]!).getByTestId("smart-diff-group-findings")).toHaveTextContent("1");
+    // two WARNING findings -> only the warning chip (amber), "2"; no blocker/suggestion chips
+    expect(within(groups[0]!).getByTestId("smart-diff-group-sev-WARNING")).toHaveTextContent("2");
+    expect(within(groups[0]!).getByTestId("smart-diff-group-sev-WARNING")).toHaveStyle({ color: "var(--warn)" });
+    expect(within(groups[0]!).queryByTestId("smart-diff-group-sev-CRITICAL")).not.toBeInTheDocument();
+    expect(within(groups[0]!).queryByTestId("smart-diff-group-sev-SUGGESTION")).not.toBeInTheDocument();
+    expect(within(groups[1]!).getByTestId("smart-diff-group-findings")).toHaveTextContent("● 0");
     expect(screen.getAllByTestId("file-finding-dot")).toHaveLength(1);
     expect(screen.queryByText(prReview.smartDiff.noReviewYet)).not.toBeInTheDocument();
 
@@ -139,15 +148,17 @@ describe("DiffTab smart diff", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Accept" })[0]!);
     expect(mocks.mutate).toHaveBeenCalledWith({ findingId: "f1", action: "accept", prId: "pr" });
 
-    fireEvent.click(screen.getByRole("button", { name: /Hide comments/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Hide findings/ }));
     expect(screen.queryByText("Null deref")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Show comments/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Show findings/ }));
     expect(screen.getByText("Null deref")).toBeInTheDocument();
   });
 
-  it("switches to original order without group headers and back", () => {
+  it("defaults to original order, switches to smart order and back", () => {
     renderTab();
-    fireEvent.click(screen.getByRole("button", { name: "Original order" }));
+    expect(screen.getByRole("button", { name: "Original order" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Smart order" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText(prReview.smartDiff.originalOrdered)).toBeInTheDocument();
     expect(screen.queryByTestId("smart-diff-group-core")).not.toBeInTheDocument();
     const paths = screen
       .getAllByText(/^(src\/[^:]*|README\.md|pnpm-lock\.yaml)$/)
@@ -156,14 +167,57 @@ describe("DiffTab smart diff", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Smart order" }));
     expect(screen.getByTestId("smart-diff-group-core")).toBeInTheDocument();
+    expect(screen.getByText(prReview.smartDiff.reviewerOrdered)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Original order" }));
+    expect(screen.queryByTestId("smart-diff-group-core")).not.toBeInTheDocument();
   });
 
   it("before the first review renders all groups with the empty-state note and no counters", () => {
     mocks.reviews = [];
     renderTab();
+    fireEvent.click(screen.getByRole("button", { name: "Smart order" }));
     ROLES.forEach((r) => expect(screen.getByTestId(`smart-diff-group-${r}`)).toBeInTheDocument());
     expect(screen.getByText(prReview.smartDiff.noReviewYet)).toBeInTheDocument();
     expect(screen.queryByTestId("smart-diff-group-findings")).not.toBeInTheDocument();
+  });
+});
+
+describe("DiffTab token usage", () => {
+  const run = (id: string, agent: string, status: string, at: string, tin: number, tout: number, cost: number) => ({
+    run_id: id, agent_id: agent, status, ran_at: at, tokens_in: tin, tokens_out: tout, cost_usd: cost,
+  });
+
+  it("sums the newest finished run per agent and ignores failed / older runs", () => {
+    mocks.runs = [
+      run("1", "a", "done", "2026-01-02", 42000, 600, 0.0012),
+      run("2", "a", "done", "2026-01-01", 99000, 9000, 0.5), // older run of the same agent
+      run("3", "b", "done", "2026-01-02", 41000, 1900, 0.0013),
+      run("4", "b", "failed", "2026-01-03", 0, 0, 0),
+    ];
+    renderTab();
+    const line = screen.getByTestId("review-token-usage");
+    expect(line).toHaveTextContent(prReview.smartDiff.tokensSpent);
+    expect(line).toHaveTextContent("83k→2.5k"); // 42k+41k in, 0.6k+1.9k out
+    expect(line).toHaveTextContent("2 agents");
+  });
+
+  it("is hidden when no run has finished", () => {
+    mocks.runs = [run("1", "a", "running", "2026-01-02", 0, 0, 0)];
+    renderTab();
+    expect(screen.queryByTestId("review-token-usage")).not.toBeInTheDocument();
+  });
+});
+
+describe("DiffTab group expand / collapse", () => {
+  it("a group's own button collapses only that group's files, keeping the section open", () => {
+    renderTab();
+    fireEvent.click(screen.getByRole("button", { name: "Smart order" }));
+    const core = screen.getByTestId("smart-diff-group-core");
+    fireEvent.click(within(core).getByRole("button", { name: "Collapse all files in this group" }));
+    expect(within(core).getByRole("button", { name: "Core" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.queryByText("Null deref")).not.toBeInTheDocument();
+    fireEvent.click(within(core).getByRole("button", { name: "Expand all files in this group" }));
+    expect(screen.getByText("Null deref")).toBeInTheDocument();
   });
 });
 
@@ -174,6 +228,7 @@ describe("DiffTab robustness", () => {
       groups: SMART.groups.map((g) => (g.role === "core" ? { ...g, files: [] } : g)),
     };
     renderTab();
+    fireEvent.click(screen.getByRole("button", { name: "Smart order" }));
     const core = screen.getByTestId("smart-diff-group-core");
     // src/a.ts is in the PR but no group lists it -> still shown in core
     expect(within(core).getByText("src/a.ts")).toBeInTheDocument();
@@ -196,15 +251,17 @@ describe("DiffTab robustness", () => {
       },
     ];
     renderTab();
+    // label counts findings only (2), not the 1 GitHub comment
+    expect(screen.getByRole("button", { name: /Hide findings/ })).toHaveTextContent("(2)");
     // default: findings visible, GitHub comments hidden, label offers to hide
     expect(screen.getByText("Null deref")).toBeInTheDocument();
     expect(screen.queryByText("gh comment body")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /Hide comments/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Hide findings/ }));
     expect(screen.queryByText("Null deref")).not.toBeInTheDocument();
     expect(screen.queryByText("gh comment body")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /Show comments/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Show findings/ }));
     expect(screen.getByText("Null deref")).toBeInTheDocument();
     expect(screen.getByText("gh comment body")).toBeInTheDocument();
   });

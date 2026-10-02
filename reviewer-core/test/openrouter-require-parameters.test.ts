@@ -49,3 +49,29 @@ describe('OpenRouterProvider requireParameters', () => {
     expect('provider' in create.mock.calls[0]![0]).toBe(false);
   });
 });
+
+describe('OpenRouterProvider reasoning', () => {
+  it('disables reasoning only when the request opts in', async () => {
+    await new OpenRouterProvider('k').completeStructured(req({ reasoning: 'off' }));
+    expect(create.mock.calls[0]![0].reasoning).toEqual({ enabled: false });
+  });
+
+  it('leaves the model default when the request does not opt in', async () => {
+    await new OpenRouterProvider('k').completeStructured(req());
+    expect('reasoning' in create.mock.calls[0]![0]).toBe(false);
+  });
+
+  it('retries without reasoning when the model rejects disabling it', async () => {
+    create.mockReset();
+    create
+      .mockRejectedValueOnce(Object.assign(new Error('Reasoning is mandatory for this endpoint'), { status: 400 }))
+      .mockResolvedValueOnce({
+        choices: [{ message: { content: '{"ok":true}' } }],
+        usage: { prompt_tokens: 1, completion_tokens: 1 },
+      });
+    const out = await new OpenRouterProvider('k').completeStructured(req({ reasoning: 'off' }));
+    expect(out.data).toEqual({ ok: true });
+    expect(create).toHaveBeenCalledTimes(2);
+    expect('reasoning' in create.mock.calls[1]![0]).toBe(false);
+  });
+});
