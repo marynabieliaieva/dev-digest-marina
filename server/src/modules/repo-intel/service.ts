@@ -55,6 +55,17 @@ import {
 import { runFullIndex, type IndexPayload } from './pipeline/full.js';
 import { runIncremental } from './pipeline/incremental.js';
 
+/** Keep at most `max` callers per `viaSymbol`, preserving input (rank-desc) order. */
+export function capCallersPerSymbol(callers: BlastCallerRow[], max: number): BlastCallerRow[] {
+  const seen = new Map<string, number>();
+  return callers.filter((c) => {
+    const n = seen.get(c.viaSymbol) ?? 0;
+    if (n >= max) return false;
+    seen.set(c.viaSymbol, n + 1);
+    return true;
+  });
+}
+
 /**
  * GLOBALS allowlist — common JS/TS builtins + runtime that appear as bare
  * invocations and are NOT phantoms. Tune for PRECISION (false-positive cost
@@ -383,7 +394,7 @@ export class RepoIntelService implements RepoIntel {
 
     return {
       changedSymbols,
-      callers: callers.slice(0, MAX_CALLERS_PER_SYMBOL),
+      callers: capCallersPerSymbol(callers, MAX_CALLERS_PER_SYMBOL),
       impactedEndpoints: [...endpoints],
       factsByFile,
       degraded: false,

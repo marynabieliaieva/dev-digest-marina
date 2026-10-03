@@ -2,9 +2,10 @@
  * Pure helpers for the review service (side-effect free; operate purely on
  * their arguments — no DB / network / `this`).
  */
-import type { Finding, Skill, SmartDiffRole, UnifiedDiff } from '@devdigest/shared';
+import type { Finding, RunDetail, RunStatus, Skill, Verdict, SmartDiffRole, UnifiedDiff } from '@devdigest/shared';
 import { wrapUntrusted } from '@devdigest/reviewer-core';
 import type { FindingRow, PullRow, ReviewRow } from './repository.js';
+import type { RunContextRow } from './repository/run.repo.js';
 import { classifyFile } from '../smart-diff/helpers.js';
 
 // reduceReviews + sliceDiff live in @devdigest/reviewer-core (pure engine logic
@@ -115,6 +116,49 @@ export function reviewToDto(
     model: review.model,
     created_at: review.createdAt.toISOString(),
     findings: findings.map(findingRowToDto),
+  };
+}
+
+const RUN_STATUSES: readonly RunStatus[] = ['running', 'done', 'failed', 'cancelled'];
+
+/** agent_runs.status is free text (nullable): null → still running; unknown → failed. */
+export function normalizeRunStatus(status: string | null): RunStatus {
+  if (status === null) return 'running';
+  return (RUN_STATUSES as readonly string[]).includes(status) ? (status as RunStatus) : 'failed';
+}
+
+/**
+ * Shape a run + its review into the `GET /runs/:id` body. The review is only
+ * exposed for a `done` run (run-executor persists it before flipping to done).
+ */
+export function runDetailToDto(
+  ctx: RunContextRow,
+  reviewRow: { review: ReviewRow; findings: FindingRow[] } | undefined,
+): RunDetail {
+  const { run } = ctx;
+  const status = normalizeRunStatus(run.status);
+  return {
+    run: {
+      run_id: run.id,
+      status,
+      error: run.error,
+      agent_id: run.agentId,
+      agent_name: ctx.agentName,
+      model: run.model,
+      ran_at: run.ranAt ? run.ranAt.toISOString() : null,
+      duration_ms: run.durationMs,
+      pr_number: ctx.prNumber,
+      repo_full_name: ctx.repoFullName,
+    },
+    review:
+      status === 'done' && reviewRow
+        ? {
+            verdict: reviewRow.review.verdict as Verdict | null,
+            score: reviewRow.review.score,
+            summary: reviewRow.review.summary,
+            findings: reviewRow.findings.map(findingRowToDto),
+          }
+        : null,
   };
 }
 

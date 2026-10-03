@@ -1,0 +1,133 @@
+import type { CSSProperties } from "react";
+
+export const s = {
+  card: {
+    border: "1px solid var(--border)",
+    borderRadius: 8,
+    background: "var(--bg-elevated)",
+    padding: "16px 18px",
+    display: "flex",
+    flexDirection: "column",
+    gap: 14,
+  } satisfies CSSProperties,
+  headerRight: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+  } satisfies CSSProperties,
+  toggle: {
+    display: "inline-flex",
+    border: "1px solid var(--border)",
+    borderRadius: 6,
+    overflow: "hidden",
+  } satisfies CSSProperties,
+  toggleBtn: {
+    padding: "3px 10px",
+    fontSize: 12,
+    background: "transparent",
+    border: "none",
+    color: "var(--text-muted)",
+    cursor: "pointer",
+  } satisfies CSSProperties,
+  toggleBtnActive: {
+    background: "var(--bg-hover)",
+    color: "var(--text-primary)",
+  } satisfies CSSProperties,
+  stats: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 24,
+  } satisfies CSSProperties,
+  stat: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 2,
+  } satisfies CSSProperties,
+  statValue: {
+    fontSize: 20,
+    fontWeight: 600,
+    color: "var(--text-primary)",
+  } satisfies CSSProperties,
+  statLabel: {
+    fontSize: 11.5,
+    color: "var(--text-muted)",
+  } satisfies CSSProperties,
+  group: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+  } satisfies CSSProperties,
+  symbol: {
+    fontFamily: "var(--font-mono, monospace)",
+    fontSize: 13.5,
+    fontWeight: 600,
+    color: "var(--text-primary)",
+    wordBreak: "break-all",
+  } satisfies CSSProperties,
+  callerCount: {
+    fontSize: 11.5,
+    fontWeight: 400,
+    color: "var(--text-muted)",
+    marginLeft: 8,
+  } satisfies CSSProperties,
+  callerList: {
+    margin: 0,
+    padding: 0,
+    listStyle: "none",
+    display: "flex",
+    flexDirection: "column",
+    gap: 3,
+    paddingLeft: 14,
+  } satisfies CSSProperties,
+  caller: {
+    fontFamily: "var(--font-mono, monospace)",
+    fontSize: 12.5,
+    color: "var(--text-secondary)",
+    wordBreak: "break-all",
+  } satisfies CSSProperties,
+  chips: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 6,
+    paddingLeft: 14,
+  } satisfies CSSProperties,
+  chip: {
+    padding: "2px 9px",
+    borderRadius: 6,
+    border: "1px solid var(--border)",
+    fontSize: 12,
+    fontFamily: "var(--font-mono, monospace)",
+    color: "var(--text-secondary)",
+  } satisfies CSSProperties,
+  badge: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    border: "1px solid var(--border-strong)",
+    borderRadius: 6,
+    background: "var(--bg-hover)",
+    padding: "8px 12px",
+    fontSize: 13,
+    color: "var(--text-secondary)",
+  } satisfies CSSProperties,
+  svgWrap: {
+    overflowX: "auto",
+  } satisfies CSSProperties,
+  svgText: {
+    fontSize: 11.5,
+    fontFamily: "var(--font-mono, monospace)",
+    fill: "var(--text-secondary)",
+  } satisfies CSSProperties,
+  error: {
+    fontSize: 13.5,
+    color: "var(--crit)",
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+  } satisfies CSSProperties,
+  muted: {
+    fontSize: 13.5,
+    color: "var(--text-muted)",
+  } satisfies CSSProperties,
+} as const;

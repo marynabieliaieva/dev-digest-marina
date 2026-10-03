@@ -79,6 +79,30 @@ export const BlastRadius = z.object({
 });
 export type BlastRadius = z.infer<typeof BlastRadius>;
 
+/** Quality of the repo-intel index a blast-radius answer was computed from. */
+export const RepoIntelIndexStatus = z.enum(['full', 'partial', 'degraded', 'failed']);
+export type RepoIntelIndexStatus = z.infer<typeof RepoIntelIndexStatus>;
+
+export const RepoIntelDegradedReason = z.enum([
+  'flag_off',
+  'index_failed',
+  'index_partial',
+  'repo_too_large',
+  'no_data',
+]);
+export type RepoIntelDegradedReason = z.infer<typeof RepoIntelDegradedReason>;
+
+/** Response of `GET /pulls/:id/blast`. */
+export const BlastRadiusResponse = z.object({
+  pr_id: z.string(),
+  indexed_sha: z.string().nullable(),
+  index_status: RepoIntelIndexStatus,
+  degraded: z.boolean(),
+  reason: RepoIntelDegradedReason.nullable(),
+  blast: BlastRadius,
+});
+export type BlastRadiusResponse = z.infer<typeof BlastRadiusResponse>;
+
 // ---- Risks ----
 export const RiskSeverity = z.enum(['high', 'medium', 'low']);
 export type RiskSeverity = z.infer<typeof RiskSeverity>;

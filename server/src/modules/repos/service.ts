@@ -1,6 +1,7 @@
 import type { Container } from '../../platform/container.js';
 import { type Repo } from '@devdigest/shared';
-import { NotFoundError } from '../../platform/errors.js';
+import { AppError, NotFoundError } from '../../platform/errors.js';
+import type { ResolvedRepoRef } from '@devdigest/shared';
 import { RepoRepository } from './repository.js';
 import { parseRepoUrl, withGitHubToken, toRepoDto } from './helpers.js';
 import {
@@ -103,6 +104,34 @@ export class RepoService {
     } satisfies CloneJobPayload);
 
     return { repo: toRepoDto(row), created: true };
+  }
+
+  /**
+   * Resolve a user-supplied repo reference (`owner/name`, or just `name`) to
+   * a repo already added to the workspace. 404 when none, 409 (with the
+   * candidate `owner/name` list) when a bare name matches several.
+   */
+  async resolve(workspaceId: string, ref: string): Promise<ResolvedRepoRef> {
+    const q = ref.trim();
+    const rows = q.includes('/')
+      ? await this.repo.findByFullNameInsensitive(workspaceId, q)
+      : await this.repo.findByName(workspaceId, q);
+    if (rows.length === 0) {
+      throw new NotFoundError(
+        `Repository "${q}" is not added to devdigest. Add it in the devdigest UI first.`,
+      );
+    }
+    if (rows.length > 1) {
+      const candidates = rows.map((r) => r.fullName);
+      throw new AppError(
+        'ambiguous_repo',
+        `Repository name "${q}" is ambiguous; use one of: ${candidates.join(', ')}`,
+        409,
+        { candidates },
+      );
+    }
+    const row = rows[0]!;
+    return { id: row.id, full_name: row.fullName };
   }
 
   async list(workspaceId: string): Promise<Repo[]> {

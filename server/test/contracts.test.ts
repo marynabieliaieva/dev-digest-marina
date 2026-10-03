@@ -19,6 +19,8 @@ import {
   Repo,
   PrDetail,
   PrMeta,
+  BlastRadiusResponse,
+  ResolvedPullRef,
 } from '@devdigest/shared';
 
 /**
@@ -268,6 +270,56 @@ describe('AI contracts parse fixtures', () => {
     // Absent key entirely (not just null) — .nullish() must accept this,
     // matching how PRs with zero cost-bearing runs are serialized.
     expect(() => PrMeta.parse(base)).not.toThrow();
+  });
+});
+
+describe('blast radius contracts', () => {
+  const blast = {
+    changed_symbols: [{ name: 'foo', file: 'src/a.ts', kind: 'function' }],
+    downstream: [
+      {
+        symbol: 'foo',
+        callers: [{ name: 'bar', file: 'src/b.ts', line: 3 }],
+        endpoints_affected: ['GET /x'],
+        crons_affected: [],
+      },
+    ],
+    summary: '1 symbol changed',
+  };
+  const full = {
+    pr_id: 'pr1',
+    indexed_sha: 'abc123',
+    index_status: 'full' as const,
+    degraded: false,
+    reason: null,
+    blast,
+  };
+
+  it('BlastRadiusResponse parses a full fixture', () => {
+    expect(() => BlastRadiusResponse.parse(full)).not.toThrow();
+  });
+
+  it('accepts null indexed_sha and reason', () => {
+    expect(() =>
+      BlastRadiusResponse.parse({ ...full, indexed_sha: null, reason: null }),
+    ).not.toThrow();
+  });
+
+  it('rejects unknown reason', () => {
+    expect(() => BlastRadiusResponse.parse({ ...full, reason: 'nope' })).toThrow();
+  });
+
+  it('rejects unknown index_status', () => {
+    expect(() => BlastRadiusResponse.parse({ ...full, index_status: 'nope' })).toThrow();
+  });
+
+  it('rejects missing blast', () => {
+    const { blast: _omit, ...rest } = full;
+    expect(() => BlastRadiusResponse.parse(rest)).toThrow();
+  });
+
+  it('ResolvedPullRef parses { id }', () => {
+    expect(ResolvedPullRef.parse({ id: 'x' })).toEqual({ id: 'x' });
   });
 });
 

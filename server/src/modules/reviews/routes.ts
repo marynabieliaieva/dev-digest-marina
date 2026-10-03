@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { RunRequest } from '@devdigest/shared';
+import { z } from 'zod';
+import { ReviewByRefRequest, RunRequest } from '@devdigest/shared';
 import type { RunEvent } from '@devdigest/shared';
 import { getContext } from '../_shared/context.js';
 import { IdParams } from '../_shared/schemas.js';
@@ -11,7 +12,8 @@ import { ReviewService } from './service.js';
  * reviews module.
  *   POST   /pulls/:id/review  {agentId} | {all:true}  → run review(s); returns runs
  *   GET    /runs/:id/events                            → SSE stream of RunEvent (replay-first)
- *   GET    /runs/:id/trace                             → the single-document RunTrace
+ *   GET    /runs/:id                                   → run status + review (when done)
+ *   GET    /runs/:id/trace                            → the single-document RunTrace
  *   GET    /pulls/:id/reviews                          → persisted reviews + findings for a PR
  *   POST   /findings/:id/(accept|dismiss)              → finding actions
  */
@@ -42,6 +44,34 @@ export default async function reviewsRoutes(appBase: FastifyInstance) {
     );
     return { pr_id: req.params.id, runs, reviews };
   });
+
+  // ---- Run by reference (owner/name + PR number; used by the MCP server) ---
+  // Same tight limit as POST /pulls/:id/review: each call can start paid LLM runs.
+  app.post(
+    '/reviews/by-ref',
+    { schema: { body: ReviewByRefRequest }, config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
+    async (req) => {
+      const { workspaceId } = await getContext(container, req);
+      return service.runByRef(workspaceId, req.body, req.log);
+    },
+  );
+
+  // ---- Latest run per agent for a PR, by reference -------------------------
+  app.get(
+    '/reviews/latest',
+    {
+      schema: {
+        querystring: z.object({
+          repo: z.string().trim().min(1).max(200),
+          pr: z.coerce.number().int().positive(),
+        }),
+      },
+    },
+    async (req) => {
+      const { workspaceId } = await getContext(container, req);
+      return service.latestByRef(workspaceId, req.query.repo, req.query.pr, req.log);
+    },
+  );
 
   // ---- SSE: live run events (replay buffer first, then live; ends on done) -
   // No rate limit: SSE is one long-lived connection, not burst traffic.
@@ -101,6 +131,12 @@ export default async function reviewsRoutes(appBase: FastifyInstance) {
   app.get('/pulls/:id/runs', { schema: { params: IdParams } }, async (req) => {
     const { workspaceId } = await getContext(container, req);
     return service.listRuns(workspaceId, req.params.id);
+  });
+
+  // ---- One run: status + (when done) the review & findings ----------------
+  app.get('/runs/:id', { schema: { params: IdParams } }, async (req) => {
+    const { workspaceId } = await getContext(container, req);
+    return service.getRunDetail(workspaceId, req.params.id);
   });
 
   // ---- Delete one run from the history (+ its trace) ----------------------

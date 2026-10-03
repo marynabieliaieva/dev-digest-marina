@@ -18,6 +18,7 @@ file inside it — module-specific conventions/gotchas live there, not here.
 | `client/` | `@devdigest/web` | Next.js UI |
 | `reviewer-core/` | `@devdigest/reviewer-core` | Pure review engine (diff→prompt→LLM→grounded findings). No DB/GitHub/FS — consumed as TS source via path alias, not built to JS. |
 | `e2e/` | `@devdigest/e2e` | Deterministic browser e2e, no LLM |
+| `mcp/` | `@devdigest/mcp` | Local stdio MCP server (thin HTTP wrapper over the API on :3001; needs the API running). Launched via root `.mcp.json`. Uses zod 4 — never import `@devdigest/shared`. |
 | `server/src/vendor/shared` | `@devdigest/shared` | Zod contracts shared by all packages — lives under `server/` but is not server-private |
 
 Cross-package imports = tsconfig path aliases, not npm links.
@@ -35,7 +36,7 @@ Cross-package imports = tsconfig path aliases, not npm links.
 ./scripts/dev.sh              # Docker Postgres + install + migrate + seed + both dev servers
 ```
 Manual steps and flags: see [README.md](README.md#quick-start-from-zero).
-`server`/`client` use **pnpm**; `reviewer-core`/`e2e` use **npm**. Node ≥ 22.
+`server`/`client` use **pnpm**; `reviewer-core`/`e2e`/`mcp` use **npm**. Node ≥ 22.
 
 ## Test / typecheck
 
@@ -47,6 +48,7 @@ cd server && pnpm exec vitest run --exclude '**/*.it.test.ts'   # unit, no Docke
 cd server && pnpm exec vitest run .it.test                      # integration, needs Docker
 cd server && pnpm typecheck
 cd reviewer-core && npm test && npm run typecheck
+cd mcp && npm test && npm run typecheck
 cd e2e && npm test   # needs the full stack running + agent-browser installed
 ```
 Full strategy: [TESTING.md](TESTING.md). Key rule: DB-backed tests **must** be named `*.it.test.ts`.
