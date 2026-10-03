@@ -16,8 +16,7 @@
  * Specs target read-only seeded data, so nothing here triggers an LLM call or
  * needs an API key. Run order is the lexical order of the spec filenames.
  */
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import spawn from "cross-spawn";
 import { readdirSync, readFileSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -30,8 +29,6 @@ import {
   type StepResult,
 } from "./lib/assert.js";
 
-const exec = promisify(execFile);
-
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SPECS_DIR = join(HERE, "specs");
 const RESULTS_DIR = join(HERE, "test-results");
@@ -40,14 +37,36 @@ const BASE = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 const BIN = process.env.AGENT_BROWSER_BIN ?? "agent-browser";
 const STEP_TIMEOUT = Number(process.env.E2E_STEP_TIMEOUT ?? 60_000);
 
-/** Run one agent-browser command; resolve with its stdout, reject on non-zero exit. */
+/**
+ * Run one agent-browser command; resolve with its stdout, reject on non-zero
+ * exit. Uses cross-spawn instead of node:child_process directly — on Windows
+ * agent-browser resolves to an npm-generated `.cmd` shim, which Windows'
+ * CreateProcess cannot launch without a shell, and plain `execFile(..., {
+ * shell: true })` joins array args with spaces unquoted, splitting any
+ * argument that contains a space (most of our `wait --text "..."` labels).
+ * cross-spawn resolves the shim and quotes each arg correctly either way.
+ */
 async function ab(args: string[]): Promise<string> {
-  const { stdout } = await exec(BIN, args, {
-    cwd: HERE,
-    timeout: STEP_TIMEOUT,
-    maxBuffer: 32 * 1024 * 1024,
+  return new Promise((resolve, reject) => {
+    const child = spawn(BIN, args, { cwd: HERE });
+    let stdout = "";
+    let stderr = "";
+    const timer = setTimeout(() => {
+      child.kill();
+      reject(new Error(`${BIN} ${args.join(" ")} timed out after ${STEP_TIMEOUT}ms`));
+    }, STEP_TIMEOUT);
+    child.stdout?.on("data", (d) => (stdout += d));
+    child.stderr?.on("data", (d) => (stderr += d));
+    child.on("error", (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      if (code === 0) resolve(stdout);
+      else reject(new Error(`${BIN} ${args.join(" ")} exited ${code}: ${stderr || stdout}`));
+    });
   });
-  return stdout ?? "";
 }
 
 function loadFlows(): { file: string; flow: Flow }[] {

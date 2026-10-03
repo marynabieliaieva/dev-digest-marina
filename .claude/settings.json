@@ -1,0 +1,4 @@
+{
+  "//": "pr-self-review is invoked MANUALLY (`/pr-self-review`), not by a hook. The PreToolUse wiring that used to live here is documented in .claude/skills/pr-self-review/README.md for anyone who wants it back.",
+  "hooks": {}
+}

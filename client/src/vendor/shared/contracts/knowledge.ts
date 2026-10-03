@@ -115,7 +115,18 @@ export type MemoryItem = z.infer<typeof MemoryItem>;
 export const SkillType = z.enum(['rubric', 'convention', 'security', 'custom']);
 export type SkillType = z.infer<typeof SkillType>;
 
-export const SkillSource = z.enum(['manual', 'imported_url', 'extracted', 'community']);
+// Where a skill's body came from. Everything except 'manual' is SOMEONE ELSE'S
+// text that ends up inside an agent's prompt, so the review pipeline wraps those
+// bodies in an <untrusted> block (see reviews/helpers.ts → renderSkillBlocks).
+// The DB column is plain `text` with no check constraint, so extending this enum
+// is a TypeScript-only change — no migration.
+export const SkillSource = z.enum([
+  'manual',
+  'imported_file',
+  'imported_url',
+  'extracted',
+  'community',
+]);
 export type SkillSource = z.infer<typeof SkillSource>;
 
 export const Skill = z.object({
@@ -128,8 +139,42 @@ export const Skill = z.object({
   enabled: z.boolean(),
   version: z.number().int(),
   evidence_files: z.array(z.string()).nullish(),
+  /**
+   * How many agents link this skill. Absent on the skill objects embedded in an
+   * agent's link list, where the count would be a self-referential round trip —
+   * present on the list/detail reads the Skills page renders.
+   */
+  agent_count: z.number().int().nullish(),
 });
 export type Skill = z.infer<typeof Skill>;
+
+/** One immutable body snapshot from `skill_versions` (newest first in listings). */
+export const SkillVersion = z.object({
+  skill_id: z.string(),
+  version: z.number().int(),
+  body: z.string(),
+  created_at: z.string(),
+});
+export type SkillVersion = z.infer<typeof SkillVersion>;
+
+/**
+ * The parsed CORE of an imported skill, returned by the import-preview endpoint.
+ * Nothing is persisted at preview time — the user confirms first, then the
+ * client POSTs a normal create. `skipped_entries` lists archive members that
+ * were deliberately NOT read (scripts, binaries, anything executable): the
+ * product imports configuration text, never behaviour.
+ */
+export const SkillImportPreview = z.object({
+  name: z.string(),
+  description: z.string(),
+  type: SkillType,
+  source: SkillSource,
+  body: z.string(),
+  /** Where it came from — a filename or a URL — shown in the preview header. */
+  origin: z.string().nullish(),
+  skipped_entries: z.array(z.string()),
+});
+export type SkillImportPreview = z.infer<typeof SkillImportPreview>;
 
 export const CommunitySkill = z.object({
   name: z.string(),
@@ -141,15 +186,60 @@ export const CommunitySkill = z.object({
 export type CommunitySkill = z.infer<typeof CommunitySkill>;
 
 // ---- Conventions ----
+export const ConventionStatus = z.enum(['pending', 'accepted', 'rejected']);
+export type ConventionStatus = z.infer<typeof ConventionStatus>;
+
+export const ConventionCategory = z.enum([
+  'naming',
+  'error_handling',
+  'module_structure',
+  'async_style',
+  'imports',
+  'validation',
+  'logging',
+  'testing',
+  'other',
+]);
+export type ConventionCategory = z.infer<typeof ConventionCategory>;
+
 export const ConventionCandidate = z.object({
   id: z.string(),
+  category: ConventionCategory,
   rule: z.string(),
   evidence_path: z.string(),
+  evidence_line: z.number().int().nullable(),
   evidence_snippet: z.string(),
   confidence: z.number().min(0).max(1),
-  accepted: z.boolean(),
+  status: ConventionStatus,
+  edited: z.boolean(),
+  skill_id: z.string().nullish(),
 });
 export type ConventionCandidate = z.infer<typeof ConventionCandidate>;
+
+export const ConventionExtractionStatus = z.enum(['running', 'done', 'failed']);
+export type ConventionExtractionStatus = z.infer<typeof ConventionExtractionStatus>;
+
+/** One scan run's header — "Detected from N sample files · last scan …". */
+export const ConventionExtractionSummary = z.object({
+  id: z.string(),
+  status: ConventionExtractionStatus,
+  sampled_files: z.number().int(),
+  candidates_raw: z.number().int(),
+  candidates_kept: z.number().int(),
+  provider: z.string().nullish(),
+  model: z.string().nullish(),
+  error: z.string().nullish(),
+  created_at: z.string(),
+  finished_at: z.string().nullish(),
+});
+export type ConventionExtractionSummary = z.infer<typeof ConventionExtractionSummary>;
+
+/** GET /repos/:id/conventions response — the latest extraction + its candidates. */
+export const ConventionsPage = z.object({
+  extraction: ConventionExtractionSummary.nullable(),
+  candidates: z.array(ConventionCandidate),
+});
+export type ConventionsPage = z.infer<typeof ConventionsPage>;
 
 // ---- Agents ----
 export const Provider = z.enum(['openai', 'anthropic', 'openrouter']);
@@ -189,5 +279,22 @@ export const AgentSkillLink = z.object({
   agent_id: z.string(),
   skill_id: z.string(),
   order: z.number().int(),
+  /**
+   * Per-agent on/off, independent of the skill's own `Skill.enabled`. The skill
+   * is injected into this agent's prompt only when BOTH are true.
+   */
+  enabled: z.boolean(),
 });
 export type AgentSkillLink = z.infer<typeof AgentSkillLink>;
+
+/**
+ * A linked skill joined with its link state — what the agent editor's Skills tab
+ * renders in one row (drag handle, checkbox, name, type badge). Returned by
+ * `GET /agents/:id/skills` so the client never has to join two lists by id.
+ */
+export const AgentSkillDetail = z.object({
+  skill: Skill,
+  order: z.number().int(),
+  enabled: z.boolean(),
+});
+export type AgentSkillDetail = z.infer<typeof AgentSkillDetail>;
