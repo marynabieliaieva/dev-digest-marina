@@ -1,3 +1,4 @@
+// DEMO: blast-radius test commit — revert after checking the PR Overview tab.
 import type { FastifyRequest } from 'fastify';
 import type { Container } from '../../platform/container.js';
 

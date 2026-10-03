@@ -1,3 +1,4 @@
+// DEMO: blast-radius test commit — revert after checking the PR Overview tab.
 /**
  * Domain error taxonomy + structured API error envelope. The UX taxonomy
  * (toast/inline/full-screen) is the frontend's concern; the API returns a

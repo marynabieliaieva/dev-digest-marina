@@ -1,3 +1,4 @@
+// DEMO: blast-radius test commit — revert after checking the PR Overview tab.
 /**
  * Enhanced regex symbol/reference extractor for TS/JS (A3, L04).
  *
