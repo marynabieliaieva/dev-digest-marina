@@ -34,4 +34,4 @@ export const GetFindingsInput = z.object({
 export type GetFindingsArgs = z.infer<typeof GetFindingsInput>;
 
 export const GET_FINDINGS_DESCRIPTION =
-  "Get the verdict and findings of an already-completed review run. Provide either run_id, or repo + pr. Defaults to a concise summary (top findings + counts by severity); pass response_format:'detailed' for full fields, and use offset/limit to page through large result sets.";
+  "Get all reviews of a pull request in one call: an overview (reviews, total_findings, severity counts), then one section per reviewer agent with verdict, score and findings. Provide run_id (the PR's other agents are included too), or repo + pr. Concise by default; response_format:'detailed' for full fields; offset/limit page each agent's findings.";

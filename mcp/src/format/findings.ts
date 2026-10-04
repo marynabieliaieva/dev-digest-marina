@@ -139,6 +139,7 @@ export function formatRunDetail(detail: RunDetail, opts: FormatOptions): string 
     `Verdict: ${review.verdict ?? 'n/a'}`,
     `Score: ${review.score === null ? 'n/a' : `${review.score}/100`}`,
     severityCounts(all),
+    `total_findings: ${all.length}`,
   ].join(' · ');
 
   const matched = sortFindings(filterFindings(all, opts));
@@ -170,7 +171,32 @@ export function formatRunDetail(detail: RunDetail, opts: FormatOptions): string 
   return out.join('\n');
 }
 
-/** Several runs (latest per agent): each rendered with the same options, blank-line separated. */
+/**
+ * PR-level overview line over all agents' reviews: how many reviews, the grand
+ * `total_findings` (every finding, before filters/paging) and its severity split.
+ */
+export function formatReviewsOverview(details: readonly RunDetail[]): string {
+  const run = details[0]?.run;
+  const pr =
+    run?.repo_full_name && run.pr_number !== null
+      ? `${inline(run.repo_full_name, 100)}#${run.pr_number}`
+      : 'PR';
+  const findings = details.flatMap((d) => (d.run.status === 'done' ? (d.review?.findings ?? []) : []));
+  const pending = details.filter((d) => d.run.status === 'running').length;
+  const parts = [
+    `${pr} — ${details.length} review${details.length === 1 ? '' : 's'}`,
+    `total_findings: ${findings.length}`,
+    severityCounts(findings),
+  ];
+  if (pending > 0) parts.push(`${pending} still running`);
+  return parts.join(' · ');
+}
+
+/**
+ * Several runs (latest per agent) as one PR-level answer: an overview line
+ * (reviews + total_findings), then one section per agent with its own findings.
+ * offset/limit/filters apply to each agent's findings separately.
+ */
 export function formatRunDetails(details: readonly RunDetail[], opts: FormatOptions): string {
-  return details.map((d) => formatRunDetail(d, opts)).join('\n\n');
+  return [formatReviewsOverview(details), ...details.map((d) => formatRunDetail(d, opts))].join('\n\n');
 }

@@ -88,6 +88,37 @@ describe('devdigest_get_findings', () => {
     expect(text).toContain('Showing 1-5 of 5.');
   });
 
+  it('repo + pr: overview with total_findings across agents, then one section per agent', async () => {
+    const other: RunDetail = {
+      ...detail('done', [finding({ id: 'x1', severity: 'WARNING' })]),
+      run: { ...detail('done').run, run_id: 'run-other-0000', agent_id: 'ag2', agent_name: 'style-reviewer' },
+    };
+    const latestReview = vi.fn().mockResolvedValue([detail('done', mixed), other]);
+    const { text } = await call(fakeApi({ latestReview }), { repo: 'octocat/hello', pr: 42 });
+    expect(text.split('\n')[0]).toBe(
+      'octocat/hello#42 — 2 reviews · total_findings: 6 · 3 CRITICAL · 2 WARNING · 1 SUGGESTION',
+    );
+    expect(text).toContain('security-reviewer');
+    expect(text).toContain('style-reviewer');
+    expect(text).toContain('· total_findings: 5');
+    expect(text).toContain('· total_findings: 1');
+  });
+
+  it('run_id: also includes the other agents of the same PR (requested run wins for its agent)', async () => {
+    const requested = detail('done', mixed);
+    const staleSameAgent: RunDetail = { ...detail('done'), run: { ...detail('done').run, run_id: 'newer-run' } };
+    const other: RunDetail = {
+      ...detail('done', [finding({ id: 'x1' })]),
+      run: { ...detail('done').run, run_id: 'run-other-0000', agent_id: 'ag2', agent_name: 'style-reviewer' },
+    };
+    const getRun = vi.fn().mockResolvedValue(requested);
+    const latestReview = vi.fn().mockResolvedValue([staleSameAgent, other]);
+    const { text } = await call(fakeApi({ getRun, latestReview }), { run_id: 'run-12345678-abcd' });
+    expect(latestReview).toHaveBeenCalledWith('octocat/hello', 42, expect.anything());
+    expect(text).toContain('2 reviews · total_findings: 6');
+    expect(text).not.toContain('newer-ru');
+  });
+
   it('says so (non-error) when there are no runs for repo+pr', async () => {
     const { res, text } = await call(fakeApi({ latestReview: async () => [] }), { repo: 'o/r', pr: 1 });
     expect(res.isError).toBeFalsy();
