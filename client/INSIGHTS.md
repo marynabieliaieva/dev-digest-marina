@@ -48,6 +48,10 @@ non-obvious; never rewritten, only appended to.
   instead (see `vendor/ui/kit/Popover.test.tsx`,
   `components/findings-severity-icons/FindingsSeverityIcons.test.tsx`).
 
+- 2026-10-03: `pnpm test -- <file>` ignores the file filter here and runs the
+  whole client suite (~190s). For iteration use `pnpm exec vitest run <name>`
+  (a substring filter; bracketed `[repoId]` paths don't work as path filters).
+
 ## Decisions
 
 - 2026-09-20: `vendor/ui/kit` has no hover-triggered popover/tooltip and no

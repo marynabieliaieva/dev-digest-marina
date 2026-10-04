@@ -83,6 +83,13 @@ non-obvious; never rewritten, only appended to.
   `NODE_ENV=test`, so tests asserting log lines should inject the service's
   `IntentLog` instead of capturing pino.
 
+- 2026-10-03: Running `.it` tests concurrently with the unit suite makes the
+  Docker probe time out and the whole `.it` run reports 23/23 *skipped* (green).
+  Run `.it` suites on their own and check the executed-test count, not the exit
+  code. Also: `repo-intel/service.ts` `tryPersistentBlast` capped callers at
+  `MAX_CALLERS_PER_SYMBOL` over the whole list, not per symbol — fixed via
+  `capCallersPerSymbol`; the ripgrep fallback path still has no cap.
+
 ## Session Notes
 
 - 2026-09-21: `server/src/vendor/shared` and `client/src/vendor/shared` are

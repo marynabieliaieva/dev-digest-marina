@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import type { Db } from '../../db/client.js';
 import * as t from '../../db/schema.js';
 
@@ -6,6 +6,8 @@ import * as t from '../../db/schema.js';
  * F1 — repos data-access layer. The ONLY place that touches the `repos`
  * table. Every query is scoped by `workspaceId` (tenancy guard).
  */
+
+const MATCH_LIMIT = 20;
 
 export type RepoRow = typeof t.repos.$inferSelect;
 
@@ -27,6 +29,37 @@ export class RepoRepository {
       .from(t.repos)
       .where(and(eq(t.repos.workspaceId, workspaceId), eq(t.repos.fullName, fullName)));
     return row;
+  }
+
+  /**
+   * Case-insensitive match on the full `owner/name` (exact, no wildcards).
+   * Capped — callers only need to know "none / one / several".
+   */
+  async findByFullNameInsensitive(workspaceId: string, fullName: string): Promise<RepoRow[]> {
+    return this.db
+      .select()
+      .from(t.repos)
+      .where(
+        and(
+          eq(t.repos.workspaceId, workspaceId),
+          sql`lower(${t.repos.fullName}) = ${fullName.toLowerCase()}`,
+        ),
+      )
+      .limit(MATCH_LIMIT);
+  }
+
+  /** Case-insensitive match on the bare repo name (exact, no wildcards). */
+  async findByName(workspaceId: string, name: string): Promise<RepoRow[]> {
+    return this.db
+      .select()
+      .from(t.repos)
+      .where(
+        and(
+          eq(t.repos.workspaceId, workspaceId),
+          sql`lower(${t.repos.name}) = ${name.toLowerCase()}`,
+        ),
+      )
+      .limit(MATCH_LIMIT);
   }
 
   async list(workspaceId: string): Promise<RepoRow[]> {

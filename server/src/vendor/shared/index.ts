@@ -16,6 +16,7 @@
 
 export * from './contracts/findings.js';
 export * from './contracts/review-api.js';
+export * from './contracts/review-refs.js';
 export * from './contracts/brief.js';
 export * from './contracts/knowledge.js';
 export * from './contracts/trace.js';

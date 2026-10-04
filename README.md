@@ -132,6 +132,20 @@ cd ../client && pnpm install && pnpm dev               # web on :3000
 (unit/integration split: `pnpm exec vitest run --exclude '**/*.it.test.ts'` / `pnpm exec vitest run .it.test`)
 `client/`: `dev` · `build` · `start` · `test` · `typecheck`
 
+## MCP server (Claude Code)
+
+[`mcp/`](mcp/AGENTS.md) is a local **stdio MCP server** that lets Claude Code (or any MCP
+client) use DevDigest. It is a thin wrapper over the API, so **the API must be running**
+(`./scripts/dev.sh`, port 3001).
+
+Tools: `devdigest_list_agents`, `devdigest_run_agent_on_pr` (blocks up to ~2 min, then
+returns a `run_id`), `devdigest_get_findings`, `devdigest_get_conventions`,
+`devdigest_get_blast_radius`.
+
+Setup: `cd mcp && npm install`, then start a **new Claude Code session** in the repo root and
+approve the project-scoped [`.mcp.json`](.mcp.json) (it is read at session start). Check
+with `/mcp`. The repo must already be added in DevDigest; PRs are synced on demand.
+
 ## Testing & CI
 
 One test suite per package, each gated by its own GitHub Actions workflow with a

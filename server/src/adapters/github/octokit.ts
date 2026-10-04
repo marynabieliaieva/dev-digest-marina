@@ -78,13 +78,15 @@ export class OctokitGitHubClient implements GitHubClient {
             repo: repo.name,
             pull_number: n,
           });
-          const { data: files } = await this.octokit.rest.pulls.listFiles({
+          // Paginate: a single page caps at 100 files, which silently drops the
+          // rest of a large PR (GitHub lists files alphabetically).
+          const files = await this.octokit.paginate(this.octokit.rest.pulls.listFiles, {
             owner: repo.owner,
             repo: repo.name,
             pull_number: n,
             per_page: 100,
           });
-          const { data: commits } = await this.octokit.rest.pulls.listCommits({
+          const commits = await this.octokit.paginate(this.octokit.rest.pulls.listCommits, {
             owner: repo.owner,
             repo: repo.name,
             pull_number: n,

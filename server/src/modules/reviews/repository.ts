@@ -64,6 +64,19 @@ export class ReviewRepository {
     return reviewRepo.reviewsForPull(this.db, prId);
   }
 
+  /** The `review`-kind review (+ findings) a run produced, workspace-scoped. */
+  reviewForRun(
+    workspaceId: string,
+    runId: string,
+  ): Promise<{ review: ReviewRow; findings: FindingRow[] } | undefined> {
+    return reviewRepo.reviewForRun(this.db, workspaceId, runId);
+  }
+
+  /** One run + agent/PR/repo context, workspace-scoped. */
+  getRunContext(workspaceId: string, runId: string): Promise<runRepo.RunContextRow | undefined> {
+    return runRepo.getRunContext(this.db, workspaceId, runId);
+  }
+
   getReview(reviewId: string): Promise<ReviewRow | undefined> {
     return reviewRepo.getReview(this.db, reviewId);
   }

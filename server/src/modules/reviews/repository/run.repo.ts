@@ -118,6 +118,42 @@ export async function listRunsForPull(
   }));
 }
 
+/** Flat row for GET /runs/:id: the run + agent name + PR number + repo full name. */
+export interface RunContextRow {
+  run: typeof t.agentRuns.$inferSelect;
+  agentName: string | null;
+  prNumber: number | null;
+  repoFullName: string | null;
+}
+
+/** One run by id, scoped to the workspace (undefined if absent / another workspace's). */
+export async function getRunContext(
+  db: Db,
+  workspaceId: string,
+  runId: string,
+): Promise<RunContextRow | undefined> {
+  const [row] = await db
+    .select({
+      run: t.agentRuns,
+      agentName: t.agents.name,
+      prNumber: t.pullRequests.number,
+      repoFullName: t.repos.fullName,
+    })
+    .from(t.agentRuns)
+    .leftJoin(t.agents, eq(t.agents.id, t.agentRuns.agentId))
+    .leftJoin(t.pullRequests, eq(t.pullRequests.id, t.agentRuns.prId))
+    .leftJoin(t.repos, eq(t.repos.id, t.pullRequests.repoId))
+    .where(and(eq(t.agentRuns.id, runId), eq(t.agentRuns.workspaceId, workspaceId)));
+  return row
+    ? {
+        run: row.run,
+        agentName: row.agentName ?? null,
+        prNumber: row.prNumber ?? null,
+        repoFullName: row.repoFullName ?? null,
+      }
+    : undefined;
+}
+
 /**
  * Delete one agent run (+ its trace via FK cascade) AND the review it produced.
  * Workspace-scoped. `reviews.run_id` has no FK to `agent_runs`, so the review
