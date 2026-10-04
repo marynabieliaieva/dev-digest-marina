@@ -1,4 +1,5 @@
-import type { ChatMessage, PromptAssembly } from '@devdigest/shared';
+import type { ChatMessage, PromptAssembly, PromptSectionStat } from '@devdigest/shared';
+import { sectionStats } from './intent/composition.js';
 
 /**
  * Prompt assembly + prompt-injection hardening.
@@ -66,6 +67,13 @@ export interface PromptParts {
    * undefined → section omitted.
    */
   prDescription?: string;
+  /**
+   * Pre-rendered derived-intent block (see `renderIntentBlock`). Untrusted —
+   * derived from PR title/body/linked docs — so delimiter-wrapped. Rendered
+   * right after `## PR description`. Empty/undefined → section omitted and the
+   * user message is byte-identical to a run without intent.
+   */
+  intent?: string;
   /** The unified diff / user task (untrusted content). */
   diff: string;
   /** Optional task framing line, e.g. "Review PR #482 '…'". */
@@ -75,7 +83,13 @@ export interface PromptParts {
 export interface AssembledPrompt {
   messages: ChatMessage[];
   assembly: PromptAssembly;
+  /** Per-section stats (chars, ~tokens, sha256) for present sections only. Never carries text. */
+  composition: PromptSectionStat[];
 }
+
+const INTENT_SCOPE_INSTRUCTION =
+  "When a Derived intent section is present, set each finding's `scope` to `in_scope` or " +
+  '`out_of_scope` relative to it; otherwise leave it null.';
 
 /**
  * Assemble the messages array + the PromptAssembly record for the run trace.
@@ -106,6 +120,13 @@ export function assemblePrompt(parts: PromptParts): AssembledPrompt {
   if (prDescription) {
     userSections.push(`## PR description\n${wrapUntrusted('pr-description', prDescription)}`);
   }
+  const intentBlock =
+    parts.intent && parts.intent.trim().length > 0 ? parts.intent : undefined;
+  if (intentBlock) {
+    userSections.push(
+      `## Derived intent\n${wrapUntrusted('derived-intent', intentBlock)}\n${INTENT_SCOPE_INSTRUCTION}`,
+    );
+  }
   if (skillsBlock) userSections.push(`## Skills / rules\n${skillsBlock}`);
   if (memoryBlock) userSections.push(`## Relevant memory\n${memoryBlock}`);
   if (parts.repoMap && parts.repoMap.trim().length > 0) {
@@ -134,8 +155,25 @@ export function assemblePrompt(parts: PromptParts): AssembledPrompt {
     callers: parts.callers ?? null,
     repo_map: parts.repoMap ?? null,
     pr_description: prDescription ?? null,
+    intent: intentBlock ?? null,
     user,
   };
 
-  return { messages, assembly };
+  const present: { name: string; content: string | undefined }[] = [
+    { name: 'system', content: system },
+    { name: 'task', content: parts.task },
+    { name: 'pr_description', content: prDescription },
+    { name: 'intent', content: intentBlock },
+    { name: 'skills', content: skillsBlock },
+    { name: 'memory', content: memoryBlock },
+    { name: 'repo_map', content: parts.repoMap },
+    { name: 'specs', content: specsBlock },
+    { name: 'callers', content: parts.callers },
+    { name: 'diff', content: parts.diff },
+  ];
+  const composition = sectionStats(
+    present.filter((s): s is { name: string; content: string } => !!s.content && s.content.trim().length > 0),
+  );
+
+  return { messages, assembly, composition };
 }

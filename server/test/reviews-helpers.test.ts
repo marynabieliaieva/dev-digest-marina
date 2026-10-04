@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { taskLine } from '../src/modules/reviews/helpers.js';
+import { filterReviewableDiff, taskLine } from '../src/modules/reviews/helpers.js';
 
 /**
  * Unit coverage for the review task-line. The key invariant: our trusted
@@ -20,5 +20,32 @@ describe('taskLine', () => {
     const line = taskLine(pull);
     expect(line).toMatch(/never .*withhold .*(or downgrade )?.*security/i);
     expect(line).toMatch(/review the entire diff/i);
+  });
+});
+
+describe('filterReviewableDiff', () => {
+  const sec = (p: string) => `diff --git a/${p} b/${p}\n--- a/${p}\n+++ b/${p}\n@@ -1 +1 @@\n+x`;
+  const file = (path: string) => ({ path, additions: 1, deletions: 0, hunks: [] });
+  const mk = (paths: string[]) => ({ raw: paths.map(sec).join('\n'), files: paths.map(file) });
+
+  it('drops boilerplate and docs files from files and raw, keeps code and tests', () => {
+    const { diff, skipped } = filterReviewableDiff(
+      mk(['src/a.ts', 'pnpm-lock.yaml', 'docs/guide.md', 'src/a.test.ts']),
+    );
+    expect(skipped.sort()).toEqual(['docs/guide.md', 'pnpm-lock.yaml']);
+    expect(diff.files.map((f) => f.path)).toEqual(['src/a.ts', 'src/a.test.ts']);
+    expect(diff.raw).toContain('a/src/a.ts b/src/a.ts');
+    expect(diff.raw).not.toContain('pnpm-lock.yaml');
+    expect(diff.raw).not.toContain('docs/guide.md');
+  });
+
+  it('returns the diff untouched when nothing is skippable', () => {
+    const input = mk(['src/a.ts']);
+    expect(filterReviewableDiff(input)).toEqual({ diff: input, skipped: [] });
+  });
+
+  it('never filters down to an empty diff', () => {
+    const input = mk(['pnpm-lock.yaml', 'README.md']);
+    expect(filterReviewableDiff(input)).toEqual({ diff: input, skipped: [] });
   });
 });

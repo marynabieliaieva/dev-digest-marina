@@ -75,6 +75,14 @@ non-obvious; never rewritten, only appended to.
   haven't touched `repo-intel`/indexer files before treating this as your
   change's fault.
 
+- 2026-09-29: In `modules/intent/helpers.ts`, `stripUrlQuery` falls back to
+  `split(/[?#]/)[0]` on non-URLs, so `#12` becomes `''`. `safeRef` therefore only
+  strips when the ref starts with `http(s)://`. Helper unit tests missed it; a
+  service-level test with a mocked repository caught it. Also: a non-uuid `:id`
+  returns **422** here (not 400), and the app logger is `false` under
+  `NODE_ENV=test`, so tests asserting log lines should inject the service's
+  `IntentLog` instead of capturing pino.
+
 ## Session Notes
 
 - 2026-09-21: `server/src/vendor/shared` and `client/src/vendor/shared` are
@@ -90,5 +98,19 @@ non-obvious; never rewritten, only appended to.
   with no code between them. The actual gap was one missing argument —
   `run-executor.ts` never passed `skills` to `reviewPullRequest`, so no skill
   ever reached a prompt. Assume "the table exists" ≠ "the feature is wired".
+- 2026-09-30: `.it` tests used to build REAL LLM providers from the developer's
+  keys. `LocalSecretsProvider` reads `~/.devdigest/secrets.json` and then
+  `process.env`, which `platform/config.ts` fills from `.env` via
+  `dotenv/config`. So any provider slot a test did not mock (e.g.
+  `llm.openrouter` for the intent classifier) made billed network calls. The
+  symptom was runs stuck in `running` and about 10 s timeouts in
+  `reviews.it.test.ts`.
+  `test/setup-env.ts` (vitest `setupFiles`) now does two things:
+  - it points `DEVDIGEST_SECRETS_PATH` at an empty temp file;
+  - it sets the provider keys to `''`, not `delete`. `delete` doesn't work
+    because dotenv re-adds missing vars from `.env`, but never overrides
+    existing ones.
+  Do NOT redirect `HOME`/`USERPROFILE` for this. Testcontainers reads
+  `~/.docker`, and every `.it` suite silently skips as "Docker not available".
 
 ## Open Questions

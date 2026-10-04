@@ -1,0 +1,37 @@
+{
+  "title": "Intent",
+  "inScope": "In scope",
+  "outOfScope": "Out of scope",
+  "riskAreas": "Risk areas",
+  "sources": "Sources",
+  "missingContext": "Missing context",
+  "confidence": {
+    "label": "Confidence",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
+  },
+  "sourceStatus": {
+    "used": "Used",
+    "truncated": "Truncated",
+    "unavailable": "Unavailable",
+    "unsupported": "Unsupported",
+    "skipped": "Skipped"
+  },
+  "sourceKind": {
+    "pr_title": "PR title",
+    "pr_body": "PR description",
+    "file_outline": "File outline",
+    "linked_issue": "Linked issue",
+    "repo_doc": "Repo document",
+    "external_doc": "External document"
+  },
+  "stale": "Derived for {sha}; the PR has new commits since.",
+  "rederive": "Recompute",
+  "derive": "Derive intent",
+  "deriving": "Computing…",
+  "derivingHint": "Asking the model — this can take a minute or two for large pull requests.",
+  "deriveError": "Could not compute the intent: {message}",
+  "failed": "Intent derivation failed",
+  "empty": "Intent not derived yet"
+}

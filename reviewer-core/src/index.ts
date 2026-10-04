@@ -32,12 +32,13 @@ export {
 } from './llm/structured.js';
 
 // Map-reduce helpers (reduce partials, slice a file's diff).
-export { reduceReviews, sliceDiff } from './review/reduce.js';
+export { reduceReviews, sliceDiff, packChunks, estimateTokens } from './review/reduce.js';
 
 // The engine entry point: given (diff + resolved agent inputs + LLM) → grounded Review.
 export {
   reviewPullRequest,
   DEFAULT_MAP_THRESHOLD_LINES,
+  DEFAULT_MAX_SINGLE_PASS_TOKENS,
   DEFAULT_REVIEW_MAX_RETRIES,
   type ReviewInput,
   type ReviewOutcome,
@@ -53,6 +54,15 @@ export {
   countBlockers,
   type ToReviewOptions,
 } from './output/to-review.js';
+
+// Intent classifier (pure): outline (headers only) → prompt → classify → finalize.
+export { outlineFromDiff, outlineFromPatches, type FileOutline } from './intent/outline.js';
+export { sectionStats } from './intent/composition.js';
+export { buildIntentPrompt, type IntentDoc, type IntentPromptInput } from './intent/prompt.js';
+export { classifyIntent, type ClassifyIntentArgs } from './intent/classify.js';
+export { finalizeIntent } from './intent/finalize.js';
+export { renderIntentBlock } from './intent/render.js';
+export { applyIntentScope, type ScopeFilterResult } from './intent/scope-filter.js';
 
 // The single OpenAI-compatible structured provider (OpenRouter), shared by the
 // CI runner and the server's openrouter path. Owns session grouping + guards.

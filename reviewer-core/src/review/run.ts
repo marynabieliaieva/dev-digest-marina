@@ -2,6 +2,7 @@ import type {
   Finding,
   LLMProvider,
   PromptAssembly,
+  PromptSectionStat,
   Review,
   RunEventKind,
   UnifiedDiff,
@@ -9,7 +10,8 @@ import type {
 import { Review as ReviewSchema } from '@devdigest/shared';
 import { assemblePrompt } from '../prompt.js';
 import { groundFindings, groundingSummary } from '../grounding.js';
-import { reduceReviews, scoreFromFindings, sliceDiff } from './reduce.js';
+import { applyIntentScope } from '../intent/scope-filter.js';
+import { estimateTokens, packChunks, reduceReviews, scoreFromFindings, sliceDiff } from './reduce.js';
 
 /**
  * reviewPullRequest — the review engine entry point.
@@ -30,6 +32,11 @@ import { reduceReviews, scoreFromFindings, sliceDiff } from './reduce.js';
 export const DEFAULT_MAP_THRESHOLD_LINES = 400;
 /** Default structured-output reprompt retries (matches REVIEW_MAX_RETRIES). */
 export const DEFAULT_REVIEW_MAX_RETRIES = 2;
+/**
+ * Single-pass guard: a diff estimated above this many tokens is split into
+ * packed chunks (one LLM call each) instead of one giant request.
+ */
+export const DEFAULT_MAX_SINGLE_PASS_TOKENS = 15_000;
 
 export type ReviewStrategy = 'auto' | 'single-pass' | 'map-reduce';
 export type ReviewMode = 'single-pass' | 'map-reduce';
@@ -73,10 +80,18 @@ export interface ReviewInput {
   prDescription?: string;
   /** Task framing line, e.g. "Review PR #482 …". */
   task?: string;
+  /**
+   * Derived PR intent (pure data, produced by the caller). `block` is the
+   * pre-rendered text (see `renderIntentBlock`); `filterEnabled` turns on the
+   * out-of-scope filter. Undefined → no intent section, no filtering.
+   */
+  intent?: { block: string; filterEnabled: boolean };
   /** Override the structured-output retry budget. */
   maxRetries?: number;
   /** Override the map-reduce line threshold. */
   mapThresholdLines?: number;
+  /** Override the single-pass token ceiling; above it the diff is chunked. */
+  maxSinglePassTokens?: number;
   /**
    * OpenRouter session id — forwarded on every LLM call so all chunks of this
    * review group into one session in the OpenRouter dashboard.
@@ -110,11 +125,22 @@ export interface ReviewOutcome {
   costUsd: number | null;
   /** Joined raw model outputs (for the run trace). */
   raw: string;
+  /** Findings removed by the intent scope filter (empty when the filter is off). */
+  scopeSuppressed: { finding: Finding; reason: string }[];
+  /** Prompt composition stats (single-pass: the one call; map-reduce: whole-diff). No text. */
+  composition: PromptSectionStat[];
 }
 
-function selectMode(strategy: ReviewStrategy, diff: UnifiedDiff, threshold: number): ReviewMode {
-  if (strategy === 'single-pass') return 'single-pass';
+function selectMode(
+  strategy: ReviewStrategy,
+  diff: UnifiedDiff,
+  threshold: number,
+  maxSinglePassTokens: number,
+): ReviewMode {
   if (strategy === 'map-reduce') return diff.files.length > 1 ? 'map-reduce' : 'single-pass';
+  // Token guard (single-pass + auto): too big for one request → chunk it.
+  if (diff.files.length > 1 && estimateTokens(diff.raw) > maxSinglePassTokens) return 'map-reduce';
+  if (strategy === 'single-pass') return 'single-pass';
   // auto: map-reduce only when the diff is both large AND multi-file (else 1 call).
   const totalLines = diff.files.reduce((n, f) => n + f.additions + f.deletions, 0);
   return totalLines > threshold && diff.files.length > 1 ? 'map-reduce' : 'single-pass';
@@ -123,7 +149,11 @@ function selectMode(strategy: ReviewStrategy, diff: UnifiedDiff, threshold: numb
 export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutcome> {
   const threshold = input.mapThresholdLines ?? DEFAULT_MAP_THRESHOLD_LINES;
   const maxRetries = input.maxRetries ?? DEFAULT_REVIEW_MAX_RETRIES;
-  const mode = selectMode(input.strategy ?? 'auto', input.diff, threshold);
+  const maxSinglePassTokens = input.maxSinglePassTokens ?? DEFAULT_MAX_SINGLE_PASS_TOKENS;
+  const strategy = input.strategy ?? 'auto';
+  const mode = selectMode(strategy, input.diff, threshold, maxSinglePassTokens);
+  // Per-file map-reduce is an explicit choice; the token guard packs files instead.
+  const packed = mode === 'map-reduce' && strategy !== 'map-reduce';
   const emit = (kind: RunEventKind, msg: string, data?: unknown) =>
     input.onEvent?.({ kind, msg, data });
 
@@ -135,22 +165,30 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
     callers: input.callers,
     repoMap: input.repoMap,
     prDescription: input.prDescription,
+    intent: input.intent?.block,
     task: input.task,
   };
 
   // Whole-diff assembly is the trace default; overwritten below for single-pass.
-  let assembly: PromptAssembly = assemblePrompt({ ...promptParts, diff: input.diff.raw }).assembly;
+  const whole = assemblePrompt({ ...promptParts, diff: input.diff.raw });
+  let assembly: PromptAssembly = whole.assembly;
+  let composition: PromptSectionStat[] = whole.composition;
 
   const chunks =
-    mode === 'map-reduce'
-      ? input.diff.files.map((f) => ({ label: f.path, diffText: sliceDiff(input.diff, f.path) }))
-      : [{ label: 'all files', diffText: input.diff.raw }];
+    mode !== 'map-reduce'
+      ? [{ label: 'all files', diffText: input.diff.raw }]
+      : packed
+        ? packChunks(input.diff, maxSinglePassTokens)
+        : input.diff.files.map((f) => ({ label: f.path, diffText: sliceDiff(input.diff, f.path) }));
 
   emit(
     'info',
-    mode === 'map-reduce'
-      ? `Large diff → map-reduce over ${input.diff.files.length} files`
-      : `Reviewing ${input.diff.files.length} changed file(s) in one pass`,
+    mode !== 'map-reduce'
+      ? `Reviewing ${input.diff.files.length} changed file(s) in one pass`
+      : packed
+        ? `Diff ~${estimateTokens(input.diff.raw)} tok exceeds ${maxSinglePassTokens} → ` +
+          `${chunks.length} chunk(s) over ${input.diff.files.length} files`
+        : `Large diff → map-reduce over ${input.diff.files.length} files`,
   );
 
   const partials: Review[] = [];
@@ -170,13 +208,34 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
       { file: chunk.label },
     );
     const a = assemblePrompt({ ...promptParts, diff: chunk.diffText });
-    if (mode === 'single-pass') assembly = a.assembly;
+    if (mode === 'single-pass') {
+      assembly = a.assembly;
+      composition = a.composition;
+    }
+    const totalChars = a.composition.reduce((n, s) => n + s.chars, 0);
+    const estTokens = a.composition.reduce((n, s) => n + s.est_tokens, 0);
+    // Stats only (names/sizes) — never section text, diff lines, or secrets.
+    emit(
+      'tool',
+      `review: main request — provider=${input.llm.id} model=${input.model} ` +
+        `sections=[${a.composition.map((s) => `${s.name}:${s.chars}c`).join(', ')}] ~${estTokens} tok`,
+      {
+        call: 'review',
+        provider: input.llm.id,
+        model: input.model,
+        chunk: chunk.label,
+        sections: a.composition,
+        total_chars: totalChars,
+        est_tokens: estTokens,
+      },
+    );
     const res = await input.llm.completeStructured<Review>({
       model: input.model,
       schema: ReviewSchema,
       schemaName: 'Review',
       messages: a.messages,
       maxRetries,
+      reasoning: 'off',
       ...(input.sessionId ? { sessionId: input.sessionId } : {}),
     });
     tokensIn += res.tokensIn;
@@ -201,11 +260,27 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
   }
   emit('result', `Citation grounding: ${grounding}`);
 
-  // Score is derived from the findings that SURVIVED grounding (not the model's
-  // self-reported number, and not the pre-grounding set) so the score, the
-  // findings list, and the deterministic event always agree.
+  // Intent scope filter (after grounding). Disabled → passthrough.
+  const scoped = applyIntentScope(ground.kept, { enabled: input.intent?.filterEnabled === true });
+  if (input.intent?.filterEnabled) {
+    emit(
+      'info',
+      `Scope filter: kept ${scoped.kept.length}, suppressed ${scoped.suppressed.length}, signal ${scoped.signal ? 1 : 0}`,
+      {
+        suppressed: scoped.suppressed.map((s) => ({
+          title: s.finding.title,
+          severity: s.finding.severity,
+          reason: s.reason,
+        })),
+      },
+    );
+  }
+
+  // Score is derived from the findings that SURVIVED grounding AND the scope
+  // filter (not the model's self-reported number) so the score, the findings
+  // list, and the deterministic event always agree.
   return {
-    review: { ...merged, findings: ground.kept, score: scoreFromFindings(ground.kept) },
+    review: { ...merged, findings: scoped.kept, score: scoreFromFindings(scoped.kept) },
     grounding,
     dropped: ground.dropped,
     mode,
@@ -215,5 +290,7 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
     tokensOut,
     costUsd,
     raw: raws.join('\n---\n'),
+    scopeSuppressed: scoped.suppressed,
+    composition,
   };
 }

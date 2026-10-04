@@ -6,10 +6,46 @@ import { z } from 'zod';
  */
 
 // ---- Intent ----
-export const Intent = z.object({
-  intent: z.string(),
+export const IntentConfidence = z.enum(['high', 'medium', 'low']);
+export type IntentConfidence = z.infer<typeof IntentConfidence>;
+
+export const IntentSourceKind = z.enum([
+  'pr_title',
+  'pr_body',
+  'file_outline',
+  'linked_issue',
+  'repo_doc',
+  'external_doc',
+]);
+export type IntentSourceKind = z.infer<typeof IntentSourceKind>;
+
+export const IntentSourceStatus = z.enum(['used', 'truncated', 'unavailable', 'unsupported', 'skipped']);
+export type IntentSourceStatus = z.infer<typeof IntentSourceStatus>;
+
+/** One input the classifier consumed (or could not). `ref` never carries a query string or fragment. */
+export const IntentSource = z.object({
+  kind: IntentSourceKind,
+  ref: z.string(),
+  status: IntentSourceStatus,
+  chars: z.number().int(),
+  sha256: z.string().nullable(),
+  reason: z.string().nullable(),
+});
+export type IntentSource = z.infer<typeof IntentSource>;
+
+/** LLM output. Strict-mode friendly: every field is required (no `.optional()`). */
+export const IntentClassification = z.object({
+  summary: z.string(),
   in_scope: z.array(z.string()),
   out_of_scope: z.array(z.string()),
+  risk_areas: z.array(z.string()),
+  confidence: IntentConfidence,
+  missing_context: z.array(z.string()),
+});
+export type IntentClassification = z.infer<typeof IntentClassification>;
+
+export const Intent = IntentClassification.extend({
+  sources: z.array(IntentSource),
 });
 export type Intent = z.infer<typeof Intent>;
 
@@ -78,7 +114,7 @@ export const PrHistory = z.object({
 export type PrHistory = z.infer<typeof PrHistory>;
 
 // ---- Smart Diff ----
-export const SmartDiffRole = z.enum(['core', 'wiring', 'boilerplate']);
+export const SmartDiffRole = z.enum(['core', 'tests', 'wiring', 'docs', 'boilerplate']);
 export type SmartDiffRole = z.infer<typeof SmartDiffRole>;
 
 export const SmartDiffFile = z.object({

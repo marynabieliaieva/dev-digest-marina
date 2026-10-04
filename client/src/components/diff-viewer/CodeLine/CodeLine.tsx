@@ -1,24 +1,35 @@
 /* CodeLine — one rendered diff line: gutter number, +/- sign, text, plus the
-   hover "+" affordance, any anchored comment threads, and an inline composer. */
+   hover "+" affordance, any anchored comment threads, review findings under the
+   line, and an inline composer. */
 "use client";
 
 import React from "react";
+import { SEV } from "@devdigest/ui";
 import { commentTargetFor, type CommentThread, type DiffCommentApi, cs } from "../comments";
+import { topSeverity, type DiffFinding, type DiffFindingApi } from "../findings";
 import { type Line } from "../helpers";
-import { s, lineRowFor, lineSignFor } from "../styles";
+import { s, fs, lineRowFor, lineSignFor, findingStripe } from "../styles";
 import { CommentThreadView } from "../CommentThreadView";
+import { FindingInline } from "../FindingInline";
 import { InlineComposer } from "../InlineComposer";
+
+const NO_FINDINGS: DiffFinding[] = [];
 
 export function CodeLine({
   ln,
   path,
   threads,
   commenting,
+  findings,
+  lineFindings = NO_FINDINGS,
 }: {
   ln: Line;
   path: string;
   threads: CommentThread[];
   commenting?: DiffCommentApi;
+  findings?: DiffFindingApi;
+  /** Findings anchored to this line (already partitioned by the file card). */
+  lineFindings?: DiffFinding[];
 }) {
   const [hover, setHover] = React.useState(false);
   const [composing, setComposing] = React.useState(false);
@@ -34,6 +45,10 @@ export function CodeLine({
   const sign = ln.kind === "add" ? "+" : ln.kind === "del" ? "−" : "";
   const target = commenting?.canComment ? commentTargetFor(ln) : null;
   const showAdd = hover && !!target && !composing;
+  const shownFindings = findings?.show ? lineFindings : NO_FINDINGS;
+  const severity = topSeverity(shownFindings);
+  const accent = severity ? SEV[severity].c : null;
+  const rowStyle = accent ? { ...lineRowFor(ln.kind), ...findingStripe(accent) } : lineRowFor(ln.kind);
 
   return (
     <div
@@ -41,7 +56,7 @@ export function CodeLine({
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <div style={lineRowFor(ln.kind)}>
+      <div style={rowStyle} data-finding-severity={severity ?? undefined}>
         <span className="mono tnum" style={{ ...s.lineNo, position: "relative" }}>
           {showAdd && target && (
             <button
@@ -63,6 +78,11 @@ export function CodeLine({
           {ln.text || " "}
         </span>
       </div>
+
+      {findings &&
+        shownFindings.map((f) => (
+          <FindingInline key={f.id} finding={f} renderFinding={findings.renderFinding} />
+        ))}
 
       {commenting &&
         commenting.showComments &&

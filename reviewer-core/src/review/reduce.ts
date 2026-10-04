@@ -70,3 +70,36 @@ export function sliceDiff(diff: UnifiedDiff, path: string): string {
   if (!f) return diff.raw;
   return `diff --git a/${path} b/${path}\n--- a/${path}\n+++ b/${path}`;
 }
+
+/** Rough token estimate (same chars/4 heuristic as the prompt composition stats). */
+export function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
+/**
+ * Pack the diff's files into chunks of at most `maxTokens` (estimated), keeping
+ * file order. Small files share a chunk; a file bigger than the budget gets a
+ * chunk of its own (never split mid-file, so hunks stay intact for grounding).
+ */
+export function packChunks(
+  diff: UnifiedDiff,
+  maxTokens: number,
+): { label: string; diffText: string }[] {
+  const chunks: { paths: string[]; texts: string[]; tokens: number }[] = [];
+  for (const f of diff.files) {
+    const text = sliceDiff(diff, f.path);
+    const tokens = estimateTokens(text);
+    const cur = chunks[chunks.length - 1];
+    if (cur && cur.tokens + tokens <= maxTokens) {
+      cur.paths.push(f.path);
+      cur.texts.push(text);
+      cur.tokens += tokens;
+    } else {
+      chunks.push({ paths: [f.path], texts: [text], tokens });
+    }
+  }
+  return chunks.map((c) => ({
+    label: c.paths.length === 1 ? c.paths[0]! : `${c.paths.length} files (${c.paths[0]} …)`,
+    diffText: c.texts.join('\n'),
+  }));
+}

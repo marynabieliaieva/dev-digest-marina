@@ -4,7 +4,7 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
-import { Icon } from "@devdigest/ui";
+import { Icon, SEV } from "@devdigest/ui";
 import type { PrFile } from "@/lib/types";
 import { AUTO_EXPAND_MAX_LINES } from "../constants";
 import { parsePatch, type Line } from "../helpers";
@@ -15,9 +15,20 @@ import {
   type CommentThread,
   type DiffCommentApi,
 } from "../comments";
-import { s, chevronFor } from "../styles";
+import { countBySeverity, partitionFindings, type DiffFinding, type DiffFindingApi } from "../findings";
+import type { DiffExpandSignal } from "../expand";
+import { s, fs, chevronFor } from "../styles";
 import { CodeLine } from "../CodeLine";
 import { OutdatedComments } from "../OutdatedComments";
+import { OutsideFindings } from "../OutsideFindings";
+
+const NO_FINDINGS: DiffFinding[] = [];
+
+/** Findings anchored to a parsed line (RIGHT side only). */
+function findingsForLine(ln: Line, byKey: Map<string, DiffFinding[]>): DiffFinding[] {
+  if (byKey.size === 0 || ln.newNo == null || ln.kind === "del" || ln.kind === "hunk") return NO_FINDINGS;
+  return byKey.get(`RIGHT:${ln.newNo}`) ?? NO_FINDINGS;
+}
 
 /** Threads anchored to a given parsed line (RIGHT=new, LEFT=old). */
 function threadsForLine(ln: Line, matched: Map<string, CommentThread[]>): CommentThread[] {
@@ -30,11 +41,25 @@ function threadsForLine(ln: Line, matched: Map<string, CommentThread[]>): Commen
   return out;
 }
 
-export function FileCard({ file, commenting }: { file: PrFile; commenting?: DiffCommentApi }) {
+export function FileCard({
+  file,
+  commenting,
+  findings,
+  expandSignal,
+}: {
+  file: PrFile;
+  commenting?: DiffCommentApi;
+  findings?: DiffFindingApi;
+  expandSignal?: DiffExpandSignal;
+}) {
   const t = useTranslations("shell");
   const [open, setOpen] = React.useState(
     (file.additions ?? 0) + (file.deletions ?? 0) <= AUTO_EXPAND_MAX_LINES
   );
+  // "Expand/collapse all" command from the parent (nonce 0 = none issued yet).
+  React.useEffect(() => {
+    if (expandSignal && expandSignal.nonce > 0) setOpen(expandSignal.open);
+  }, [expandSignal]);
   const lines = React.useMemo(() => parsePatch(file.patch), [file.patch]);
 
   // Group this file's comments into threads, then split into ones we can anchor
@@ -47,6 +72,13 @@ export function FileCard({ file, commenting }: { file: PrFile; commenting?: Diff
     for (const ln of lines) for (const k of keysForLine(ln)) renderedKeys.add(k);
     return partitionThreads(fileThreads, renderedKeys);
   }, [comments, file.path, lines]);
+
+  const fileFindings = findings?.byPath.get(file.path) ?? NO_FINDINGS;
+  const { byKey: findingsByKey, outside: outsideFindings } = React.useMemo(
+    () => partitionFindings(fileFindings, lines),
+    [fileFindings, lines],
+  );
+  const severityChips = countBySeverity(fileFindings);
 
   const commentCount = commenting
     ? commenting.comments.filter((c) => c.path === file.path).length
@@ -72,6 +104,24 @@ export function FileCard({ file, commenting }: { file: PrFile; commenting?: Diff
             {commentCount}
           </span>
         )}
+        {severityChips.length > 0 && (
+          <span data-testid="file-finding-dot" role="img" aria-label="Has review findings" style={fs.badges}>
+            {severityChips.map(({ severity, count }) => {
+              const I = Icon[SEV[severity].icon];
+              return (
+                <span
+                  key={severity}
+                  data-severity={severity}
+                  title={`${count} ${SEV[severity].label.toLowerCase()}${count === 1 ? "" : "s"}`}
+                  style={{ ...fs.badge, color: SEV[severity].c }}
+                >
+                  <I size={12} />
+                  {count}
+                </span>
+              );
+            })}
+          </span>
+        )}
       </div>
       {open && (
         <div style={s.fileBody}>
@@ -85,10 +135,15 @@ export function FileCard({ file, commenting }: { file: PrFile; commenting?: Diff
                 path={file.path}
                 threads={threadsForLine(ln, matched)}
                 commenting={commenting}
+                findings={findings}
+                lineFindings={findingsForLine(ln, findingsByKey)}
               />
             ))
           )}
           {commenting && commenting.showComments && <OutdatedComments threads={outdated} />}
+          {findings?.show && (
+            <OutsideFindings findings={outsideFindings} renderFinding={findings.renderFinding} />
+          )}
         </div>
       )}
     </div>

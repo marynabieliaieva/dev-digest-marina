@@ -55,7 +55,7 @@ export function FindingCard({
     <div data-finding-id={f.id} style={s.card(!!focused, sevColor, muted)}>
       <div onClick={() => setExpanded((e) => !e)} style={s.header}>
         <div style={s.badgeWrap}>
-          <SeverityBadge severity={f.severity as Severity} compact />
+          <SeverityBadge severity={f.severity as Severity} />
         </div>
         <div style={s.headerMain}>
           <div style={s.titleRow}>
