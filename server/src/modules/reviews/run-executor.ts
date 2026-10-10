@@ -434,7 +434,12 @@ export class ReviewRunExecutor {
         `≈${resolved.totalTokens} tokens`,
     );
     for (const e of resolved.entries) {
-      if (e.status !== 'included') runLog.info(`project context: skipped ${e.path} — ${e.status}`);
+      if (e.status === 'included') {
+        const via = e.origin === 'skill' && e.skill_name ? ` (via skill ${e.skill_name})` : '';
+        runLog.info(`project context: included ${e.path} — ≈${e.est_tokens} tokens${via}`);
+      } else {
+        runLog.info(`project context: skipped ${e.path} — ${e.status}`);
+      }
     }
     return resolved;
   }

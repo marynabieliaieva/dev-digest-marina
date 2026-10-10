@@ -181,6 +181,7 @@ d('project-context in review runs', () => {
     expect(trace.log.some((l) => /^project context: 1 of 1 document\(s\) attached, ≈\d+ tokens$/.test(l.msg))).toBe(
       true,
     );
+    expect(trace.log.some((l) => /^project context: included specs\/x\.md — ≈\d+ tokens$/.test(l.msg))).toBe(true);
   });
 
   it('a missing attached doc is recorded as missing and the run stays done', async () => {
