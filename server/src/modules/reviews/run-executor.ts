@@ -10,6 +10,7 @@ import { filterReviewableDiff, renderSkillBlocks, selectActiveSkills, taskLine }
 import { toSkillDto } from '../skills/helpers.js';
 import { loadDiff } from './diff-loader.js';
 import { IntentService, type EnsuredIntent } from '../intent/service.js';
+import { ProjectContextService, type ResolvedProjectContext } from '../project-context/service.js';
 
 /** Thrown by a run when the user cancels it mid-flight (between map files). */
 export class RunCancelledError extends Error {
@@ -176,6 +177,10 @@ export class ReviewRunExecutor {
 
     runLog.info(`Starting review with agent "${agent.name}" (${agent.provider}/${agent.model})`);
 
+    // Declared before the try so a failure/cancel trace can still carry it
+    // once resolution has finished (AC-33).
+    let projectContext: ResolvedProjectContext | undefined;
+
     try {
       // Resolve the agent's LLM provider. (container.llm throws if the provider
       // key is missing — caught below and persisted as a failed run.)
@@ -212,6 +217,11 @@ export class ReviewRunExecutor {
       // this degrades to "no skills" and says so in the Live Log.
       const skillBlocks = await this.buildSkillBlocks(agent.id, runLog);
 
+      // Project context — repo documents the agent (or its skills) attaches,
+      // read from the PR's repo clone. Best-effort, like skills.
+      const resolvedContext = await this.buildProjectContext(workspaceId, agent.id, repo.clonePath, runLog);
+      projectContext = resolvedContext;
+
       // ---- Engine: assemble → single-pass → grounding -----------------------
       // The pure review pipeline lives in @devdigest/reviewer-core (shared with
       // the CI runner). The service owns only I/O: repo-intel context resolution
@@ -228,6 +238,9 @@ export class ReviewRunExecutor {
         // so an agent without skills produces the exact pre-skills prompt (the
         // baseline half of the control experiment).
         ...(skillBlocks.length > 0 ? { skills: skillBlocks } : {}),
+        // Project context docs (untrusted; reviewer-core wraps them). Omitted
+        // when none were included → today's exact prompt.
+        ...(resolvedContext.docs.length > 0 ? { specs: resolvedContext.docs } : {}),
         // T1.3 — pass the callers digest only when we built one. assemblePrompt
         // omits the section when this is empty/undefined.
         ...(callersDigest ? { callers: callersDigest } : {}),
@@ -315,7 +328,8 @@ export class ReviewRunExecutor {
         })),
         raw_output: outcome.raw,
         memory_pulled: [],
-        specs_read: [],
+        specs_read: resolvedContext.specsRead,
+        project_context: resolvedContext.entries,
         // Persisted log = the run's FULL event buffer (incl. shared pre-work:
         // diff load + intent), not just events recorded inside this method.
         log: runLog.logFor(runId),
@@ -344,7 +358,7 @@ export class ReviewRunExecutor {
         })
         .catch(() => undefined);
       await this.repo
-        .saveRunTrace(runId, this.traceFromBuffer(runId, pull, agent, '0/0 passed', Date.now() - start))
+        .saveRunTrace(runId, this.traceFromBuffer(runId, pull, agent, '0/0 passed', Date.now() - start, projectContext))
         .catch(() => undefined);
       this.container.runBus.complete(runId);
       throw err;
@@ -388,6 +402,41 @@ export class ReviewRunExecutor {
         `(${names.join(', ')}) — ~${tokens} token(s)`,
     );
     return blocks;
+  }
+
+  /**
+   * Resolve the agent's attached project-context documents from the PR's repo
+   * clone. Best-effort: an unexpected error is logged as one info line and
+   * yields an empty result — it never changes the run status. Resolution is
+   * filesystem + DB only (no LLM call).
+   */
+  private async buildProjectContext(
+    workspaceId: string,
+    agentId: string,
+    clonePath: string | null,
+    runLog: RunLogger,
+  ): Promise<ResolvedProjectContext> {
+    let resolved: ResolvedProjectContext;
+    try {
+      resolved = await new ProjectContextService(this.container).resolveForRun(
+        workspaceId,
+        agentId,
+        clonePath,
+      );
+    } catch (err) {
+      runLog.info(`project context: could not resolve — ${(err as Error).message}`);
+      return { docs: [], entries: [], specsRead: [], totalTokens: 0 };
+    }
+    if (resolved.entries.length === 0) return resolved;
+
+    runLog.info(
+      `project context: ${resolved.docs.length} of ${resolved.entries.length} document(s) attached, ` +
+        `≈${resolved.totalTokens} tokens`,
+    );
+    for (const e of resolved.entries) {
+      if (e.status !== 'included') runLog.info(`project context: skipped ${e.path} — ${e.status}`);
+    }
+    return resolved;
   }
 
   /**
@@ -488,6 +537,7 @@ export class ReviewRunExecutor {
     agent: AgentRow,
     grounding: string,
     durationMs = 0,
+    projectContext?: ResolvedProjectContext,
   ): RunTrace {
     return {
       config: {
@@ -503,7 +553,8 @@ export class ReviewRunExecutor {
       tool_calls: [],
       raw_output: '',
       memory_pulled: [],
-      specs_read: [],
+      specs_read: projectContext?.specsRead ?? [],
+      ...(projectContext ? { project_context: projectContext.entries } : {}),
       log: this.container.runBus.buffer(runId).map((e) => ({ t: e.t, kind: e.kind, msg: e.msg })),
     };
   }

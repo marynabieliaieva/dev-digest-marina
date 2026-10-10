@@ -29,7 +29,11 @@ export function Markdown({ children }: { children?: string | null }) {
             </code>
           ),
           a: ({ children, href }) => (
-            <a href={href} style={{ color: "var(--accent-text)", textDecoration: "underline" }}>
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "var(--accent-text)", textDecoration: "underline" }}>
               {children}
             </a>
           ),

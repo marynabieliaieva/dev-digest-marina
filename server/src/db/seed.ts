@@ -13,6 +13,8 @@ import {
 import { SEED_SKILLS } from './seed-skills.js';
 import { CONTROL_PRS } from './seed-control-prs.js';
 import { SEED_CONVENTIONS, SEED_EXTRACTION } from './seed-conventions.js';
+import { seedProjectContextFixture } from './seed-project-context.js';
+import { loadConfig } from '../platform/config.js';
 
 /**
  * Which starter skills each built-in agent links to, in prompt order. Named
@@ -448,6 +450,7 @@ if (fileURLToPath(import.meta.url) === process.argv[1]) {
   const handle = createDb(url);
   seed(handle.db)
     .then(async (r) => {
+      await seedProjectContextFixture(handle.db, loadConfig().cloneDir);
       console.log('✓ seeded', r);
       await handle.close();
       process.exit(0);

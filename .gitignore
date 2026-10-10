@@ -24,3 +24,6 @@ test-results/
 
 # emdash worktree config (local)
 .emdash.json
+
+# agent run logs (scripts/check.sh)
+.claude/tmp/

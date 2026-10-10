@@ -1,24 +1,24 @@
 {
   "title": "Project Context",
-  "chunks": "{count} chunks",
-  "reindex": "Re-index",
-  "indexing": "Indexing…",
-  "resync": "Resync",
-  "resyncing": "Resyncing…",
-  "indexStatus": "Index status: {status}",
-  "loadError": "Couldn’t load specs",
-  "kb": "{kb}kb",
+  "refresh": "Refresh",
+  "selectPrompt": "Select a document to preview it.",
+  "previewLoadError": "Couldn’t load this document",
+  "usedBy": {
+    "label": "{count, plural, one {Used by # agent} other {Used by # agents}}",
+    "title": "Agents using this document"
+  },
+  "footer": {
+    "indexed": "Indexed: {files} files · {tokens} tokens total",
+    "last": "last {relative} ago"
+  },
+  "loadError": "Couldn’t load project context",
+  "notCloned": {
+    "title": "Repository not cloned yet",
+    "body": "Project context is read from the local clone. Sync the repository to fetch it.",
+    "sync": "Sync"
+  },
   "empty": {
-    "title": "No spec files yet",
-    "body": "Drop your PRDs, tech specs, and acceptance criteria under .devdigest/specs/. Every agent and the PR brief read them as grounding context."
-  },
-  "mode": {
-    "preview": "preview",
-    "edit": "edit"
-  },
-  "editor": {
-    "loadError": "Couldn’t load spec",
-    "save": "Save",
-    "saving": "Saving…"
+    "title": "No context documents found",
+    "body": "No Markdown files matched the configured globs: {globs}"
   }
 }

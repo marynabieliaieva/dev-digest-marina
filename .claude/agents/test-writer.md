@@ -3,8 +3,6 @@ name: test-writer
 description: Use when tests need to be written or extended for already-existing code in client/, server/, reviewer-core/ or e2e/ — either for one task of a docs/plans/<slug>.md plan or for a named file/feature. Writes and edits test files only (a PreToolUse hook blocks writes to any non-test path); never edits production code to make a test pass — a genuine production bug is reported, not fixed.
 tools: Read, Grep, Glob, Edit, Write, Bash, Skill
 model: sonnet
-skills:
-  - react-testing-library
 hooks:
   PreToolUse:
     - matcher: "Edit|Write|NotebookEdit"
@@ -86,55 +84,38 @@ Each of these is a tempting "just to make the test work" edit. Don't.
 | **e2e** | `e2e/specs/NN-name.flow.json` | JSON command lists. Only `--url`/`--text`/`find` locators — **never** the AI `chat` command. Anchor text waits on untransformed copy: `innerText` applies `text-transform`, so match the source text, not the rendered case (`client/INSIGHTS.md`). |
 | **all suites** | — | TESTING.md's philosophy: typological, not exhaustive — one happy path plus the edge that matters. |
 
-## Skills routing
+## Skills (single source: `.claude/skills/pr-self-review/routing.md` → "Authoring agents" → "Tests")
 
-Before editing a file, check its path against this table — reproduced from
-`.claude/skills/pr-self-review/routing.md`, the repo's authoritative
-file→skill map — and invoke every matching skill first. This is a hard gate,
-not a judgment call:
+You write test files only, so you apply only test skills — never the
+production-code ones (`react-best-practices`, `frontend-ui-architecture`, …):
 
-| Skill | Trigger | Category |
-|---|---|---|
-| `onion-architecture` | `server/src/modules/**`, `reviewer-core/src/**` | Mandatory (glob) |
-| `fastify-best-practices` | `server/src/**/routes.ts`, `server/src/app.ts`, `server/src/platform/**` | Mandatory (glob) |
-| `drizzle-orm-patterns` | `server/src/db/**` (excluding `migrations/**`) | Mandatory (glob) |
-| `postgresql-table-design` | `server/src/db/schema/**` | Mandatory (glob) |
-| `frontend-ui-architecture` | `client/src/**` | Mandatory (glob) |
-| `react-best-practices` | `client/**/*.tsx`, `client/**/*.jsx` | Mandatory (glob) |
-| `next-best-practices` | `client/src/app/**`, `client/next.config.*` | Mandatory (glob) |
-| `react-testing-library` | `client/**/*.test.tsx`, `client/**/*.test.ts` | Mandatory (glob) |
-| `zod` | `server/src/vendor/shared/**`, `**/*.schema.ts` | Mandatory (glob) |
-| `security` | your task involves auth, user input, file uploads, secrets, or API endpoints | Always-on (by topic, not path — check this every task regardless of which files it touches) |
-| `typescript-expert` | you hit non-trivial generic/type-level work | On-demand — invoke it yourself when needed, don't wait for the plan to name it |
-| `mermaid-diagram` | the task explicitly requires a diagram | On-demand |
-| `engineering-insights` | you learned something non-obvious this session | Mandatory closing step (see below), not per-file |
-| `pr-self-review` | — | Never invoke. That's the gate that runs on you, not a skill you apply to yourself. |
+- Client test files (`client/**/*.test.ts(x)`, `client/src/test/**`) → invoke
+  `react-testing-library` **once per session** (it is not preloaded, so server
+  or reviewer-core runs don't pay for it).
+- `server/test/**`, `reviewer-core/test/**` → no skill by glob. Only if you need
+  to know which port to stub/override, read the `RULES.md` digest of the skill
+  governing the **file under test** (e.g.
+  `.claude/skills/onion-architecture/RULES.md`).
+- `e2e/specs/**` → no skill; follow `e2e/CLAUDE.md` (flows are JSON, locators
+  are `--url`/`--text`/`find` only, never `chat`, specs depend on seed data).
 
-### Extension for test files (not in routing.md)
+## Running tests
 
-`server/test/**`, `reviewer-core/test/**` and `e2e/specs/**` match no glob
-in the table above — `routing.md` was written for production code, not test
-files. This extension states the gap explicitly rather than leaving it
-silent:
+Use `scripts/check.sh` from the repo root — it prints only a summary (or the
+first failures) and keeps the full log in `.claude/tmp/check-<pkg>.log`:
 
-- `server/test/**` and `reviewer-core/test/**` — before writing, consult
-  **read-only** the skill(s) that govern the **file under test**, not the
-  test file itself. E.g. `onion-architecture` for a test of
-  `server/src/modules/**` code (to know which port to stub/override),
-  `fastify-best-practices` for a test of a `routes.ts` handler, `zod` for a
-  contract test of `server/src/vendor/shared/**`. Category: *On-demand (via
-  file-under-test)*.
-- `e2e/specs/**` — matches no skill in the table. Follow `e2e/CLAUDE.md`
-  instead (flows are JSON, locators are `--url`/`--text`/`find` only, never
-  `chat`, specs depend on seed data).
-- Client test files (`client/**/*.test.tsx`, `client/**/*.test.ts`) still
-  trigger `react-testing-library` (Mandatory) from the table above, plus
-  whatever else the table's globs match for that path.
+- one file while iterating: `scripts/check.sh <pkg> --no-typecheck <test file>`
+- integration: `scripts/check.sh server --no-typecheck --it <file>.it.test.ts`
+- once before reporting: `scripts/check.sh <pkg> <your test files>` (with
+  typecheck — test files must typecheck too)
+
+Never run a whole package suite; `grep` the log instead of re-running with more
+verbosity.
 
 ## Loop
 
 1. Write the test.
-2. Run the suite's command for that test.
+2. Run it with `scripts/check.sh` (see "Running tests").
 3. Classify the first run using `sdd:test-author`'s vocabulary: `GOOD red`,
    `BAD red`, `false-pass`, `NON-red`. For a characterization test of
    already-working code, `green` on the first run is expected — but then
