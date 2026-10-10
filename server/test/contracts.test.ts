@@ -198,6 +198,25 @@ describe('AI contracts parse fixtures', () => {
     expect(trace.tool_calls).toHaveLength(1);
   });
 
+  it('RunTrace project_context: legacy parses unchanged; five statuses parse; unknown fails', () => {
+    const base = {
+      config: { agent: 'A', model: 'm' },
+      stats: { duration_ms: 1, tokens_in: 1, tokens_out: 1, findings: 0, grounding: '0/0', cost_usd: null },
+      prompt_assembly: { system: 's', user: 'u' },
+      tool_calls: [],
+      raw_output: '{}',
+      memory_pulled: [],
+      specs_read: [],
+      log: [],
+    };
+    expect(RunTrace.parse(base).project_context).toBeUndefined();
+    const statuses = ['included', 'missing', 'too_large', 'over_budget', 'unreadable'] as const;
+    const entry = (status: string) => ({ path: 'specs/a.md', origin: 'agent', est_tokens: 0, status });
+    const ok = RunTrace.parse({ ...base, project_context: statuses.map(entry) });
+    expect(ok.project_context).toHaveLength(5);
+    expect(() => RunTrace.parse({ ...base, project_context: [entry('bogus')] })).toThrow();
+  });
+
   it('RunStats cost_usd: numeric and null both parse (never omitted — null ≠ "unknown")', () => {
     expect(() =>
       RunStats.parse({

@@ -17,6 +17,12 @@ Reusable AI skills that provide specialized knowledge and workflows. Canonical l
 | [typescript-expert](typescript-expert/SKILL.md) | Full-stack | Type-level programming, performance, tooling, migrations |
 | [security](security/SKILL.md) | Full-stack | OWASP Top 10:2025, auth, injection, uploads, secrets |
 | [mermaid-diagram](mermaid-diagram/SKILL.md) | Shared | Mermaid diagrams in markdown (flowcharts, sequence, ERD, …) |
+| [run-plan](run-plan/SKILL.md) | Workflow | `/run-plan docs/plans/<slug>.md` (user-invoked only) — implementer waves, plan-verifier + fix loop, architecture-review loop, final full run; optional `--review` / `--docs` |
+| [workflow-retro](workflow-retro/SKILL.md) | Workflow | `/workflow-retro [label] [--deep]` (user-invoked only, never automatic). Retrospective of a finished multi-agent run: tokens, agents and order, fix loops, defect escapes, per-agent insights, and ranked proposals. Writes `docs/retro/ledger/` |
+
+`onion-architecture`, `frontend-ui-architecture` and `security` also ship a short
+`RULES.md` authoring digest used by the `implementer` agent instead of the full skill;
+see `pr-self-review/routing.md` → "Authoring agents".
 
 ## What Are Skills?
 

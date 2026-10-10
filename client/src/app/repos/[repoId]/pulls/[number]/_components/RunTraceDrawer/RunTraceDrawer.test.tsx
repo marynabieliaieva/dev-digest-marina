@@ -19,8 +19,9 @@ const TRACE: RunTrace = {
   ],
 };
 
+let current: RunTrace = TRACE;
 vi.mock("../../../../../../../lib/hooks/trace", () => ({
-  useRunTrace: () => ({ data: TRACE, isLoading: false }),
+  useRunTrace: () => ({ data: current, isLoading: false }),
 }));
 vi.mock("../../../../../../../lib/hooks/reviews", () => ({
   useRunEvents: () => ({ events: [], running: false }),
@@ -28,7 +29,10 @@ vi.mock("../../../../../../../lib/hooks/reviews", () => ({
 
 import RunTraceDrawer from "./RunTraceDrawer";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  current = TRACE;
+});
 
 function renderWithIntl(ui: React.ReactElement) {
   return render(
@@ -45,6 +49,28 @@ describe("A5 Run Trace drawer (smoke)", () => {
     expect(screen.getByText("Stats")).toBeInTheDocument();
     expect(screen.getByText("2/2 passed")).toBeInTheDocument();
     expect(screen.getByText("Tool calls")).toBeInTheDocument();
+  });
+
+  it("renders project context entries with tokens and status labels", () => {
+    current = {
+      ...TRACE,
+      project_context: [
+        { path: "specs/public-api.md", status: "included", est_tokens: 412, origin: "agent" },
+        { path: "specs/gone.md", status: "missing", est_tokens: 0, origin: "agent" },
+      ],
+    };
+    renderWithIntl(<RunTraceDrawer runId="r1" agentName="Security" prNumber={482} onClose={() => {}} />);
+    expect(screen.getByText("specs/public-api.md · 412 tok")).toBeInTheDocument();
+    expect(screen.getByText("specs/gone.md — missing")).toBeInTheDocument();
+  });
+
+  it("renders the specs prompt block with the exact text", () => {
+    const text = '<untrusted source="specs/a.md">\nX\n</untrusted>';
+    current = { ...TRACE, prompt_assembly: { ...TRACE.prompt_assembly, specs: text } };
+    renderWithIntl(<RunTraceDrawer runId="r1" agentName="Security" prNumber={482} onClose={() => {}} />);
+    fireEvent.click(screen.getByText("Prompt assembly"));
+    fireEvent.click(screen.getByText("Project context — attached specs (untrusted)"));
+    expect(screen.getByText((_, el) => el?.tagName === "PRE" && el.textContent === text)).toBeInTheDocument();
   });
 
   it("switches to the live log tab", () => {

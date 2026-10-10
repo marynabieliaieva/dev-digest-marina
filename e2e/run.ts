@@ -12,6 +12,8 @@
  *   E2E_BASE_URL       web app origin (default http://localhost:3000)
  *   AGENT_BROWSER_BIN  binary name/path (default "agent-browser")
  *   E2E_STEP_TIMEOUT   per-command timeout in ms (default 60000)
+ *   E2E_FLOWS          optional comma-separated filename prefixes to run only
+ *                      some flows, e.g. "10,11-agent" (default: all)
  *
  * Specs target read-only seeded data, so nothing here triggers an LLM call or
  * needs an API key. Run order is the lexical order of the spec filenames.
@@ -36,6 +38,10 @@ const RESULTS_DIR = join(HERE, "test-results");
 const BASE = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 const BIN = process.env.AGENT_BROWSER_BIN ?? "agent-browser";
 const STEP_TIMEOUT = Number(process.env.E2E_STEP_TIMEOUT ?? 60_000);
+const FLOW_PREFIXES = (process.env.E2E_FLOWS ?? "")
+  .split(",")
+  .map((p) => p.trim())
+  .filter(Boolean);
 
 /**
  * Run one agent-browser command; resolve with its stdout, reject on non-zero
@@ -72,6 +78,7 @@ async function ab(args: string[]): Promise<string> {
 function loadFlows(): { file: string; flow: Flow }[] {
   return readdirSync(SPECS_DIR)
     .filter((f) => f.endsWith(".flow.json"))
+    .filter((f) => FLOW_PREFIXES.length === 0 || FLOW_PREFIXES.some((p) => f.startsWith(p)))
     .sort()
     .map((file) => ({
       file,

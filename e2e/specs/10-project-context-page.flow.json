@@ -1,0 +1,25 @@
+{
+  "name": "Project Context page: read-only tree of the seeded repo's specs/docs/insights, with preview",
+  "description": "From the seeded payments-api repo, open Project Context via the sidebar (repo-scoped route, id resolved through the active-repo context), confirm the five matching fixture documents are listed and the non-matching src/readme.md is not, confirm the footer count, open a document and see it rendered as markdown, and confirm the page is read-only (no Edit / Upload buttons). Read-only seeded data written to a _seed clone dir by the seed CLI — see server/src/db/seed-project-context.ts. Assumes a freshly-seeded DB where acme/payments-api is the first repo. Covers AC-7, AC-8, AC-11 (AC-10 and AC-40 need a mutable clone and are covered by RTL and integration tests).",
+  "steps": [
+    { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
+    { "cmd": ["wait", "--url", "/pulls"], "label": "land on the PR list for the default repo" },
+    { "cmd": ["find", "text", "Project Context", "click"], "label": "open Project Context from the sidebar" },
+    { "cmd": ["wait", "--url", "/context"], "label": "context route reached" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "context fetch settles" },
+    { "cmd": ["wait", "--text", "public-api.md"], "label": "specs/public-api.md is listed" },
+    { "cmd": ["wait", "--text", "security-baseline.md"], "label": "specs/security-baseline.md is listed" },
+    { "cmd": ["wait", "--text", "rate-limiting.md"], "label": "specs/rate-limiting.md is listed" },
+    { "cmd": ["wait", "--text", "overview.md"], "label": "docs/architecture/overview.md is listed" },
+    { "cmd": ["wait", "--text", "incident-2026-09.md"], "label": "insights/incident-2026-09.md is listed" },
+    { "cmd": ["wait", "--fn", "!document.body.innerText.includes('readme.md')"], "label": "src/readme.md is outside the globs and absent" },
+    { "cmd": ["wait", "--text", "Indexed: 5 files"], "label": "footer shows the indexed file count" },
+
+    { "cmd": ["find", "text", "public-api.md", "click"], "label": "select public-api.md" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "document preview fetch settles" },
+    { "cmd": ["wait", "--text", "The public API is versioned"], "label": "the markdown body renders in the preview" },
+    { "cmd": ["wait", "--text", "Used by"], "label": "the used-by indicator is shown" },
+
+    { "cmd": ["wait", "--fn", "![...document.querySelectorAll('button')].some(b => /^(edit|upload)$/i.test((b.innerText || '').trim()))"], "label": "the page is read-only: no Edit or Upload buttons" }
+  ]
+}

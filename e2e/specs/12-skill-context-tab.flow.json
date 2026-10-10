@@ -1,0 +1,35 @@
+{
+  "name": "Skill Context tab: attach a document and see it inherited by the linked agent",
+  "description": "Opens the seeded secret-leakage-gate skill (linked to the Security Reviewer), switches to its Context tab, attaches public-api.md and confirms the '1 attached' badge, then opens the Security Reviewer's Context tab to confirm the document shows as inherited 'via secret-leakage-gate', and finally opens Project Context and confirms public-api.md reports 'Used by 2 agents' (Security Reviewer via the skill, plus General Reviewer from flow 11). Mutates the seeded DB; must run after flow 11 on a freshly-seeded DB. Covers AC-9, AC-18, AC-21.",
+  "steps": [
+    { "cmd": ["open", "{BASE}/skills"], "label": "load the skills page" },
+    { "cmd": ["wait", "--url", "/skills"], "label": "skills route reached" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "skills fetch settles" },
+    { "cmd": ["wait", "--text", "secret-leakage-gate"], "label": "the skill card renders" },
+    { "cmd": ["find", "text", "secret-leakage-gate", "click"], "label": "open the skill" },
+    { "cmd": ["wait", "--url", "/skills/"], "label": "skill detail route reached" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Context", "--exact"], "label": "switch to the Context tab" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "context docs fetch settles" },
+    { "cmd": ["wait", "--text", "Project context to use"], "label": "the skill context panel renders" },
+    { "cmd": ["wait", "--text", "0 attached"], "label": "nothing is attached on a fresh seed" },
+    { "cmd": ["find", "role", "checkbox", "click", "--name", "public-api.md"], "label": "attach public-api.md to the skill" },
+    { "cmd": ["wait", "--text", "1 attached"], "label": "badge counts the attachment" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "attachment save settles" },
+
+    { "cmd": ["open", "{BASE}/agents"], "label": "load the agents page" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "agents fetch settles" },
+    { "cmd": ["wait", "--text", "Security Reviewer"], "label": "the agent card renders" },
+    { "cmd": ["find", "text", "Security Reviewer", "click"], "label": "open the Security Reviewer" },
+    { "cmd": ["wait", "--url", "/agents/"], "label": "agent editor reached" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Context", "--exact"], "label": "switch to the Context tab" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "context fetch settles" },
+    { "cmd": ["wait", "--text", "via secret-leakage-gate"], "label": "the document is inherited from the skill" },
+
+    { "cmd": ["find", "text", "Project Context", "click"], "label": "open Project Context from the sidebar" },
+    { "cmd": ["wait", "--url", "/context"], "label": "context route reached" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "context fetch settles" },
+    { "cmd": ["wait", "--text", "public-api.md"], "label": "the document list renders" },
+    { "cmd": ["find", "text", "public-api.md", "click"], "label": "select public-api.md" },
+    { "cmd": ["wait", "--text", "Used by 2 agents"], "label": "usage counts the direct and the via-skill agent" }
+  ]
+}
