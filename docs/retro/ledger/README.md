@@ -17,3 +17,4 @@ One file per retrospective of a multi-agent workflow run (`/run-plan`,
 ## Entries
 
 - [2026-10-10 project-context](2026-10-10-project-context.md) — spec → plan → /run-plan → /pr-self-review, 27 agents, 54.2 M tokens (2.15 M fresh), FPY 62%
+- [2026-10-10 pr-brief](2026-10-10-pr-brief.md) — spec → plan → Opus plan review → /run-plan → /pr-self-review, 22 agents, ≈2.3 M subagent tokens, FPY 88%

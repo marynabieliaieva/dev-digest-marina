@@ -15,5 +15,50 @@
     "blame": "blame",
     "noHistory": "No history available for this line.",
     "noCommits": "No commits found for this line."
+  },
+  "card": {
+    "title": "PR brief",
+    "summary": "Summary",
+    "reviewFocus": "Review focus",
+    "noFocus": "No review focus suggested.",
+    "generate": "Generate brief",
+    "refresh": "Refresh brief",
+    "updating": "Updating…",
+    "generating": "Generating brief…",
+    "generatedFor": "Generated for {sha} · {model}",
+    "cost": "Cost ${cost}",
+    "notInDiff": "File not in this PR's diff",
+    "retry": "Retry",
+    "settingsHint": "No API key is configured for the Risk Brief model. Set one up in Settings.",
+    "settingsLink": "Open Settings",
+    "gaps": {
+      "title": "Some inputs were unavailable",
+      "phrase": "{source} ({status}): {reason}",
+      "source": {
+        "intent": "Intent",
+        "blast_radius": "Blast radius",
+        "linked_issue": "Linked issue",
+        "specs": "Specs",
+        "pr_description": "PR description",
+        "budget": "Prompt budget"
+      },
+      "status": {
+        "missing": "missing",
+        "stale": "stale",
+        "degraded": "degraded",
+        "truncated": "truncated",
+        "dropped": "dropped"
+      }
+    },
+    "severity": {
+      "label": "Severity: {severity}",
+      "high": "high",
+      "medium": "medium",
+      "low": "low"
+    },
+    "errors": {
+      "title": "Brief generation failed",
+      "unknown": "Something went wrong while generating the brief."
+    }
   }
 }

@@ -18,6 +18,8 @@ export function SmartDiffGroup({
   hasReview,
   commenting,
   findings,
+  focusPath = null,
+  focusLine = null,
 }: {
   role: SmartDiffRole;
   /** Files of the group, in server order, with their patches. */
@@ -27,13 +29,23 @@ export function SmartDiffGroup({
   hasReview: boolean;
   commenting: DiffCommentApi;
   findings: DiffFindingApi;
+  /** Deep-link target path: the group holding it is forced open, others keep their default. */
+  focusPath?: string | null;
+  focusLine?: number | null;
 }) {
   const t = useTranslations("prReview");
-  const [open, setOpen] = React.useState(!COLLAPSED_BY_DEFAULT.has(role));
+  const hasFocus = focusPath != null && files.some((f) => f.path === focusPath);
+  const [open, setOpen] = React.useState(hasFocus || !COLLAPSED_BY_DEFAULT.has(role));
   const label = t(`smartDiff.${ROLE_LABEL_KEY[role]}`);
   // This header's own "expand/collapse all files" command (nonce 0 = none issued yet).
   const [signal, setSignal] = React.useState<DiffExpandSignal>({ open: true, nonce: 0 });
   const [filesOpen, setFilesOpen] = React.useState(true);
+  // A deep link arriving while the group is mounted (URL change) re-opens it and its files.
+  React.useEffect(() => {
+    if (!hasFocus) return;
+    setOpen(true);
+    setFilesOpen(true);
+  }, [hasFocus, focusPath, focusLine]);
   const toggleFiles = () => {
     const next = !filesOpen;
     setFilesOpen(next);
@@ -90,7 +102,14 @@ export function SmartDiffGroup({
         )}
       </div>
       {open && files.length > 0 && (
-        <DiffViewer files={files} commenting={commenting} findings={findings} expandSignal={signal} />
+        <DiffViewer
+          files={files}
+          commenting={commenting}
+          findings={findings}
+          expandSignal={signal}
+          focusFile={hasFocus ? focusPath : null}
+          focusLine={hasFocus ? focusLine : null}
+        />
       )}
     </div>
   );

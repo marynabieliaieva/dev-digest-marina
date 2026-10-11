@@ -22,6 +22,8 @@ export function CodeLine({
   commenting,
   findings,
   lineFindings = NO_FINDINGS,
+  deepLinkRef,
+  deepLinkActive = false,
 }: {
   ln: Line;
   path: string;
@@ -30,6 +32,10 @@ export function CodeLine({
   findings?: DiffFindingApi;
   /** Findings anchored to this line (already partitioned by the file card). */
   lineFindings?: DiffFinding[];
+  /** Set only on the deep-link target row: the card scrolls this element into view. */
+  deepLinkRef?: React.Ref<HTMLDivElement>;
+  /** True while the deep-link highlight is shown on this row. */
+  deepLinkActive?: boolean;
 }) {
   const [hover, setHover] = React.useState(false);
   const [composing, setComposing] = React.useState(false);
@@ -56,7 +62,12 @@ export function CodeLine({
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <div style={rowStyle} data-finding-severity={severity ?? undefined}>
+      <div
+        ref={deepLinkRef}
+        style={deepLinkActive ? { ...rowStyle, outline: "2px solid var(--accent)", outlineOffset: -2 } : rowStyle}
+        data-finding-severity={severity ?? undefined}
+        data-deeplink-target={deepLinkActive ? "true" : undefined}
+      >
         <span className="mono tnum" style={{ ...s.lineNo, position: "relative" }}>
           {showAdd && target && (
             <button

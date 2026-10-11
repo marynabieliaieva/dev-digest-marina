@@ -63,6 +63,9 @@ export default function PRDetailPage() {
 
   const tab = search.get("tab") ?? "overview";
   const traceRunId = search.get("trace");
+  const focusFile = search.get("file");
+  const rawLine = Number.parseInt(search.get("line") ?? "", 10);
+  const focusLine = Number.isInteger(rawLine) && rawLine >= 1 ? rawLine : null;
   const setParam = (key: string, val: string | null) => {
     const sp = new URLSearchParams(search.toString());
     if (val == null) sp.delete(key);
@@ -138,7 +141,19 @@ export default function PRDetailPage() {
       />
 
       <div style={{ padding: "24px 32px 44px", display: "flex", flexDirection: "column", gap: 24, maxWidth: 1080, margin: "0 auto" }}>
-        {tab === "overview" && prId && <OverviewTab prId={prId} repoId={repoId} repoFullName={repoFullName} headSha={pr.head_sha} prBody={pr.body} />}
+        {tab === "overview" && prId && (
+          <OverviewTab
+            prId={prId}
+            repoId={repoId}
+            repoFullName={repoFullName}
+            headSha={pr.head_sha}
+            prBody={pr.body}
+            prNumber={pr.number}
+            reviews={reviews}
+            changedFiles={pr.files.map((f) => f.path)}
+            onNavigate={(href) => router.push(href)}
+          />
+        )}
 
         {tab === "findings" && (
           <FindingsTab
@@ -174,6 +189,8 @@ export default function PRDetailPage() {
             canComment={pr.status === "open"}
             repoFullName={repoFullName}
             headSha={pr.head_sha}
+            focusFile={focusFile}
+            focusLine={focusLine}
           />
         )}
       </div>

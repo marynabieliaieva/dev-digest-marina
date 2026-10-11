@@ -23,6 +23,8 @@ import { OutdatedComments } from "../OutdatedComments";
 import { OutsideFindings } from "../OutsideFindings";
 
 const NO_FINDINGS: DiffFinding[] = [];
+/** How long the deep-link target stays highlighted. */
+const DEEP_LINK_HIGHLIGHT_MS = 2000;
 
 /** Findings anchored to a parsed line (RIGHT side only). */
 function findingsForLine(ln: Line, byKey: Map<string, DiffFinding[]>): DiffFinding[] {
@@ -46,21 +48,57 @@ export function FileCard({
   commenting,
   findings,
   expandSignal,
+  focus = false,
+  focusLine = null,
 }: {
   file: PrFile;
   commenting?: DiffCommentApi;
   findings?: DiffFindingApi;
   expandSignal?: DiffExpandSignal;
+  /** Deep-link target: open this card, scroll to it and highlight it briefly. */
+  focus?: boolean;
+  /** New-side line to land on inside the focused file (header when absent / not rendered). */
+  focusLine?: number | null;
 }) {
   const t = useTranslations("shell");
   const [open, setOpen] = React.useState(
-    (file.additions ?? 0) + (file.deletions ?? 0) <= AUTO_EXPAND_MAX_LINES
+    focus || (file.additions ?? 0) + (file.deletions ?? 0) <= AUTO_EXPAND_MAX_LINES
   );
   // "Expand/collapse all" command from the parent (nonce 0 = none issued yet).
   React.useEffect(() => {
     if (expandSignal && expandSignal.nonce > 0) setOpen(expandSignal.open);
   }, [expandSignal]);
   const lines = React.useMemo(() => parsePatch(file.patch), [file.patch]);
+
+  // Deep link: force open, scroll once, highlight for DEEP_LINK_HIGHLIGHT_MS.
+  const headerRef = React.useRef<HTMLDivElement>(null);
+  const targetLineRef = React.useRef<HTMLDivElement>(null);
+  const scrolledFor = React.useRef<string | null>(null);
+  const [highlight, setHighlight] = React.useState(focus);
+  const focusKey = focus ? `${file.path}:${focusLine ?? ""}` : null;
+  const lineTargetIdx = React.useMemo(
+    () =>
+      focus && focusLine != null
+        ? lines.findIndex((l) => l.kind !== "hunk" && l.kind !== "del" && l.newNo === focusLine)
+        : -1,
+    [focus, focusLine, lines],
+  );
+  React.useEffect(() => {
+    if (!focusKey) {
+      setHighlight(false);
+      return;
+    }
+    setOpen(true);
+    setHighlight(true);
+    const timer = setTimeout(() => setHighlight(false), DEEP_LINK_HIGHLIGHT_MS);
+    return () => clearTimeout(timer);
+  }, [focusKey]);
+  React.useEffect(() => {
+    if (!focusKey || !open || scrolledFor.current === focusKey) return;
+    scrolledFor.current = focusKey;
+    (targetLineRef.current ?? headerRef.current)?.scrollIntoView?.({ block: "center" });
+  }, [focusKey, open, lineTargetIdx]);
+  const headerHighlighted = highlight && lineTargetIdx < 0;
 
   // Group this file's comments into threads, then split into ones we can anchor
   // to a rendered line vs. "outdated" (GitHub dropped the line / it's not here).
@@ -86,7 +124,12 @@ export function FileCard({
 
   return (
     <div style={s.fileCard}>
-      <div onClick={() => setOpen((o) => !o)} style={s.fileHeader}>
+      <div
+        ref={headerRef}
+        onClick={() => setOpen((o) => !o)}
+        style={headerHighlighted ? { ...s.fileHeader, outline: "2px solid var(--accent)", outlineOffset: -2 } : s.fileHeader}
+        data-deeplink-target={headerHighlighted ? "true" : undefined}
+      >
         <Icon.ChevronRight size={13} style={chevronFor(open)} />
         <Icon.FileText size={14} style={s.fileIcon} />
         <span className="mono" style={s.filePath}>
@@ -137,6 +180,8 @@ export function FileCard({
                 commenting={commenting}
                 findings={findings}
                 lineFindings={findingsForLine(ln, findingsByKey)}
+                deepLinkRef={i === lineTargetIdx ? targetLineRef : undefined}
+                deepLinkActive={i === lineTargetIdx && highlight}
               />
             ))
           )}

@@ -64,6 +64,19 @@ export { finalizeIntent } from './intent/finalize.js';
 export { renderIntentBlock } from './intent/render.js';
 export { applyIntentScope, type ScopeFilterResult } from './intent/scope-filter.js';
 
+// PR brief (pure): budgeted prompt → one structured call → output validation.
+export {
+  buildBriefPrompt,
+  type BriefPrompt,
+  type BriefPromptInput,
+  type BriefFileInput,
+  type BriefBlastInput,
+} from './brief/prompt.js';
+export { generateBrief, type GenerateBriefArgs } from './brief/generate.js';
+export { validateBriefOutput, type BriefValidationInput, type ValidatedBrief } from './brief/validate.js';
+export { newSideRanges } from './brief/ranges.js';
+export { BRIEF_TOKEN_BUDGET, GAP_NOTE_RESERVE_TOKENS, BRIEF_MAX_OUTPUT_TOKENS } from './brief/constants.js';
+
 // The single OpenAI-compatible structured provider (OpenRouter), shared by the
 // CI runner and the server's openrouter path. Owns session grouping + guards.
 export { OpenRouterProvider, type OpenRouterProviderOptions } from './llm/openrouter.js';

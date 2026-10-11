@@ -173,10 +173,75 @@ export const SmartDiff = z.object({
 export type SmartDiff = z.infer<typeof SmartDiff>;
 
 // ---- Composed PR Brief (pr_brief.json) ----
+export const ReviewFocusItem = z.object({
+  file: z.string(),
+  line: z.number().int().min(1),
+  reason: z.string(),
+});
+export type ReviewFocusItem = z.infer<typeof ReviewFocusItem>;
+
+/** LLM output. Strict-mode friendly: every field is required. */
+export const PrBriefGeneration = z.object({
+  summary: z.string(),
+  risks: z.array(Risk),
+  review_focus: z.array(ReviewFocusItem),
+});
+export type PrBriefGeneration = z.infer<typeof PrBriefGeneration>;
+
+export const DataGap = z.object({
+  source: z.enum(['intent', 'blast_radius', 'linked_issue', 'specs', 'pr_description', 'budget']),
+  status: z.enum(['missing', 'stale', 'degraded', 'truncated', 'dropped']),
+  reason: z.string(),
+});
+export type DataGap = z.infer<typeof DataGap>;
+
+export const InputSection = z.object({
+  name: z.enum(['pr', 'intent', 'diff', 'blast', 'linked_issue', 'specs']),
+  ref: z.string().nullable(),
+  status: z.enum(['used', 'truncated', 'dropped', 'missing', 'too_large', 'unreadable', 'unavailable']),
+  est_tokens: z.number(),
+});
+export type InputSection = z.infer<typeof InputSection>;
+
+export const PrBriefDropped = z.object({
+  risks: z.number(),
+  risk_file_refs: z.number(),
+  review_focus: z.number(),
+});
+export type PrBriefDropped = z.infer<typeof PrBriefDropped>;
+
 export const PrBrief = z.object({
-  intent: Intent,
-  blast: BlastRadius,
+  intent: Intent.nullable(),
+  blast: BlastRadius.nullable(),
   risks: Risks,
   history: PrHistory,
+  summary: z.string(),
+  review_focus: z.array(ReviewFocusItem),
+  head_sha: z.string(),
+  generated_at: z.string(),
+  provider: z.string(),
+  model: z.string(),
+  tokens_in: z.number().int(),
+  tokens_out: z.number().int(),
+  cost_usd: z.number().nullable(),
+  attempts: z.number().int(),
+  data_gaps: z.array(DataGap),
+  inputs: z.array(InputSection),
+  dropped: PrBriefDropped,
 });
 export type PrBrief = z.infer<typeof PrBrief>;
+
+export const PrBriefResponse = z.object({
+  pr_id: z.string(),
+  current_head_sha: z.string(),
+  brief: PrBrief.nullable(),
+  stale: z.boolean(),
+  generating: z.boolean(),
+});
+export type PrBriefResponse = z.infer<typeof PrBriefResponse>;
+
+/** Request-only, so `.default` is fine here. */
+export const PrBriefRequest = z.object({
+  mode: z.enum(['refresh', 'if_stale']).default('refresh'),
+});
+export type PrBriefRequest = z.infer<typeof PrBriefRequest>;

@@ -33,11 +33,24 @@ interface DiffTabProps {
   canComment?: boolean;
   repoFullName?: string | null;
   headSha?: string | null;
+  /** Deep link: file path (exact match) to open, scroll to and highlight. */
+  focusFile?: string | null;
+  /** Deep link: new-side line in `focusFile`; ignored unless a positive integer. */
+  focusLine?: number | null;
 }
 
 type Order = "smart" | "original";
 
-export function DiffTab({ prId, filesCount, files, canComment, repoFullName, headSha }: DiffTabProps) {
+export function DiffTab({
+  prId,
+  filesCount,
+  files,
+  canComment,
+  repoFullName,
+  headSha,
+  focusFile,
+  focusLine: rawFocusLine,
+}: DiffTabProps) {
   const t = useTranslations("prReview");
   const { data: comments } = usePrComments(prId);
   const { data: reviews } = usePrReviews(prId);
@@ -96,6 +109,11 @@ export function DiffTab({ prId, filesCount, files, canComment, repoFullName, hea
       );
     },
   };
+
+  const focusLine =
+    typeof rawFocusLine === "number" && Number.isInteger(rawFocusLine) && rawFocusLine >= 1 ? rawFocusLine : null;
+  const focusPath = focusFile || null;
+  const focusMissing = focusPath != null && !files.some((f) => f.path === focusPath);
 
   const filesByPath = new Map(files.map((f) => [f.path, f]));
   const groups = order === "smart" && smartDiff?.groups.length ? smartDiff.groups : null;
@@ -160,6 +178,12 @@ export function DiffTab({ prId, filesCount, files, canComment, repoFullName, hea
         </p>
       )}
 
+      {focusMissing && (
+        <p role="status" style={s.notice}>
+          {t("deepLink.notInDiff")}
+        </p>
+      )}
+
       {groups && !hasReview && <p style={s.noReview}>{t("smartDiff.noReviewYet")}</p>}
 
       {groups ? (
@@ -173,11 +197,19 @@ export function DiffTab({ prId, filesCount, files, canComment, repoFullName, hea
               hasReview={hasReview}
               commenting={commenting}
               findings={findingApi}
+              focusPath={focusPath}
+              focusLine={focusLine}
             />
           ))}
         </div>
       ) : (
-        <DiffViewer files={files} commenting={commenting} findings={findingApi} />
+        <DiffViewer
+          files={files}
+          commenting={commenting}
+          findings={findingApi}
+          focusFile={focusPath}
+          focusLine={focusLine}
+        />
       )}
     </section>
   );

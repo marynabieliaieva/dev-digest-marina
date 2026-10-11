@@ -1,0 +1,22 @@
+{
+  "name": "PR brief card shows the cached brief and deep-links a focus item",
+  "description": "From PR #482 Overview, the seeded pr_brief row is shown (head SHA matches, so no regeneration), survives a reload, and clicking the focus item src/config.ts:12 opens Files changed on that file. Read-only seeded data (no model call). The no-POST, in-viewport, highlight-duration and line-row scroll checks live in the PrBriefCard/DiffTab RTL tests; line 12 falls back to the file header here because the seeded pr_files row has no patch. Assumes a freshly-seeded DB (see e2e/README.md).",
+  "steps": [
+    { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
+    { "cmd": ["wait", "--url", "/pulls"], "label": "land on the PR list" },
+    { "cmd": ["find", "text", "Add rate limiting to public API endpoints", "click"], "label": "open the PR row" },
+    { "cmd": ["wait", "--url", "/pulls/482"], "label": "navigate to the PR detail route" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "PR detail data settles" },
+    { "cmd": ["wait", "--text", "Seeded brief: rate limiting touches the public API config."], "label": "the brief card is on Overview" },
+    { "cmd": ["open", "{BASE}/"], "label": "reload: load the app root again" },
+    { "cmd": ["wait", "--url", "/pulls"], "label": "land on the PR list again" },
+    { "cmd": ["find", "text", "Add rate limiting to public API endpoints", "click"], "label": "open the PR row again" },
+    { "cmd": ["wait", "--url", "/pulls/482"], "label": "navigate to the PR detail route again" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "PR detail data settles again" },
+    { "cmd": ["wait", "--text", "Seeded brief: rate limiting touches the public API config."], "label": "the cached brief is shown after reload" },
+    { "cmd": ["find", "text", "src/config.ts:12", "click"], "label": "click the review focus item" },
+    { "cmd": ["wait", "--url", "tab=diff"], "label": "diff tab is active in the URL" },
+    { "cmd": ["wait", "--url", "file=src%2Fconfig.ts"], "label": "the file param is in the URL" },
+    { "cmd": ["wait", "--text", "src/config.ts"], "label": "the file renders in Files changed" }
+  ]
+}

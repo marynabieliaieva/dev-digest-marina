@@ -29,6 +29,13 @@ export interface ResolvedProjectContext {
   totalTokens: number;
 }
 
+export interface WorkspaceDoc {
+  path: string;
+  status: 'ok' | 'missing' | 'too_large' | 'unreadable';
+  content: string | null;
+  bytes: number;
+}
+
 const EMPTY_RESOLVED: ResolvedProjectContext = {
   docs: [],
   entries: [],
@@ -217,6 +224,59 @@ export class ProjectContextService {
       specsRead: included.map((b) => b.path),
       totalTokens: included.reduce((sum, b) => sum + b.est_tokens, 0),
     };
+  }
+
+  /**
+   * Every document attached by any enabled agent (or its enabled linked
+   * skills) in the workspace, read from the given repo's clone. First
+   * occurrence of a path wins; agents ordered by creation. No token budget
+   * here. Never throws for per-document problems or a missing clone.
+   */
+  async collectWorkspaceDocs(
+    workspaceId: string,
+    repoId: string,
+  ): Promise<{ clone: boolean; docs: WorkspaceDoc[] }> {
+    const basics = await this.repo.getRepoBasics(workspaceId, repoId);
+    const clonePath = basics?.clonePath ?? null;
+    if (clonePath === null) return { clone: false, docs: [] };
+
+    const agentIds = await this.repo.listEnabledAgentIds(workspaceId);
+    const paths: string[] = [];
+    const seen = new Set<string>();
+    for (const agentId of agentIds) {
+      const agentPaths = await this.repo.getAgentPaths(agentId);
+      const linked = (await this.container.agentsRepo.linkedSkills(agentId)).filter(
+        (l) => l.enabled && l.skill.enabled,
+      );
+      const skillPaths = await this.repo.getSkillPathsMap(linked.map((l) => l.skill.id));
+      const effective = mergeEffective(
+        agentPaths,
+        linked.map((l) => ({ name: l.skill.name, paths: skillPaths.get(l.skill.id) ?? [] })),
+      );
+      for (const e of effective) {
+        if (seen.has(e.path)) continue;
+        seen.add(e.path);
+        paths.push(e.path);
+      }
+    }
+
+    const globs = this.container.config.projectContextGlobs;
+    const docs: WorkspaceDoc[] = [];
+    for (const path of paths) {
+      if (!isSafeRelPath(path) || !matchesAny(path, globs)) {
+        docs.push({ path, status: 'unreadable', content: null, bytes: 0 });
+        continue;
+      }
+      const res = await readDocConfined(clonePath, path);
+      if (res.status === 'ok') {
+        docs.push({ path, status: 'ok', content: res.content, bytes: res.bytes });
+      } else if (res.status === 'too_large') {
+        docs.push({ path, status: 'too_large', content: null, bytes: res.bytes });
+      } else {
+        docs.push({ path, status: res.status, content: null, bytes: 0 });
+      }
+    }
+    return { clone: true, docs };
   }
 
   // ---- internals -----------------------------------------------------------
