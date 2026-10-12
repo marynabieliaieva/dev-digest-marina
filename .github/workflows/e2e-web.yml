@@ -123,6 +123,14 @@ jobs:
           npm ci
           npm test
 
+      # Server-side view of a failing flow (slow/hung requests, warnings) — the screenshot alone
+      # only shows the symptom.
+      - name: Show API + web logs
+        if: failure()
+        run: |
+          echo "::group::api.log (tail)"; tail -n 300 "$RUNNER_TEMP/api.log" || true; echo "::endgroup::"
+          echo "::group::web.log (tail)"; tail -n 100 "$RUNNER_TEMP/web.log" || true; echo "::endgroup::"
+
       - name: Upload failure artifacts
         if: failure()
         uses: actions/upload-artifact@v4
@@ -130,4 +138,6 @@ jobs:
           name: e2e-failure
           path: |
             e2e/test-results/**
+            ${{ runner.temp }}/api.log
+            ${{ runner.temp }}/web.log
           if-no-files-found: ignore
