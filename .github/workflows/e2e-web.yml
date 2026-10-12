@@ -108,9 +108,13 @@ jobs:
           curl -fsS http://localhost:3000 >/dev/null 2>&1 || { echo "::error::web never became reachable"; cat "$RUNNER_TEMP/web.log"; exit 1; }
 
       # --- agent-browser CLI (Rust + CDP) + Chrome for Testing ---
+      # Pinned: an unpinned `npm i -g agent-browser` floats to the newest release, and the flows
+      # (e.g. `find role checkbox … --name`) were written and verified against 0.38.1. Bump it
+      # deliberately, together with a local run of the whole suite.
       - name: Install agent-browser
         run: |
-          npm i -g agent-browser
+          npm i -g agent-browser@0.38.1
+          agent-browser --version
           agent-browser install --with-deps
 
       - name: Run e2e flows
