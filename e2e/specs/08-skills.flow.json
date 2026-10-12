@@ -22,6 +22,7 @@
 
     { "cmd": ["open", "{BASE}/agents"], "label": "load the agents page" },
     { "cmd": ["wait", "--load", "networkidle"], "label": "agents fetch settles" },
+    { "cmd": ["wait", "--text", "Test Quality Reviewer"], "label": "wait until the agent card has rendered (data loads after the URL changes)" },
     { "cmd": ["find", "text", "Test Quality Reviewer", "click"], "label": "open the new agent" },
     { "cmd": ["wait", "--url", "/agents/"], "label": "agent editor reached" },
     { "cmd": ["find", "role", "button", "click", "--name", "Skills", "--exact"], "label": "switch to the Skills tab" },

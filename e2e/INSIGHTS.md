@@ -24,6 +24,9 @@ non-obvious; never rewritten, only appended to.
   `useUpdateConvention` mutation, so `pending` disables every card's Accept until the PATCH returns;
   a back-to-back second Accept was silently dropped on slower CI. Wait for the first action to
   settle (count text + an enabled button via `wait --fn`) before the next click.
+- 2026-10-12 — `find … click` does not wait for its target. `wait --url` / `networkidle` are not
+  enough before clicking fetched data (the PR list showed "Loading pull requests…" in CI): put a
+  `wait --text <target>` right before every click on fetched content (PR rows, agent cards).
 
 ## Decisions
 

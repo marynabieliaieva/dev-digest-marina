@@ -5,6 +5,7 @@
     { "cmd": ["open", "{BASE}/agents"], "label": "load the agents page" },
     { "cmd": ["wait", "--url", "/agents"], "label": "agents route reached" },
     { "cmd": ["wait", "--load", "networkidle"], "label": "agents fetch settles" },
+    { "cmd": ["wait", "--text", "General Reviewer"], "label": "wait until the agent card has rendered (data loads after the URL changes)" },
     { "cmd": ["find", "text", "General Reviewer", "click"], "label": "open the General Reviewer" },
     { "cmd": ["wait", "--url", "/agents/"], "label": "agent editor reached" },
     { "cmd": ["find", "role", "button", "click", "--name", "Context", "--exact"], "label": "switch to the Context tab" },
@@ -20,6 +21,7 @@
 
     { "cmd": ["open", "{BASE}/agents"], "label": "reload the agents page" },
     { "cmd": ["wait", "--load", "networkidle"], "label": "agents fetch settles" },
+    { "cmd": ["wait", "--text", "General Reviewer"], "label": "wait until the agent card has rendered (data loads after the URL changes)" },
     { "cmd": ["find", "text", "General Reviewer", "click"], "label": "re-open the General Reviewer" },
     { "cmd": ["wait", "--url", "/agents/"], "label": "agent editor reached again" },
     { "cmd": ["find", "role", "button", "click", "--name", "Context", "--exact"], "label": "switch to the Context tab again" },
