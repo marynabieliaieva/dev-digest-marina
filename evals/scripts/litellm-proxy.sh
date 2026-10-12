@@ -14,7 +14,7 @@ set -euo pipefail
 PROXY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../proxy" && pwd)"
 COMPOSE=(docker compose -f "$PROXY_DIR/docker-compose.yml")
 PORT="${LITELLM_PORT:-4000}"
-URL="http://localhost:${PORT}"
+URL="http://127.0.0.1:${PORT}"
 
 load_key() {
   if [[ -z "${OPENROUTER_API_KEY:-}" ]]; then

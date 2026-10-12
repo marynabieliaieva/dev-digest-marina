@@ -136,7 +136,7 @@ jobs:
         working-directory: evals
         env:
           SKILL: ${{ matrix.skill }}
-        run: pnpm vitest run "skills/$SKILL"
+        run: pnpm vitest run "skills/$SKILL/"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -164,7 +164,7 @@ jobs:
       EVAL_MODEL: ${{ inputs.model_tools || vars.EVAL_MODEL_TOOLS || 'google/gemini-2.5-flash' }}
       EVAL_JUDGE_MODEL: ${{ inputs.judge_model || vars.EVAL_JUDGE_MODEL || 'google/gemini-2.5-flash' }}
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-      OPENROUTER_BASE_URL: http://localhost:4000
+      OPENROUTER_BASE_URL: http://127.0.0.1:4000
       EVAL_QUIET: '1'
     steps:
       - uses: actions/checkout@v4
@@ -178,7 +178,7 @@ jobs:
         working-directory: evals
         env:
           AGENT: ${{ matrix.agent }}
-        run: pnpm vitest run "agents/$AGENT" --retry 1
+        run: pnpm vitest run "agents/$AGENT/" --retry 1
       - name: Proxy logs
         if: failure()
         working-directory: evals
@@ -212,7 +212,7 @@ jobs:
       EVAL_MODEL: ${{ inputs.model_tools || vars.EVAL_MODEL_TOOLS || 'google/gemini-2.5-flash' }}
       EVAL_JUDGE_MODEL: ${{ inputs.judge_model || vars.EVAL_JUDGE_MODEL || 'google/gemini-2.5-flash' }}
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-      OPENROUTER_BASE_URL: http://localhost:4000
+      OPENROUTER_BASE_URL: http://127.0.0.1:4000
       EVAL_QUIET: '1'
     steps:
       - uses: actions/checkout@v4
