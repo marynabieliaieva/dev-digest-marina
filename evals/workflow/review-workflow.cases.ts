@@ -19,6 +19,8 @@ import type { WorkflowCase } from "../src/index.js";
  * lazily, only when the agent touches a file inside that package — so the prompts below name
  * source files in each package (never the INSIGHTS.md files themselves) and the assertion is that
  * the agent follows the nested instruction on its own.
+ *
+ * (CI smoke: this comment was touched to exercise .github/workflows/evals.yml.)
  */
 export const cases: WorkflowCase[] = [
   // --- trace (1 session): nested CLAUDE.md in 3 packages + subagent dispatch, together ----------

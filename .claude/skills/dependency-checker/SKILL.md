@@ -10,7 +10,7 @@ description: >
   "what depends on what", dependency graphs or cycles, unused packages, duplicate versions, or
   whether to upgrade or remove a package — even if they do not say "dependency checker". Also use
   it before adding a heavy new package to judge its cost, and when asked "why is node_modules so big".
-version: "1.1.0"
+version: "1.1.1"
 ---
 
 # Dependency Checker
