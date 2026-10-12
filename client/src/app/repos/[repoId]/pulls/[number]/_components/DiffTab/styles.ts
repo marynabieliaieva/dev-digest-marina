@@ -7,5 +7,6 @@ export const s = {
   segmented: { display: "inline-flex", gap: 4 } satisfies CSSProperties,
   usage: { fontSize: 12, color: "var(--text-muted)", margin: "0 0 8px" } satisfies CSSProperties,
   noReview: { fontSize: 12, color: "var(--text-muted)", margin: "0 0 8px" } satisfies CSSProperties,
+  notice: { fontSize: 12, color: "var(--text-muted)", margin: "0 0 8px" } satisfies CSSProperties,
   groups: { display: "flex", flexDirection: "column", gap: 14 } satisfies CSSProperties,
 };

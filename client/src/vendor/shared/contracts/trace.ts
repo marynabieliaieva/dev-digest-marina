@@ -80,6 +80,24 @@ export const RunStats = z.object({
 });
 export type RunStats = z.infer<typeof RunStats>;
 
+export const ProjectContextStatus = z.enum([
+  'included',
+  'missing',
+  'too_large',
+  'over_budget',
+  'unreadable',
+]);
+export type ProjectContextStatus = z.infer<typeof ProjectContextStatus>;
+
+export const ProjectContextEntry = z.object({
+  path: z.string(),
+  origin: z.enum(['agent', 'skill']),
+  skill_name: z.string().optional(),
+  est_tokens: z.number().int(),
+  status: ProjectContextStatus,
+});
+export type ProjectContextEntry = z.infer<typeof ProjectContextEntry>;
+
 /** The single-document trace stored in `run_traces.trace`. */
 export const RunTrace = z.object({
   config: z.object({
@@ -96,6 +114,8 @@ export const RunTrace = z.object({
   raw_output: z.string(),
   memory_pulled: z.array(MemoryPulled),
   specs_read: z.array(z.string()),
+  /** Optional (not defaulted) so legacy traces parse unchanged. */
+  project_context: z.array(ProjectContextEntry).optional(),
   log: z.array(RunLogLine),
 });
 export type RunTrace = z.infer<typeof RunTrace>;

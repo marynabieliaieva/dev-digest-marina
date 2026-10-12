@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, within, act } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import type { FindingRecord, PrFile, ReviewRecord, SmartDiff } from "@devdigest/shared";
 import prReview from "../../../../../../../../messages/en/prReview.json";
@@ -218,6 +218,137 @@ describe("DiffTab group expand / collapse", () => {
     expect(screen.queryByText("Null deref")).not.toBeInTheDocument();
     fireEvent.click(within(core).getByRole("button", { name: "Expand all files in this group" }));
     expect(screen.getByText("Null deref")).toBeInTheDocument();
+  });
+});
+
+describe("DiffTab deep link (file / line)", () => {
+  const PATCH_B = "@@ -10,2 +10,4 @@\n ten\n+eleven\n+twelve\n end";
+  // Large (> AUTO_EXPAND_MAX_LINES) so it would start collapsed without the deep link.
+  const BIG_B: PrFile = { path: "src/b.ts", additions: 500, deletions: 0, patch: PATCH_B };
+  const NO_PATCH_B: PrFile = { path: "src/b.ts", additions: 1, deletions: 0, patch: null };
+  const A: PrFile = { path: "src/a.ts", additions: 1, deletions: 0, patch: PATCH };
+  const DOC: PrFile = { path: "docs/guide.md", additions: 1, deletions: 0, patch: PATCH };
+  const LOCK: PrFile = { path: "pnpm-lock.yaml", additions: 1, deletions: 0, patch: PATCH };
+
+  const scroll = vi.fn();
+
+  function renderFocus(files: PrFile[], focusFile: string | null, focusLine: number | null = null) {
+    return render(
+      <NextIntlClientProvider locale="en" messages={{ prReview, shell }}>
+        <DiffTab
+          prId="pr"
+          filesCount={files.length}
+          files={files}
+          focusFile={focusFile}
+          focusLine={focusLine}
+        />
+      </NextIntlClientProvider>,
+    );
+  }
+
+  const targets = () => Array.from(document.querySelectorAll('[data-deeplink-target="true"]'));
+  const scrolledOn = () => scroll.mock.contexts.at(-1) as HTMLElement | undefined;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    scroll.mockClear();
+    Element.prototype.scrollIntoView = scroll;
+    mocks.reviews = [];
+    mocks.smartDiff = undefined;
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("original order: opens the card, scrolls to its header and highlights it for 2s", () => {
+    renderFocus([A, { ...BIG_B, patch: null }], "src/b.ts");
+    expect(scroll).toHaveBeenCalledTimes(1);
+    const header = scrolledOn()!;
+    expect(header).toHaveTextContent("src/b.ts");
+    expect(header).toHaveAttribute("data-deeplink-target", "true");
+    expect(screen.getByText(prReview.smartDiff.originalOrdered)).toBeInTheDocument();
+    // card is open (large file would otherwise start collapsed): body shows "no diff text"
+    expect(screen.getByText(shell.diffViewer.noDiffText)).toBeInTheDocument();
+    act(() => void vi.advanceTimersByTime(1999));
+    expect(header).toHaveAttribute("data-deeplink-target", "true");
+    act(() => void vi.advanceTimersByTime(1));
+    expect(header).not.toHaveAttribute("data-deeplink-target");
+    expect(targets()).toHaveLength(0);
+  });
+
+  it("smart order: same behaviour after switching order", () => {
+    mocks.smartDiff = {
+      ...SMART,
+      groups: [{ role: "core", files: [sf("src/a.ts"), sf("src/b.ts")] }],
+    };
+    renderFocus([A, NO_PATCH_B], "src/b.ts");
+    scroll.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Smart order" }));
+    const header = scrolledOn()!;
+    expect(header).toHaveTextContent("src/b.ts");
+    expect(header).toHaveAttribute("data-deeplink-target", "true");
+    act(() => void vi.advanceTimersByTime(1999));
+    expect(header).toHaveAttribute("data-deeplink-target", "true");
+    act(() => void vi.advanceTimersByTime(1));
+    expect(header).not.toHaveAttribute("data-deeplink-target");
+  });
+
+  it("smart order: opens a group that is collapsed by default, leaving other collapsed groups closed", () => {
+    mocks.smartDiff = {
+      ...SMART,
+      groups: [
+        { role: "core", files: [sf("src/a.ts")] },
+        { role: "docs", files: [sf("docs/guide.md")] },
+        { role: "boilerplate", files: [sf("pnpm-lock.yaml")] },
+      ],
+    };
+    renderFocus([A, DOC, LOCK], "docs/guide.md");
+    fireEvent.click(screen.getByRole("button", { name: "Smart order" }));
+    const docs = screen.getByTestId("smart-diff-group-docs");
+    expect(within(docs).getByRole("button", { name: "Docs" })).toHaveAttribute("aria-expanded", "true");
+    expect(within(docs).getByText("docs/guide.md")).toBeInTheDocument();
+    const header = scrolledOn()!;
+    expect(header).toHaveTextContent("docs/guide.md");
+    expect(header).toHaveAttribute("data-deeplink-target", "true");
+    const lock = screen.getByTestId("smart-diff-group-boilerplate");
+    expect(within(lock).getByRole("button", { name: "Boilerplate" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("pnpm-lock.yaml")).not.toBeInTheDocument();
+  });
+
+  it("focusLine inside a hunk scrolls to and highlights that new-side row", () => {
+    renderFocus([BIG_B], "src/b.ts", 12);
+    const row = scrolledOn()!;
+    expect(row).toHaveTextContent("twelve");
+    expect(row).toHaveAttribute("data-deeplink-target", "true");
+    expect(targets()).toHaveLength(1);
+  });
+
+  it("falls back to the file header for an out-of-range line or a file without a patch", () => {
+    const { unmount } = renderFocus([BIG_B], "src/b.ts", 9999);
+    expect(scrolledOn()).toHaveTextContent("src/b.ts");
+    expect(scrolledOn()).toHaveAttribute("data-deeplink-target", "true");
+    unmount();
+    scroll.mockClear();
+    renderFocus([NO_PATCH_B], "src/b.ts", 12);
+    expect(scrolledOn()).toHaveTextContent("src/b.ts");
+    expect(scrolledOn()).toHaveAttribute("data-deeplink-target", "true");
+  });
+
+  it("ignores a non-positive or NaN line", () => {
+    for (const bad of [0, Number.NaN, -3, 1.5]) {
+      const { unmount } = renderFocus([BIG_B], "src/b.ts", bad);
+      expect(scrolledOn()).toHaveTextContent("src/b.ts");
+      expect(targets()).toHaveLength(1);
+      expect(targets()[0]).toBe(scrolledOn());
+      unmount();
+    }
+  });
+
+  it("shows a notice and still renders the diff when the file is not in the PR", () => {
+    renderFocus([A], "src/ghost.ts");
+    expect(screen.getByText("File not in this PR's diff")).toBeInTheDocument();
+    expect(screen.getByText("src/a.ts")).toBeInTheDocument();
+    expect(scroll).not.toHaveBeenCalled();
   });
 });
 

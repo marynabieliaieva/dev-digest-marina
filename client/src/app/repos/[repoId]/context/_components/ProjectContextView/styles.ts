@@ -1,0 +1,58 @@
+import type { CSSProperties } from "react";
+
+export const s = {
+  page: { display: "flex", minHeight: "calc(100vh - 56px)", minWidth: 0 } satisfies CSSProperties,
+  side: {
+    width: 260,
+    flexShrink: 0,
+    display: "flex",
+    flexDirection: "column",
+    borderRight: "1px solid var(--border)",
+  } satisfies CSSProperties,
+  sideHead: { padding: "16px 16px 8px" } satisfies CSSProperties,
+  sideTitle: {
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: "0.06em",
+    textTransform: "uppercase",
+    color: "var(--text-tertiary)",
+  } satisfies CSSProperties,
+  roots: {
+    fontSize: 12,
+    color: "var(--text-secondary)",
+    marginTop: 4,
+    wordBreak: "break-all",
+  } satisfies CSSProperties,
+  toolbar: { padding: "4px 8px" } satisfies CSSProperties,
+  list: { flex: 1, overflowY: "auto", padding: "4px 8px" } satisfies CSSProperties,
+  footer: {
+    padding: "12px 16px",
+    borderTop: "1px solid var(--border)",
+    fontSize: 12,
+    color: "var(--text-tertiary)",
+    lineHeight: 1.5,
+  } satisfies CSSProperties,
+  main: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column" } satisfies CSSProperties,
+  mainHead: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    padding: "14px 28px",
+    borderBottom: "1px solid var(--border)",
+  } satisfies CSSProperties,
+  docName: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 14,
+    fontWeight: 600,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  } satisfies CSSProperties,
+  usedBy: { fontSize: 12.5, color: "var(--text-secondary)", cursor: "default" } satisfies CSSProperties,
+  popTitle: { fontSize: 12, fontWeight: 600, marginBottom: 6 } satisfies CSSProperties,
+  popList: { margin: 0, paddingLeft: 16, fontSize: 12.5 } satisfies CSSProperties,
+  preview: { padding: "24px 28px", fontSize: 14 } satisfies CSSProperties,
+  muted: { padding: "24px 28px", color: "var(--text-secondary)", fontSize: 13 } satisfies CSSProperties,
+  skeletons: { display: "flex", flexDirection: "column", gap: 10, padding: 16 } satisfies CSSProperties,
+} as const;

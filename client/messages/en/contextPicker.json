@@ -1,0 +1,25 @@
+{
+  "filterPlaceholder": "Filter documents…",
+  "badgeOfTotal": "{attached} of {total} attached",
+  "badgeCount": "{attached} attached",
+  "orderHint": "Order matters — earlier docs appear earlier in the assembled prompt block.",
+  "empty": "No documents found.",
+  "noMatches": "No documents match the filter.",
+  "tokenTotal": "≈ {tokens} tokens",
+  "budgetWarning": "over the 20k budget — later documents will be skipped",
+  "tooLarge": "Too large — will be skipped",
+  "missing": "missing in {repo}",
+  "via": "via {skill}",
+  "preview": "Preview",
+  "previewLabel": "Preview {path}",
+  "previewTitle": "Document preview",
+  "close": "Close",
+  "loading": "Loading…",
+  "loadError": "Could not load this document.",
+  "listError": "Could not load project documents.",
+  "type": {
+    "specs": "specs",
+    "docs": "docs",
+    "insights": "insights"
+  }
+}

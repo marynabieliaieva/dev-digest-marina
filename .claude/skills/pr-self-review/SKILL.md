@@ -85,15 +85,44 @@ giving that subagent only:
   pre-existing code in the same file that the diff didn't touch is context, not a finding.
   A domain skill run over a whole legacy file will otherwise resurface old issues unrelated
   to this PR and train the user to ignore the gate.
+- an explicit **remit boundary**: report only violations of *that skill's* rules, such as
+  structure, layering, hook rules, schema design or test style. General correctness bugs
+  (races, wrong edge cases, state that never resets, wrong status codes) belong to the
+  Step 1 `code-review` pass. A domain pass must not report them, so the same bug does not
+  arrive twice from two passes.
+
+Dispatch the domain-bucket subagents with `model: "sonnet"`. They apply a known rule
+set to a bounded file list. Keep the Step 1 `security` and `code-review` passes on the
+default model, because they hunt for bugs that no rule names.
+
+**Decided items.** Give **every** pass (Step 1 and Step 2) the list of decisions that are
+not findings:
+- the spec's `Non-goals`;
+- the plan's `Out of scope / deferred` and `Open questions` resolutions, when a spec or
+  plan exists for this branch;
+- anything the caller states as decided.
+
+A pass that reports one of these anyway gets it dropped in Step 3.
 
 Each subagent reports findings through `ReportFindings` (file, line, summary,
 failure_scenario, category) — no free-text findings.
 
+**Reuse an `architecture-reviewer` report.** If the caller (e.g. the
+`/run-plan` skill) hands you an `architecture-reviewer` report produced
+**after the last code change** in this diff, do not dispatch the
+`onion-architecture` and `frontend-ui-architecture` buckets — their boundary
+checks are exactly what that report covers. Fold its findings into Step 3 as-is
+(same fields, severities already normalized per [gate.md](gate.md)). All other
+buckets, and Step 1, still run. If you are unsure whether the report is current,
+dispatch the buckets.
+
 ### Step 3 — Aggregate and classify
 
-Collect findings from Steps 1–2, dedupe (the same line can be flagged by `security` and a
-domain skill), and classify each as CRITICAL/HIGH/MEDIUM using the mapping in
-[gate.md](gate.md). Count `critical_count`.
+Collect findings from Steps 1–2 and dedupe them. The same defect can be flagged by
+`security` or `code-review` and by a domain skill. Keep one row per defect and list
+every pass that found it. Drop any finding that restates a decided item. Then classify
+each finding as CRITICAL/HIGH/MEDIUM using the mapping in [gate.md](gate.md), and count
+`critical_count`.
 
 ### Step 4 — Write the verdict
 

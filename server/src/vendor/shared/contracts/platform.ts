@@ -255,6 +255,44 @@ export const SpecFile = z.object({
 });
 export type SpecFile = z.infer<typeof SpecFile>;
 
+export const ContextDocType = z.enum(['specs', 'docs', 'insights']);
+export type ContextDocType = z.infer<typeof ContextDocType>;
+
+export const ContextDoc = SpecFile.extend({
+  type: ContextDocType,
+  size: z.number().int(),
+  est_tokens: z.number().int(),
+  updated_at: z.string(),
+  used_by_agents: z.number().int(),
+  used_by: z.array(z.object({ id: z.string(), name: z.string() })),
+});
+export type ContextDoc = z.infer<typeof ContextDoc>;
+
+/** `roots` are the configured search globs (subtitle + empty state). */
+export const ContextDocList = z.object({
+  roots: z.array(z.string()),
+  docs: z.array(ContextDoc),
+});
+export type ContextDocList = z.infer<typeof ContextDocList>;
+
+export const ContextDocContent = z.object({
+  path: z.string(),
+  content: z.string(),
+  size: z.number().int(),
+  est_tokens: z.number().int(),
+});
+export type ContextDocContent = z.infer<typeof ContextDocContent>;
+
+export const ContextPaths = z.object({ paths: z.array(z.string()) });
+export type ContextPaths = z.infer<typeof ContextPaths>;
+
+export const AgentContext = ContextPaths.extend({
+  inherited: z.array(
+    z.object({ path: z.string(), skill_id: z.string(), skill_name: z.string() }),
+  ),
+});
+export type AgentContext = z.infer<typeof AgentContext>;
+
 export const IndexStatus = z.object({
   status: z.enum(['idle', 'cloning', 'parsing', 'embedding', 'done', 'error']),
   pct: z.number().min(0).max(100),

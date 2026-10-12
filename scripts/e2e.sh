@@ -6,6 +6,7 @@
 #
 #   ./scripts/e2e.sh
 #   E2E_PG_PORT=5440 E2E_API_PORT=3201 E2E_WEB_PORT=3200 ./scripts/e2e.sh
+#   E2E_FLOWS=10,11 ./scripts/e2e.sh   # only flows whose filename starts with 10 or 11
 #
 # Mirrors what .github/workflows/e2e-web.yml does, but with an ephemeral
 # Postgres (no persistent volume → empty every run, so the seeded demo repo

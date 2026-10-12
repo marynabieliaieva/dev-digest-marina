@@ -127,5 +127,8 @@
     "goToReview": "Jump to this run’s findings below",
     "openTrace": "Open run trace & logs",
     "deleteRun": "Delete run"
+  },
+  "deepLink": {
+    "notInDiff": "File not in this PR's diff"
   }
 }

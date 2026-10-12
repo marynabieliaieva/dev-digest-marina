@@ -14,6 +14,7 @@ import { useDeleteSkill, useSkill, useSkills, useUpdateSkill } from "../../../..
 import { SkillCard, isUntrustedSource, typeColor } from "../../../_components/SkillCard";
 import { AddSkillMenu, useAddSkillFlow } from "../../../_components/AddSkillMenu";
 import { SkillConfigTab } from "../SkillConfigTab";
+import { SkillContextTab } from "../SkillContextTab";
 import { SkillPreviewTab } from "../SkillPreviewTab";
 import { SkillVersionsTab } from "../SkillVersionsTab";
 import { TABS, DEFAULT_TAB } from "./constants";
@@ -191,6 +192,7 @@ export function SkillDetailView({
 
             <div style={s.content}>
               {tab === "preview" && <SkillPreviewTab body={effective.body} />}
+              {tab === "context" && <SkillContextTab skill={skill} />}
               {tab === "versions" && <SkillVersionsTab skill={skill} />}
               {(tab === DEFAULT_TAB || !TABS.some((tb) => tb.key === tab)) && (
                 <SkillConfigTab

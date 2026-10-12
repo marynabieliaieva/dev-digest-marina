@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { Badge } from "@devdigest/ui";
 import type { RunTrace, FindingRecord } from "@devdigest/shared";
 import { PROMPT_COLORS } from "../../constants";
-import { formatSeconds, formatTokens } from "../../helpers";
+import { contextStatusKey, formatContextTokens, formatSeconds, formatTokens } from "../../helpers";
 import { formatCost } from "@/lib/format-cost";
 import { s } from "../../styles";
 import { TraceSection } from "../TraceSection";
@@ -19,6 +19,7 @@ import { Row, Stat } from "../atoms";
 export function TraceBody({ trace, findings }: { trace: RunTrace; findings: FindingRecord[] }) {
   const t = useTranslations("runs");
   const stats = trace.stats;
+  const hasContext = (trace.project_context?.length ?? 0) > 0;
   return (
     <>
       <TraceSection icon="Settings" title={t("trace.configuration")}>
@@ -38,7 +39,15 @@ export function TraceBody({ trace, findings }: { trace: RunTrace; findings: Find
           </Row>
           <Row label={t("trace.config.specsRead")}>
             <div style={s.specsWrap}>
-              {trace.specs_read.length === 0 ? (
+              {hasContext ? (
+                trace.project_context!.map((e) => (
+                  <span key={e.path} className="mono" style={s.spec}>
+                    {e.status === "included"
+                      ? `${e.path} · ${formatContextTokens(e.est_tokens)}`
+                      : `${e.path} — ${t(`trace.config.contextStatus.${contextStatusKey(e.status)}`)}`}
+                  </span>
+                ))
+              ) : trace.specs_read.length === 0 ? (
                 <span style={s.specsNone}>{t("trace.config.none")}</span>
               ) : (
                 trace.specs_read.map((sp) => (

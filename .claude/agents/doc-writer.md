@@ -31,6 +31,9 @@ truth.
 
 ## Where to write
 
+- **Folder name:** if the feature has a spec at `specs/<YYYY-MM-DD>-<feature>/spec.md`,
+  write the docs to `docs/features/<YYYY-MM-DD>-<feature>/` (the same slug) and
+  link to the spec. Never touch `specs/`.
 - **Default output:** `docs/features/<feature-slug>/README.md` — the
   feature's "what it is and how it works" doc. GitHub renders `README.md` as
   the folder index. Extra deep-dive pages may be added as kebab-case
@@ -46,7 +49,7 @@ truth.
   agent"), so an edit here without a versioned `PUT /agents/:id` creates
   drift. If a feature changed a reviewer prompt or a DB skill, report it
   under "Suggested follow-ups" instead of touching the file.
-- **Also off-limits:** `docs/plans/**` (the planner's artifact), root
+- **Also off-limits:** `docs/plans/**` (the implementation-planner's artifact), root
   `README.md`/`TESTING.md`/`AGENTS.md`, package `CLAUDE.md`/`INSIGHTS.md`,
   `.claude/**`, and all code. Suggested edits to root docs go into the
   report, not into the file.

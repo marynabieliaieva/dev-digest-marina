@@ -46,9 +46,17 @@
     "tabs": {
       "config": "Config",
       "skills": "Skills",
+      "context": "Context",
       "evals": "Evals",
       "stats": "Stats",
       "ci": "CI"
+    },
+    "context": {
+      "title": "Project context",
+      "orderHint": "Order matters — earlier docs appear earlier",
+      "injected": "Injected as an untrusted block (`## Project context`) into every run",
+      "unavailable": "Repository not cloned yet — sync it to browse project documents.",
+      "noRepo": "Select a repository to browse project documents."
     }
   },
   "config": {

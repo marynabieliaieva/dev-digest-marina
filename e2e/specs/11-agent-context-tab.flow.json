@@ -1,0 +1,29 @@
+{
+  "name": "Agent editor Context tab: browse project documents and attach two",
+  "description": "Opens the General Reviewer from /agents, switches to its Context tab, confirms the seeded project documents are listed, attaches security-baseline.md then public-api.md, and confirms the '2 of 5 attached' badge, then reloads the agents list and re-opens the tab to confirm the attachments persisted. Drag-reordering (AC-16) is NOT driven here — agent-browser has no verified HTML5 drag command (plan OQ-2); order persistence is covered by the server integration test and the reorderAttached unit test. Mutates the seeded DB (attachments persist), so flow 12 relies on public-api.md being attached to General Reviewer here. Assumes a freshly-seeded DB. Covers AC-13, AC-16 (partial).",
+  "steps": [
+    { "cmd": ["open", "{BASE}/agents"], "label": "load the agents page" },
+    { "cmd": ["wait", "--url", "/agents"], "label": "agents route reached" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "agents fetch settles" },
+    { "cmd": ["find", "text", "General Reviewer", "click"], "label": "open the General Reviewer" },
+    { "cmd": ["wait", "--url", "/agents/"], "label": "agent editor reached" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Context", "--exact"], "label": "switch to the Context tab" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "context docs fetch settles" },
+    { "cmd": ["wait", "--text", "public-api.md"], "label": "public-api.md is listed" },
+    { "cmd": ["wait", "--text", "0 of 5 attached"], "label": "nothing is attached on a fresh seed" },
+
+    { "cmd": ["find", "role", "checkbox", "click", "--name", "security-baseline.md"], "label": "attach security-baseline.md" },
+    { "cmd": ["wait", "--text", "1 of 5 attached"], "label": "badge counts the first attachment" },
+    { "cmd": ["find", "role", "checkbox", "click", "--name", "public-api.md"], "label": "attach public-api.md" },
+    { "cmd": ["wait", "--text", "2 of 5 attached"], "label": "badge counts both attachments" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "attachments save settles" },
+
+    { "cmd": ["open", "{BASE}/agents"], "label": "reload the agents page" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "agents fetch settles" },
+    { "cmd": ["find", "text", "General Reviewer", "click"], "label": "re-open the General Reviewer" },
+    { "cmd": ["wait", "--url", "/agents/"], "label": "agent editor reached again" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Context", "--exact"], "label": "switch to the Context tab again" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "context fetch settles" },
+    { "cmd": ["wait", "--text", "2 of 5 attached"], "label": "the attachments persisted across a reload" }
+  ]
+}

@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-// .claude/hooks/planner-path-guard.mjs
+// .claude/hooks/implementation-planner-path-guard.mjs
 //
-// PreToolUse guard for the `planner` subagent (see
-// .claude/agents/planner.md). Blocks any Edit/Write/NotebookEdit call
-// whose target path is not a plan artifact (docs/plans/<slug>.md). Keep this
-// allowlist and planner.md's "only file you are allowed to write" rule in
-// sync — they are the same contract stated twice. Modelled on
+// PreToolUse guard for the `implementation-planner` subagent (see
+// .claude/agents/implementation-planner.md). Blocks any Edit/Write/NotebookEdit
+// call whose target path is not a plan artifact (docs/plans/<slug>.md) — so
+// specs (specs/**/spec.md, and legacy docs/features/**/spec.md) and code are unwritable. Keep this
+// allowlist and implementation-planner.md's "only file you are allowed to
+// write" rule in sync — they are the same contract stated twice. Modelled on
 // test-writer-path-guard.mjs.
 //
 // Node ESM, no dependencies (Node >=22 is already a repo requirement; `jq`
@@ -94,7 +95,7 @@ function toRelative(filePath, projectDir) {
 }
 
 function reject(reason) {
-  process.stderr.write(`planner-path-guard: ${reason}\n`);
+  process.stderr.write(`implementation-planner-path-guard: ${reason}\n`);
   process.exit(2);
 }
 
@@ -171,7 +172,7 @@ function main() {
   }
 
   reject(
-    `rejected "${relPath}" — planner may only write to: ${ALLOWLIST.join(', ')}`,
+    `rejected "${relPath}" — implementation-planner may only write to: ${ALLOWLIST.join(', ')}`,
   );
 }
 
@@ -180,7 +181,7 @@ try {
 } catch (err) {
   try {
     process.stderr.write(
-      `planner-path-guard: unexpected error, failing closed — ${err && err.stack ? err.stack : err}\n`,
+      `implementation-planner-path-guard: unexpected error, failing closed — ${err && err.stack ? err.stack : err}\n`,
     );
   } catch {
     // stderr itself failed; nothing more we can do, still exit 2 below.

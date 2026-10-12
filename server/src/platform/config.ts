@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { z } from 'zod';
 import { homedir } from 'node:os';
 import { join, isAbsolute, resolve } from 'node:path';
+import { DEFAULT_CONTEXT_GLOBS } from '../modules/project-context/constants.js';
 
 /**
  * Central, zod-validated environment config. Loaded once at startup.
@@ -30,6 +31,8 @@ const EnvSchema = z.object({
   // SSRF-guarded WebFetcher). Default ON — set INTENT_EXTERNAL_FETCH=false on a
   // shared/multi-tenant deployment; such links are then recorded `unsupported`.
   INTENT_EXTERNAL_FETCH: z.string().optional(),
+  // Project context: comma-separated repo-relative globs searched for context docs.
+  PROJECT_CONTEXT_GLOBS: z.string().optional(),
   API_PORT: z.coerce.number().int().default(3001),
   WEB_PORT: z.coerce.number().int().default(3000),
   DEVDIGEST_CLONE_DIR: z.string().optional(),
@@ -72,7 +75,27 @@ export type AppConfig = {
    * then recorded `unsupported`, with no request made).
    */
   intentExternalFetch: boolean;
+  /** Globs (repo-relative) searched for project context documents. */
+  projectContextGlobs: string[];
 };
+
+function parseGlobs(raw: string | undefined): string[] {
+  // Split on commas outside `{…}` so brace globs like `**/{a,b}/*.md` stay intact.
+  const parts: string[] = [];
+  let depth = 0;
+  let cur = '';
+  for (const ch of raw ?? '') {
+    if (ch === '{') depth++;
+    else if (ch === '}' && depth > 0) depth--;
+    if (ch === ',' && depth === 0) {
+      parts.push(cur);
+      cur = '';
+    } else cur += ch;
+  }
+  parts.push(cur);
+  const globs = parts.map((g) => g.trim()).filter(Boolean);
+  return globs.length > 0 ? globs : [...DEFAULT_CONTEXT_GLOBS];
+}
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const parsed = EnvSchema.parse(env);
@@ -91,5 +114,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     embeddingsEnabled: parsed.EMBEDDINGS_ENABLED === 'true',
     repoIntelEnabled: parsed.REPO_INTEL_ENABLED !== 'false',
     intentExternalFetch: parsed.INTENT_EXTERNAL_FETCH !== 'false',
+    projectContextGlobs: parseGlobs(parsed.PROJECT_CONTEXT_GLOBS),
   };
 }

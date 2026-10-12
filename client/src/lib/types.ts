@@ -29,6 +29,13 @@ export type {
   PrStatus,
   SpecFile,
   IndexStatus,
+  ContextDoc,
+  ContextDocList,
+  ContextDocContent,
+  ContextPaths,
+  AgentContext,
+  ContextDocType,
+  ProjectContextEntry,
 } from "@devdigest/shared";
 
 export type { Review, Finding, Severity, Verdict } from "@devdigest/shared";

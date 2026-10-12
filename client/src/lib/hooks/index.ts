@@ -9,4 +9,6 @@ export * from "./trace";
 export * from "./repo-intel";
 export * from "./conventions";
 export * from "./intent";
+export * from "./brief";
 export * from "./blast";
+export * from "./project-context";

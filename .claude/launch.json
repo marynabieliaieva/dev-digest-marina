@@ -6,6 +6,20 @@
       "runtimeExecutable": "C:\\Program Files\\Git\\usr\\bin\\bash.exe",
       "runtimeArgs": ["scripts/dev.sh"],
       "port": 3000
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--dir", "client", "dev"],
+      "port": 3000,
+      "autoPort": false
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--dir", "server", "dev"],
+      "port": 3001,
+      "autoPort": false
     }
   ]
 }

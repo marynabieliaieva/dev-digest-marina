@@ -19,11 +19,17 @@ export function DiffViewer({
   commenting,
   findings,
   expandSignal,
+  focusFile,
+  focusLine,
 }: {
   files: PrFile[];
   commenting?: DiffCommentApi;
   findings?: DiffFindingApi;
   expandSignal?: DiffExpandSignal;
+  /** Deep-link: path (matched exactly) of the file to open, scroll to and highlight. */
+  focusFile?: string | null;
+  /** Deep-link: new-side line inside `focusFile`. */
+  focusLine?: number | null;
 }) {
   const t = useTranslations("shell");
   if (!files || files.length === 0) {
@@ -32,7 +38,15 @@ export function DiffViewer({
   return (
     <div style={s.list}>
       {files.map((f) => (
-        <FileCard key={f.path} file={f} commenting={commenting} findings={findings} expandSignal={expandSignal} />
+        <FileCard
+          key={f.path}
+          file={f}
+          commenting={commenting}
+          findings={findings}
+          expandSignal={expandSignal}
+          focus={focusFile != null && f.path === focusFile}
+          focusLine={focusLine}
+        />
       ))}
     </div>
   );

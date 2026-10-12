@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { createDb, type Db } from './client.js';
 import * as t from './schema.js';
 import { eq, and } from 'drizzle-orm';
+import { PrBrief } from '@devdigest/shared';
 import {
   GENERAL_REVIEWER_PROMPT,
   SECURITY_REVIEWER_PROMPT,
@@ -13,6 +14,8 @@ import {
 import { SEED_SKILLS } from './seed-skills.js';
 import { CONTROL_PRS } from './seed-control-prs.js';
 import { SEED_CONVENTIONS, SEED_EXTRACTION } from './seed-conventions.js';
+import { seedProjectContextFixture } from './seed-project-context.js';
+import { loadConfig } from '../platform/config.js';
 
 /**
  * Which starter skills each built-in agent links to, in prompt order. Named
@@ -274,6 +277,7 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
   await seedAgentSkillLinks(db, workspaceId);
   await seedControlPrs(db, workspaceId, repoId);
   await seedConventions(db, workspaceId, repoId);
+  await seedPrBrief(db, pr!.id);
 
   return { workspaceId, userId };
 }
@@ -394,6 +398,49 @@ async function seedControlPrs(db: Db, workspaceId: string, repoId: string): Prom
 }
 
 /**
+ * A cached PR Brief for PR #482 so the Overview card and the e2e flow work with
+ * no model call. `head_sha` equals the seeded PR head, so it is not stale and
+ * the client sends no POST. Upserted so a re-seed restores it.
+ */
+async function seedPrBrief(db: Db, prId: string): Promise<void> {
+  const brief = PrBrief.parse({
+    intent: null,
+    blast: null,
+    risks: {
+      risks: [
+        {
+          kind: 'security',
+          title: 'Secret committed in config',
+          explanation: 'A live-looking secret key is present in the public API configuration.',
+          severity: 'high',
+          file_refs: ['src/config.ts'],
+        },
+      ],
+    },
+    history: { history: [] },
+    summary: 'Seeded brief: rate limiting touches the public API config.',
+    review_focus: [
+      { file: 'src/config.ts', line: 12, reason: 'Hardcoded secret key on this line.' },
+    ],
+    head_sha: 'a1b2c3d4e5f6',
+    generated_at: new Date('2026-01-01T00:00:00.000Z').toISOString(),
+    provider: 'openai',
+    model: 'seed',
+    tokens_in: 0,
+    tokens_out: 0,
+    cost_usd: null,
+    attempts: 1,
+    data_gaps: [],
+    inputs: [],
+    dropped: { risks: 0, risk_file_refs: 0, review_focus: 0 },
+  });
+  await db
+    .insert(t.prBrief)
+    .values({ prId, json: brief })
+    .onConflictDoUpdate({ target: t.prBrief.prId, set: { json: brief } });
+}
+
+/**
  * A `done` extraction + its accepted-none candidates, so `/repos/:id/conventions`
  * renders (and the e2e flow has something to accept) with no API key. Idempotent:
  * skipped once payments-api already has an extraction row.
@@ -448,6 +495,7 @@ if (fileURLToPath(import.meta.url) === process.argv[1]) {
   const handle = createDb(url);
   seed(handle.db)
     .then(async (r) => {
+      await seedProjectContextFixture(handle.db, loadConfig().cloneDir);
       console.log('✓ seeded', r);
       await handle.close();
       process.exit(0);

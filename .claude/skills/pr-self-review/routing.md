@@ -43,6 +43,38 @@ immutable, flagging them as a "finding" would be noise the user can't act on any
 `engineering-insights`, `mermaid-diagram` — meta/authoring skills, not review skills.
 Never bucketed.
 
+## Authoring agents (implementer / test-writer / implementation-planner)
+
+This section is **not** used for review bucketing above — it is the single source
+of truth for which skills the *writing* agents apply. The agents link here instead
+of keeping their own copies of the table.
+
+**Code (implementer).** Same globs as the review tables above, plus:
+
+| Skill | Trigger | How the implementer applies it |
+|---|---|---|
+| `onion-architecture` | `server/src/modules/**`, `reviewer-core/src/**` | Read `RULES.md` digest; full skill only for a new module / new integration / container wiring |
+| `frontend-ui-architecture` | `client/src/**` | Read `RULES.md` digest; full skill only for a new route/feature folder or moving components |
+| `security` | task involves user input, API endpoints, secrets, auth, uploads (by topic, not path) | Read `RULES.md` digest; full skill for auth/secrets/uploads/shelling out |
+| all other globbed skills (`fastify-best-practices`, `drizzle-orm-patterns`, `postgresql-table-design`, `react-best-practices`, `next-best-practices`, `zod`) | as in the tables above | **Digest by default.** The plan's Key constraints carry the relevant rules. Invoke the full skill (once per session) only when the plan marks it `full`: a new schema table, a new shared contract, or a new route folder or module |
+| `typescript-expert`, `mermaid-diagram` | on demand | Only when genuinely needed |
+| `engineering-insights` | end of session, if something non-obvious was learned | Closing step, not per file |
+| `pr-self-review` | — | Never invoked by an authoring agent — it is the gate that runs on them |
+
+Digests live at `.claude/skills/<skill>/RULES.md`. A task's "Key constraints" in
+the plan take precedence over re-reading a skill.
+
+**Tests (test-writer).** Test files only need:
+
+| Path | Skill |
+|---|---|
+| `client/**/*.test.ts(x)`, `client/src/test/**` | `react-testing-library` (full skill, once per session) |
+| `server/test/**`, `reviewer-core/test/**` | none by glob — read the `RULES.md` digest of the skill governing the **file under test** only if needed to know which port to stub |
+| `e2e/specs/**` | none — follow `e2e/CLAUDE.md` |
+
+Production-code skills (`react-best-practices`, `frontend-ui-architecture`, …) are
+**not** applied to test files.
+
 ## Unmatched files
 
 If a changed file is under `client/` or `server/` but matches no pattern above, note it in

@@ -51,6 +51,10 @@ cd reviewer-core && npm test && npm run typecheck
 cd mcp && npm test && npm run typecheck
 cd e2e && npm test   # needs the full stack running + agent-browser installed
 ```
+Agents run tests through `scripts/check.sh <pkg> [--related] [--it] [files…]` (typecheck +
+targeted vitest, summary-only output, full log in `.claude/tmp/`) — see its header.
+`scripts/arch-check.sh` greps the architecture boundary rules on the branch diff.
+
 Full strategy: [TESTING.md](TESTING.md). Key rule: DB-backed tests **must** be named `*.it.test.ts`.
 
 ## Session learnings

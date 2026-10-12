@@ -1,5 +1,5 @@
 import type { LogLine } from "@devdigest/ui";
-import type { RunTrace } from "@devdigest/shared";
+import type { RunTrace, ProjectContextEntry } from "@devdigest/shared";
 
 interface RawEvent {
   t: string;
@@ -15,6 +15,22 @@ export function eventsToLog(events: RawEvent[]): LogLine[] {
 /** Map a persisted trace's log to the LiveLogStream LogLine shape. */
 export function traceLog(trace: RunTrace | undefined): LogLine[] {
   return trace?.log.map((l) => ({ t: l.t, k: l.kind as LogLine["k"], m: l.msg })) ?? [];
+}
+
+/** runs.json key (under `trace.config.contextStatus`) for a non-included project-context status. */
+export function contextStatusKey(status: Exclude<ProjectContextEntry["status"], "included">): string {
+  const keys = {
+    missing: "missing",
+    too_large: "tooLarge",
+    over_budget: "overBudget",
+    unreadable: "unreadable",
+  } as const;
+  return keys[status];
+}
+
+/** Token string for an included project-context entry (e.g. "412 tok"). */
+export function formatContextTokens(estTokens: number): string {
+  return `${estTokens} tok`;
 }
 
 /** Seconds-formatted duration. */
