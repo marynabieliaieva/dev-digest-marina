@@ -13,6 +13,8 @@
     { "cmd": ["wait", "--text", "src/config.ts:8"], "label": "its evidence chip shows path:line" },
 
     { "cmd": ["find", "role", "button", "click", "--name", "Accept", "--exact"], "label": "accept the first candidate" },
+    { "cmd": ["wait", "--text", "1 of 4 accepted"], "label": "first accept is reflected in the toolbar" },
+    { "cmd": ["wait", "--fn", "[...document.querySelectorAll('button')].some((b) => b.textContent.trim() === 'Accept' && !b.disabled)"], "label": "first accept settles — every card shares one mutation, so its Accept buttons stay disabled until the PATCH returns" },
     { "cmd": ["find", "role", "button", "click", "--name", "Accept", "--exact"], "label": "accept the second candidate" },
     { "cmd": ["wait", "--text", "2 of 4 accepted"], "label": "toolbar count reflects both accepts" },
 

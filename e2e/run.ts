@@ -136,6 +136,8 @@ async function main(): Promise<void> {
 
   const results: FlowResult[] = [];
   try {
+    // A page must exist first: on a fresh daemon `set viewport` hangs (seen on Windows).
+    await ab(["open", "about:blank"]);
     await ab(["set", "viewport", VIEWPORT[0], VIEWPORT[1]]);
     for (const { file, flow } of flows) {
       results.push(await runFlow(file, flow));
