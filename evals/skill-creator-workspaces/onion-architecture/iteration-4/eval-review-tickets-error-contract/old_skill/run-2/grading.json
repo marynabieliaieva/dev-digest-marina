@@ -1,0 +1,35 @@
+{
+  "expectations": [
+    {
+      "text": "review.md flags the GET /tickets/:id handler for building the 404 reply by hand (reply.code(404).send({ error: ... })) and recommends throwing NotFoundError from platform/errors.ts so the central error handler renders it",
+      "passed": false,
+      "evidence": "old_skill run-2: GET hand-built body mentioned only as an inconsistency; fix offers 'throw NotFoundError, or keep null' - not a clear recommendation."
+    },
+    {
+      "text": "review.md flags the try/catch in POST /tickets/:id/close that maps error message strings to 404/409 by hand, and recommends the service throw AppError subclasses that the central error handler maps",
+      "passed": true,
+      "evidence": "old_skill run-2: Flags routes decoding err.message; fix: delete try/catch."
+    },
+    {
+      "text": "review.md flags service.ts for throwing bare new Error('ticket_not_found') / new Error('ticket_already_closed') instead of AppError subclasses from platform/errors.ts",
+      "passed": true,
+      "evidence": "old_skill run-2: Flags bare Error with magic strings."
+    },
+    {
+      "text": "review.md flags the Octokit adapter (adapters/github/issues.ts) for letting the vendor exception escape and recommends wrapping failures in ExternalServiceError",
+      "passed": true,
+      "evidence": "old_skill run-2: Octokit failures bubble instead of ExternalServiceError."
+    },
+    {
+      "text": "review.md does NOT present repository.ts as a violation",
+      "passed": true,
+      "evidence": "old_skill run-2: repository.ts called correct."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 1,
+    "total": 5,
+    "pass_rate": 0.8
+  }
+}

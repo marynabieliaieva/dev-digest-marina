@@ -238,3 +238,42 @@ export async function review(diff: Diff, provider: LLMProvider): Promise<Review>
 When someone asks "what does a correctly-onioned application/domain layer
 look like in this repo," point them at `reviewer-core/` directly — it's not
 a hypothetical example, it's the shipping package.
+
+---
+
+## A Failure Path Built by Hand in the Route
+
+```ts
+// routes.ts — BAD: the route invents its own error body and status.
+// Clients now get { error: 'not_found' } here and { error: { code, ... } }
+// everywhere else.
+app.get<{ Params: { id: string } }>('/invoices/:id', async (req, reply) => {
+  const invoice = await service.get(req.params.id);
+  if (!invoice) return reply.code(404).send({ error: 'not_found' });
+  return invoice;
+});
+```
+
+```ts
+// routes.ts — GOOD: throw the domain error; app.ts's setErrorHandler renders
+// { error: { code: 'not_found', message, details } } with status 404.
+import { NotFoundError } from '../../platform/errors.js';
+
+app.get<{ Params: { id: string } }>('/invoices/:id', async (req) => {
+  const invoice = await service.get(req.params.id);
+  if (!invoice) throw new NotFoundError('Invoice not found');
+  return invoice;
+});
+```
+
+```ts
+// adapters/s3/exporter.ts — wrap the vendor exception so no S3 type reaches
+// the application layer, and the handler maps it to 502.
+import { ExternalServiceError } from '../../platform/errors.js';
+
+try {
+  await this.client.send(new PutObjectCommand(input));
+} catch (err) {
+  throw new ExternalServiceError('Report export failed', { cause: String(err) });
+}
+```

@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "review.md reports that inventory/routes.ts reaches the database through serializers.ts (withSupplierNames imports db/client.js and db/schema), naming serializers.ts as the leak or the chain routes.ts -> serializers.ts -> db",
+      "passed": true,
+      "evidence": "new_skill run-5: serializers.ts importing db/client + schema flagged as the DB leak behind inventory/routes.ts."
+    },
+    {
+      "text": "review.md flags reports/service.ts importing InventoryRepository from the inventory module and says the call must go through InventoryService",
+      "passed": true,
+      "evidence": "new_skill run-5: reports/service.ts importing InventoryRepository flagged; fix via InventoryService."
+    },
+    {
+      "text": "review.md flags the import cycle between inventory/service.ts and suppliers/service.ts (InventoryService <-> SupplierService)",
+      "passed": true,
+      "evidence": "new_skill run-5: inventory<->suppliers service cycle flagged."
+    },
+    {
+      "text": "review.md flags the Drizzle-derived alias SupplierRow (suppliers/types.ts, typeof suppliers.$inferSelect) used in SupplierService.get's return type",
+      "passed": true,
+      "evidence": "new_skill run-5: SupplierRow ($inferSelect alias) in SupplierService.get flagged."
+    },
+    {
+      "text": "review.md flags lib/mailer.ts (module-level new Resend(...) exported as mailer) being used directly by suppliers/service.ts and recommends a port/adapter wired through the container",
+      "passed": true,
+      "evidence": "new_skill run-5: lib/mailer.ts Resend wrapper used by suppliers/service flagged; port/adapter recommended."
+    },
+    {
+      "text": "review.md flags the shared contract vendor/shared/contracts/inventory.ts importing from modules/inventory/constants.js (the domain layer depending outward)",
+      "passed": true,
+      "evidence": "new_skill run-5: contracts/inventory.ts importing modules/inventory/constants flagged (domain depends outward)."
+    },
+    {
+      "text": "review.md does NOT report as a violation: ReportService taking the whole Container, services building their own repositories, or the one-way new SupplierService(this.container) call from reports",
+      "passed": true,
+      "evidence": "new_skill run-5: Whole-Container ctor, own repositories, one-way new SupplierService call listed as fine or not mentioned."
+    },
+    {
+      "text": "review.md does NOT report any repository.ts file or the pure reports/format.ts helper as a violation",
+      "passed": true,
+      "evidence": "new_skill run-5: repository.ts files and pure format.ts not reported as violations (only an optional 'no interface' note at most)."
+    }
+  ],
+  "summary": {
+    "passed": 8,
+    "failed": 0,
+    "total": 8,
+    "pass_rate": 1.0
+  }
+}

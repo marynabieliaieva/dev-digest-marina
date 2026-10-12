@@ -1,0 +1,15 @@
+{
+  "eval_id": 13,
+  "eval_name": "review-inventory-deep-search",
+  "prompt": "Please review the inventory PR before I open it. The changed files are listed in evals/fixtures/inventory-pr/CHANGED.txt and the (server-only) repo snapshot is under evals/fixtures/inventory-pr/ (treat it as the repo root). List every architecture problem with file, why it is a problem and how to fix it, and write the review to review.md.",
+  "assertions": [
+    "review.md reports that inventory/routes.ts reaches the database through serializers.ts (withSupplierNames imports db/client.js and db/schema), naming serializers.ts as the leak or the chain routes.ts -> serializers.ts -> db",
+    "review.md flags reports/service.ts importing InventoryRepository from the inventory module and says the call must go through InventoryService",
+    "review.md flags the import cycle between inventory/service.ts and suppliers/service.ts (InventoryService <-> SupplierService)",
+    "review.md flags the Drizzle-derived alias SupplierRow (suppliers/types.ts, typeof suppliers.$inferSelect) used in SupplierService.get's return type",
+    "review.md flags lib/mailer.ts (module-level new Resend(...) exported as mailer) being used directly by suppliers/service.ts and recommends a port/adapter wired through the container",
+    "review.md flags the shared contract vendor/shared/contracts/inventory.ts importing from modules/inventory/constants.js (the domain layer depending outward)",
+    "review.md does NOT report as a violation: ReportService taking the whole Container, services building their own repositories, or the one-way new SupplierService(this.container) call from reports",
+    "review.md does NOT report any repository.ts file or the pure reports/format.ts helper as a violation"
+  ]
+}

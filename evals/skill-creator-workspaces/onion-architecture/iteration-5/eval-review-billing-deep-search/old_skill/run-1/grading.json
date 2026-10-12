@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "review.md reports that billing/service.ts reaches the database through helpers.ts (nextInvoiceNumber imports db/client.js and db/schema), naming helpers.ts as the leak or the chain service.ts -> helpers.ts -> db",
+      "passed": true,
+      "evidence": "old_skill run-1: helpers.ts importing db/client + schema flagged (chain via helpers)."
+    },
+    {
+      "text": "review.md flags billing/service.ts importing and instantiating CustomerRepository from the customers module, and says the call must go through CustomerService",
+      "passed": true,
+      "evidence": "old_skill run-1: CustomerRepository import in billing/service flagged; fix via CustomerService."
+    },
+    {
+      "text": "review.md flags the import cycle between billing/service.ts and customers/service.ts (BillingService <-> CustomerService)",
+      "passed": true,
+      "evidence": "old_skill run-1: billing<->customers service cycle flagged."
+    },
+    {
+      "text": "review.md flags the Drizzle-derived alias InvoiceRow (billing/types.ts, typeof invoices.$inferSelect) used in BillingService.getRow's return type",
+      "passed": true,
+      "evidence": "old_skill run-1: InvoiceRow ($inferSelect alias) leak via getRow flagged."
+    },
+    {
+      "text": "review.md flags lib/payments.ts (module-level new Stripe(...) exported as stripe) being used directly by billing/service.ts and recommends a port/adapter wired through the container",
+      "passed": true,
+      "evidence": "old_skill run-1: lib/payments.ts Stripe wrapper flagged; port/adapter/container recommended."
+    },
+    {
+      "text": "review.md flags customers/routes.ts importing InvoiceRepository from the billing module and querying it directly instead of calling a service",
+      "passed": true,
+      "evidence": "old_skill run-1: customers/routes.ts using billing InvoiceRepository flagged."
+    },
+    {
+      "text": "review.md does NOT report as a violation: BillingService taking the whole Container, new InvoiceRepository(container.db), or the one-way new NotificationService(this.container) call",
+      "passed": true,
+      "evidence": "old_skill run-1: Whole-Container ctor, own repository and one-way NotificationService call listed as fine or not mentioned."
+    },
+    {
+      "text": "review.md does NOT report any repository.ts file or the pure formatAmount helper as a violation",
+      "passed": true,
+      "evidence": "old_skill run-1: repository.ts and formatAmount not reported as violations."
+    }
+  ],
+  "summary": {
+    "passed": 8,
+    "failed": 0,
+    "total": 8,
+    "pass_rate": 1.0
+  }
+}

@@ -63,6 +63,14 @@ Each package keeps its own `INSIGHTS.md` (append-only, pointed to from that
 package's `CLAUDE.md`) — read it before working there. Learned something
 non-obvious this session? Run the `engineering-insights` skill before you stop.
 
+**Before you touch any file in `server/`, `client/`, `reviewer-core/`, `e2e/` or `mcp/`,
+first read that package's `INSIGHTS.md`** (e.g. `server/INSIGHTS.md`) — do this even
+for a quick plan or a read-only look, and for every package a task spans.
+
+**For an architecture-boundary check of a change or plan** (onion layers, cross-package
+imports, "Do not touch"), dispatch the `architecture-reviewer` subagent — don't review
+it inline and don't substitute a generic Explore agent.
+
 ## Non-default conventions
 
 - Server module files are named by **role**, not feature: `routes.ts`, `service.ts`,

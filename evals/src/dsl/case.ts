@@ -68,10 +68,13 @@ export type WorkflowCase =
       maxTurns?: number;
     };
 
+/** Trace paths are OS-native (backslashes on Windows); expectations are written with `/`. */
+const posix = (p: string): string => p.replaceAll("\\", "/");
+
 /** Did a skill engage? Either an explicit Skill tool-call, or reading its SKILL.md. */
 export function activated(result: Result, skill: string): boolean {
   const bySkill = result.skillsInvoked.some((s) => s === skill || s.endsWith(`:${skill}`));
-  const byRead = result.filesRead.some((f) => f.includes(`skills/${skill}/SKILL.md`));
+  const byRead = result.filesRead.some((f) => posix(f).includes(`skills/${skill}/SKILL.md`));
   return bySkill || byRead;
 }
 
@@ -151,13 +154,13 @@ export function runWorkflowCases(cases: WorkflowCase[]): void {
         const files = c.expectFilesRead ?? [];
         const skillEngaged = (p: { skillsInvoked: string[]; filesRead: string[] }, skill: string) =>
           p.skillsInvoked.some((s) => s === skill || s.endsWith(`:${skill}`)) ||
-          p.filesRead.some((f) => f.includes(`skills/${skill}/SKILL.md`));
+          p.filesRead.some((f) => posix(f).includes(`skills/${skill}/SKILL.md`));
         const result = await workflowTask(c.prompt, {
           maxTurns: c.maxTurns,
           stopWhen: (p) =>
             subs.every((s) => p.subagents.includes(s)) &&
             skls.every((s) => skillEngaged(p, s)) &&
-            files.every((f) => p.filesRead.some((r) => r.includes(f))),
+            files.every((f) => p.filesRead.some((r) => posix(r).includes(f))),
         });
         logTrace(c.name, result);
         try {
@@ -172,7 +175,7 @@ export function runWorkflowCases(cases: WorkflowCase[]): void {
           }
           for (const file of c.expectFilesRead ?? []) {
             expect(
-              result.filesRead.some((f) => f.includes(file)),
+              result.filesRead.some((f) => posix(f).includes(file)),
               `${file} not read | reads: ${result.filesRead.join(", ")}`,
             ).toBe(true);
           }
@@ -194,8 +197,8 @@ export function runWorkflowCases(cases: WorkflowCase[]): void {
         logTrace(`${c.name} [treatment]`, treatment);
         logTrace(`${c.name} [control]`, control);
         try {
-          const treatmentRead = treatment.filesRead.some((f) => f.includes(c.expectFileRead));
-          const controlRead = control.filesRead.some((f) => f.includes(c.expectFileRead));
+          const treatmentRead = treatment.filesRead.some((f) => posix(f).includes(c.expectFileRead));
+          const controlRead = control.filesRead.some((f) => posix(f).includes(c.expectFileRead));
           expect(treatmentRead, `treatment reads: ${treatment.filesRead.join(", ")}`).toBe(true);
           expect(controlRead, `control reads: ${control.filesRead.join(", ")}`).toBe(false);
         } finally {

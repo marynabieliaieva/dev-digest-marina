@@ -1,0 +1,580 @@
+{
+  "metadata": {
+    "skill_name": "onion-architecture",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-10-11T18:04:46Z",
+    "evals_run": [
+      10,
+      11
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 11,
+      "configuration": "new_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 36.1,
+        "tokens": 88125,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "A missing ticket is reported by throwing NotFoundError imported from platform/errors.ts",
+          "passed": true,
+          "evidence": "new_skill run-1: service throws NotFoundError."
+        },
+        {
+          "text": "A closed ticket is rejected by throwing an AppError subclass from platform/errors.ts (for example ValidationError) in the service, not a bare Error and not a hand-built reply",
+          "passed": true,
+          "evidence": "new_skill run-1: service throws ValidationError/ConflictError for a closed ticket."
+        },
+        {
+          "text": "routes.ts contains no hand-built 4xx/5xx reply body (no reply.code(4xx/5xx).send / reply.status(4xx/5xx).send) and no try/catch that remaps errors",
+          "passed": true,
+          "evidence": "new_skill run-1: routes.ts has no reply.code/try/catch."
+        },
+        {
+          "text": "A GitHub failure is wrapped in ExternalServiceError (in the adapter or the service) instead of letting the Octokit exception escape",
+          "passed": true,
+          "evidence": "new_skill run-1: ExternalServiceError wrapping in adapter issues.ts and service.ts."
+        },
+        {
+          "text": "No new or changed file contains a bare throw new Error(...)",
+          "passed": true,
+          "evidence": "new_skill run-1: no 'throw new Error(' in new/changed files."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 11,
+      "configuration": "new_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 37.3,
+        "tokens": 85078,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "A missing ticket is reported by throwing NotFoundError imported from platform/errors.ts",
+          "passed": true,
+          "evidence": "new_skill run-2: service throws NotFoundError."
+        },
+        {
+          "text": "A closed ticket is rejected by throwing an AppError subclass from platform/errors.ts (for example ValidationError) in the service, not a bare Error and not a hand-built reply",
+          "passed": true,
+          "evidence": "new_skill run-2: service throws ValidationError/ConflictError for a closed ticket."
+        },
+        {
+          "text": "routes.ts contains no hand-built 4xx/5xx reply body (no reply.code(4xx/5xx).send / reply.status(4xx/5xx).send) and no try/catch that remaps errors",
+          "passed": true,
+          "evidence": "new_skill run-2: routes.ts has no reply.code/try/catch."
+        },
+        {
+          "text": "A GitHub failure is wrapped in ExternalServiceError (in the adapter or the service) instead of letting the Octokit exception escape",
+          "passed": true,
+          "evidence": "new_skill run-2: ExternalServiceError wrapping in adapter issues.ts and service.ts."
+        },
+        {
+          "text": "No new or changed file contains a bare throw new Error(...)",
+          "passed": true,
+          "evidence": "new_skill run-2: no 'throw new Error(' in new/changed files."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 11,
+      "configuration": "new_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 35.1,
+        "tokens": 87492,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "A missing ticket is reported by throwing NotFoundError imported from platform/errors.ts",
+          "passed": true,
+          "evidence": "new_skill run-3: service throws NotFoundError."
+        },
+        {
+          "text": "A closed ticket is rejected by throwing an AppError subclass from platform/errors.ts (for example ValidationError) in the service, not a bare Error and not a hand-built reply",
+          "passed": true,
+          "evidence": "new_skill run-3: service throws ValidationError/ConflictError for a closed ticket."
+        },
+        {
+          "text": "routes.ts contains no hand-built 4xx/5xx reply body (no reply.code(4xx/5xx).send / reply.status(4xx/5xx).send) and no try/catch that remaps errors",
+          "passed": true,
+          "evidence": "new_skill run-3: routes.ts has no reply.code/try/catch."
+        },
+        {
+          "text": "A GitHub failure is wrapped in ExternalServiceError (in the adapter or the service) instead of letting the Octokit exception escape",
+          "passed": true,
+          "evidence": "new_skill run-3: ExternalServiceError wrapping in adapter issues.ts and service.ts."
+        },
+        {
+          "text": "No new or changed file contains a bare throw new Error(...)",
+          "passed": true,
+          "evidence": "new_skill run-3: no 'throw new Error(' in new/changed files."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 10,
+      "configuration": "new_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 39.9,
+        "tokens": 85597,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md flags the GET /tickets/:id handler for building the 404 reply by hand (reply.code(404).send({ error: ... })) and recommends throwing NotFoundError from platform/errors.ts so the central error handler renders it",
+          "passed": true,
+          "evidence": "new_skill run-1: Flagged as finding #1 with NotFoundError fix."
+        },
+        {
+          "text": "review.md flags the try/catch in POST /tickets/:id/close that maps error message strings to 404/409 by hand, and recommends the service throw AppError subclasses that the central error handler maps",
+          "passed": true,
+          "evidence": "new_skill run-1: Flagged as finding #2 (try/catch remap)."
+        },
+        {
+          "text": "review.md flags service.ts for throwing bare new Error('ticket_not_found') / new Error('ticket_already_closed') instead of AppError subclasses from platform/errors.ts",
+          "passed": true,
+          "evidence": "new_skill run-1: Flagged as finding #3 (bare Error)."
+        },
+        {
+          "text": "review.md flags the Octokit adapter (adapters/github/issues.ts) for letting the vendor exception escape and recommends wrapping failures in ExternalServiceError",
+          "passed": true,
+          "evidence": "new_skill run-1: Flagged: Octokit exception must be wrapped in ExternalServiceError."
+        },
+        {
+          "text": "review.md does NOT present repository.ts as a violation",
+          "passed": true,
+          "evidence": "new_skill run-1: repository.ts called fine."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 10,
+      "configuration": "new_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 40.3,
+        "tokens": 85344,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md flags the GET /tickets/:id handler for building the 404 reply by hand (reply.code(404).send({ error: ... })) and recommends throwing NotFoundError from platform/errors.ts so the central error handler renders it",
+          "passed": true,
+          "evidence": "new_skill run-2: Flagged as finding #1 with NotFoundError fix."
+        },
+        {
+          "text": "review.md flags the try/catch in POST /tickets/:id/close that maps error message strings to 404/409 by hand, and recommends the service throw AppError subclasses that the central error handler maps",
+          "passed": true,
+          "evidence": "new_skill run-2: Flagged as finding #2 (try/catch remap)."
+        },
+        {
+          "text": "review.md flags service.ts for throwing bare new Error('ticket_not_found') / new Error('ticket_already_closed') instead of AppError subclasses from platform/errors.ts",
+          "passed": true,
+          "evidence": "new_skill run-2: Flagged as finding #3 (bare Error)."
+        },
+        {
+          "text": "review.md flags the Octokit adapter (adapters/github/issues.ts) for letting the vendor exception escape and recommends wrapping failures in ExternalServiceError",
+          "passed": true,
+          "evidence": "new_skill run-2: Flagged: Octokit exception must be wrapped in ExternalServiceError."
+        },
+        {
+          "text": "review.md does NOT present repository.ts as a violation",
+          "passed": true,
+          "evidence": "new_skill run-2: repository.ts called fine."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 10,
+      "configuration": "new_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 43.7,
+        "tokens": 85810,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md flags the GET /tickets/:id handler for building the 404 reply by hand (reply.code(404).send({ error: ... })) and recommends throwing NotFoundError from platform/errors.ts so the central error handler renders it",
+          "passed": true,
+          "evidence": "new_skill run-3: Flagged as finding #1 with NotFoundError fix."
+        },
+        {
+          "text": "review.md flags the try/catch in POST /tickets/:id/close that maps error message strings to 404/409 by hand, and recommends the service throw AppError subclasses that the central error handler maps",
+          "passed": true,
+          "evidence": "new_skill run-3: Flagged as finding #2 (try/catch remap)."
+        },
+        {
+          "text": "review.md flags service.ts for throwing bare new Error('ticket_not_found') / new Error('ticket_already_closed') instead of AppError subclasses from platform/errors.ts",
+          "passed": true,
+          "evidence": "new_skill run-3: Flagged as finding #3 (bare Error)."
+        },
+        {
+          "text": "review.md flags the Octokit adapter (adapters/github/issues.ts) for letting the vendor exception escape and recommends wrapping failures in ExternalServiceError",
+          "passed": true,
+          "evidence": "new_skill run-3: Flagged: Octokit exception must be wrapped in ExternalServiceError."
+        },
+        {
+          "text": "review.md does NOT present repository.ts as a violation",
+          "passed": true,
+          "evidence": "new_skill run-3: repository.ts called fine."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 11,
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 41.1,
+        "tokens": 85453,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "A missing ticket is reported by throwing NotFoundError imported from platform/errors.ts",
+          "passed": true,
+          "evidence": "old_skill run-1: service throws NotFoundError."
+        },
+        {
+          "text": "A closed ticket is rejected by throwing an AppError subclass from platform/errors.ts (for example ValidationError) in the service, not a bare Error and not a hand-built reply",
+          "passed": true,
+          "evidence": "old_skill run-1: service throws ValidationError/ConflictError for a closed ticket."
+        },
+        {
+          "text": "routes.ts contains no hand-built 4xx/5xx reply body (no reply.code(4xx/5xx).send / reply.status(4xx/5xx).send) and no try/catch that remaps errors",
+          "passed": true,
+          "evidence": "old_skill run-1: routes.ts has no reply.code/try/catch."
+        },
+        {
+          "text": "A GitHub failure is wrapped in ExternalServiceError (in the adapter or the service) instead of letting the Octokit exception escape",
+          "passed": true,
+          "evidence": "old_skill run-1: ExternalServiceError wrapping in service.ts (ConflictError added to errors.ts)."
+        },
+        {
+          "text": "No new or changed file contains a bare throw new Error(...)",
+          "passed": true,
+          "evidence": "old_skill run-1: no 'throw new Error(' in new/changed files."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 11,
+      "configuration": "old_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 33.6,
+        "tokens": 84503,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "A missing ticket is reported by throwing NotFoundError imported from platform/errors.ts",
+          "passed": true,
+          "evidence": "old_skill run-2: service throws NotFoundError."
+        },
+        {
+          "text": "A closed ticket is rejected by throwing an AppError subclass from platform/errors.ts (for example ValidationError) in the service, not a bare Error and not a hand-built reply",
+          "passed": true,
+          "evidence": "old_skill run-2: service throws ValidationError/ConflictError for a closed ticket."
+        },
+        {
+          "text": "routes.ts contains no hand-built 4xx/5xx reply body (no reply.code(4xx/5xx).send / reply.status(4xx/5xx).send) and no try/catch that remaps errors",
+          "passed": true,
+          "evidence": "old_skill run-2: routes.ts has no reply.code/try/catch."
+        },
+        {
+          "text": "A GitHub failure is wrapped in ExternalServiceError (in the adapter or the service) instead of letting the Octokit exception escape",
+          "passed": true,
+          "evidence": "old_skill run-2: ExternalServiceError wrapping in service.ts."
+        },
+        {
+          "text": "No new or changed file contains a bare throw new Error(...)",
+          "passed": true,
+          "evidence": "old_skill run-2: no 'throw new Error(' in new/changed files."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 11,
+      "configuration": "old_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 39.3,
+        "tokens": 86319,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "A missing ticket is reported by throwing NotFoundError imported from platform/errors.ts",
+          "passed": true,
+          "evidence": "old_skill run-3: service throws NotFoundError."
+        },
+        {
+          "text": "A closed ticket is rejected by throwing an AppError subclass from platform/errors.ts (for example ValidationError) in the service, not a bare Error and not a hand-built reply",
+          "passed": true,
+          "evidence": "old_skill run-3: service throws ValidationError/ConflictError for a closed ticket."
+        },
+        {
+          "text": "routes.ts contains no hand-built 4xx/5xx reply body (no reply.code(4xx/5xx).send / reply.status(4xx/5xx).send) and no try/catch that remaps errors",
+          "passed": true,
+          "evidence": "old_skill run-3: routes.ts has no reply.code/try/catch."
+        },
+        {
+          "text": "A GitHub failure is wrapped in ExternalServiceError (in the adapter or the service) instead of letting the Octokit exception escape",
+          "passed": true,
+          "evidence": "old_skill run-3: ExternalServiceError wrapping in service.ts."
+        },
+        {
+          "text": "No new or changed file contains a bare throw new Error(...)",
+          "passed": true,
+          "evidence": "old_skill run-3: no 'throw new Error(' in new/changed files."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 10,
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 46.0,
+        "tokens": 85283,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md flags the GET /tickets/:id handler for building the 404 reply by hand (reply.code(404).send({ error: ... })) and recommends throwing NotFoundError from platform/errors.ts so the central error handler renders it",
+          "passed": true,
+          "evidence": "old_skill run-1: Flags the GET handler 404 (line 9) and the fix makes service.get throw NotFoundError."
+        },
+        {
+          "text": "review.md flags the try/catch in POST /tickets/:id/close that maps error message strings to 404/409 by hand, and recommends the service throw AppError subclasses that the central error handler maps",
+          "passed": true,
+          "evidence": "old_skill run-1: Flags try/catch matching err.message."
+        },
+        {
+          "text": "review.md flags service.ts for throwing bare new Error('ticket_not_found') / new Error('ticket_already_closed') instead of AppError subclasses from platform/errors.ts",
+          "passed": true,
+          "evidence": "old_skill run-1: Flags bare Error('ticket_...') in service.ts."
+        },
+        {
+          "text": "review.md flags the Octokit adapter (adapters/github/issues.ts) for letting the vendor exception escape and recommends wrapping failures in ExternalServiceError",
+          "passed": true,
+          "evidence": "old_skill run-1: Says raw Octokit errors escape instead of ExternalServiceError."
+        },
+        {
+          "text": "review.md does NOT present repository.ts as a violation",
+          "passed": true,
+          "evidence": "old_skill run-1: repository.ts called correct."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 10,
+      "configuration": "old_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.8,
+        "passed": 4,
+        "failed": 1,
+        "total": 5,
+        "time_seconds": 40.4,
+        "tokens": 82822,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md flags the GET /tickets/:id handler for building the 404 reply by hand (reply.code(404).send({ error: ... })) and recommends throwing NotFoundError from platform/errors.ts so the central error handler renders it",
+          "passed": false,
+          "evidence": "old_skill run-2: GET hand-built body mentioned only as an inconsistency; fix offers 'throw NotFoundError, or keep null' - not a clear recommendation."
+        },
+        {
+          "text": "review.md flags the try/catch in POST /tickets/:id/close that maps error message strings to 404/409 by hand, and recommends the service throw AppError subclasses that the central error handler maps",
+          "passed": true,
+          "evidence": "old_skill run-2: Flags routes decoding err.message; fix: delete try/catch."
+        },
+        {
+          "text": "review.md flags service.ts for throwing bare new Error('ticket_not_found') / new Error('ticket_already_closed') instead of AppError subclasses from platform/errors.ts",
+          "passed": true,
+          "evidence": "old_skill run-2: Flags bare Error with magic strings."
+        },
+        {
+          "text": "review.md flags the Octokit adapter (adapters/github/issues.ts) for letting the vendor exception escape and recommends wrapping failures in ExternalServiceError",
+          "passed": true,
+          "evidence": "old_skill run-2: Octokit failures bubble instead of ExternalServiceError."
+        },
+        {
+          "text": "review.md does NOT present repository.ts as a violation",
+          "passed": true,
+          "evidence": "old_skill run-2: repository.ts called correct."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 10,
+      "configuration": "old_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 0.8,
+        "passed": 4,
+        "failed": 1,
+        "total": 5,
+        "time_seconds": 41.8,
+        "tokens": 85735,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md flags the GET /tickets/:id handler for building the 404 reply by hand (reply.code(404).send({ error: ... })) and recommends throwing NotFoundError from platform/errors.ts so the central error handler renders it",
+          "passed": false,
+          "evidence": "old_skill run-3: No finding about the GET handler's hand-built 404 body."
+        },
+        {
+          "text": "review.md flags the try/catch in POST /tickets/:id/close that maps error message strings to 404/409 by hand, and recommends the service throw AppError subclasses that the central error handler maps",
+          "passed": true,
+          "evidence": "old_skill run-3: Flags route parsing err.message; drop try/catch."
+        },
+        {
+          "text": "review.md flags service.ts for throwing bare new Error('ticket_not_found') / new Error('ticket_already_closed') instead of AppError subclasses from platform/errors.ts",
+          "passed": true,
+          "evidence": "old_skill run-3: Flags bare Error with magic strings."
+        },
+        {
+          "text": "review.md flags the Octokit adapter (adapters/github/issues.ts) for letting the vendor exception escape and recommends wrapping failures in ExternalServiceError",
+          "passed": true,
+          "evidence": "old_skill run-3: Adapter should rethrow as ExternalServiceError."
+        },
+        {
+          "text": "review.md does NOT present repository.ts as a violation",
+          "passed": true,
+          "evidence": "old_skill run-3: repository.ts called correct."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "new_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 38.7333,
+        "stddev": 3.1835,
+        "min": 35.1,
+        "max": 43.7
+      },
+      "tokens": {
+        "mean": 86241.0,
+        "stddev": 1254.7615,
+        "min": 85078,
+        "max": 88125
+      }
+    },
+    "old_skill": {
+      "pass_rate": {
+        "mean": 0.9333,
+        "stddev": 0.1033,
+        "min": 0.8,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 40.3667,
+        "stddev": 4.0312,
+        "min": 33.6,
+        "max": 46.0
+      },
+      "tokens": {
+        "mean": 85019.1667,
+        "stddev": 1229.1276,
+        "min": 82822,
+        "max": 86319
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.07",
+      "time_seconds": "-1.6",
+      "tokens": "+1222"
+    }
+  },
+  "notes": []
+}

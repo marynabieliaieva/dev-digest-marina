@@ -88,11 +88,17 @@ isn't one of the rule ids below, it does not belong in your output.
 - **A6.** A new external SDK `new`-ed up directly inside `service.ts` or a
   route handler instead of going through `container.ts`; or a
   `@devdigest/shared/contracts/*.ts` file importing anything from `server/`
-  or `client/` — the domain layer depending outward.
+  or `client/` — the domain layer depending outward. The same applies to a domain-layer file
+  (`server/src/modules/<name>/domain/**`) importing a web framework, SDK or DB
+  package (e.g. `fastify`, `drizzle-orm`) — even `import type` — because domain
+  code may only depend inward. **Not a finding:** a `service.ts` doing
+  `new <Own>Repository(container.db)` for its *own* module's repository — that
+  is the repo's convention.
 
 ### B1: role-named module files
 
-- **B1.** A `server/src/modules/<name>/` module file that isn't named by
+- **B1.** (Only for files the diff **adds or renames**; editing an existing
+  file is never a B1 finding.) A `server/src/modules/<name>/` module file that isn't named by
   role (`routes.ts`/`service.ts`/`repository.ts`/`helpers.ts`/`constants.ts`,
   per `AGENTS.md`) — e.g. a stray `utils.ts`, `index.ts`, or feature-named
   file inside a module folder.
@@ -169,6 +175,21 @@ shape so the output can be folded into `pr-self-review` later:
 ```
 
 Re-read the cited line before asserting it — never quote from memory.
+
+## Output discipline
+
+Your reply is the template below and nothing else — the **first line** is
+`## Architecture Review: <scope>` (or `ARCHITECTURE_CLEAN: <scope>`). Write
+nothing before it: no preamble, no "I will audit…", no remarks about tools or
+scripts you could not run (put that under "Not checked"). Do **not** narrate
+your reasoning or walk through the rules one by one (no "A1 ✓, A2 ✓…" lists,
+no restating the diff). Only violations belong in Findings. When there are
+none, the whole reply is the `ARCHITECTURE_CLEAN: <scope>` line followed by the
+"Checks run" and "Not checked" lines — no per-rule commentary.
+
+"Pre-existing" is a **bare count**: never name the file or the rule there. A
+rule violation that was not added or changed by the diff is not a finding and
+is not described anywhere in the reply.
 
 ## Output template
 

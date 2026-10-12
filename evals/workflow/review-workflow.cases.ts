@@ -1,71 +1,66 @@
 import type { WorkflowCase } from "../src/index.js";
 
 /**
- * Systemic ("workflow") tier — asserts the real on-disk harness (CLAUDE.md + skills + subagents,
- * loaded via settingSources:["project"]) behaves as documented. Organized by scenario, not by a
- * single artifact, because these behaviors are cross-cutting.
+ * Systemic ("workflow") tier — asserts the real on-disk harness (CLAUDE.md + nested package
+ * CLAUDE.md/AGENTS.md + skills + subagents, loaded via settingSources:["project"]) behaves as
+ * documented. Organized by scenario, not by a single artifact, because these behaviors are
+ * cross-cutting.
  *
- * Budget: 5 Claude sessions total.
- *   - 3 × trace     → 1 session each                      = 3
- *   - 1 × activation pair (positive + near-miss negative) = 2
+ * Budget: 4 Claude sessions total (merged from 5 + the planned extras).
+ *   - 2 × trace     → 1 session each; each folds SEVERAL assertions into one session = 2
+ *   - 1 × discovery pair (positive trace on INSIGHTS.md + near-miss negative activation)   = 2
  *
  * `trace` folds several assertions into ONE session (cheaper, coarser) and stops early once its
- * evidence is in — so a dispatch-bearing trace never waits out the nested subagent's full run.
+ * evidence is in. Every listed expectation must hold, so keep each trace to a handful of facets
+ * that ONE natural prompt reliably triggers — too many in one session turns into flakiness.
+ *
+ * What the nested-CLAUDE.md traces rely on: every package's CLAUDE.md is just `@AGENTS.md`, and
+ * each AGENTS.md says "Read INSIGHTS.md before starting work here". Those nested files are loaded
+ * lazily, only when the agent touches a file inside that package — so the prompts below name
+ * source files in each package (never the INSIGHTS.md files themselves) and the assertion is that
+ * the agent follows the nested instruction on its own.
  */
 export const cases: WorkflowCase[] = [
-  // --- trace (1 session): CLAUDE.md "Read When" routing + subagent dispatch, together -----------
+  // --- trace (1 session): nested CLAUDE.md in 3 packages + subagent dispatch, together ----------
   {
     kind: "trace",
-    // Endpoint must NOT already exist, or the model reviews the existing code inline instead of
-    // planning-then-dispatching. GET /reviews/:id/export is genuinely absent from routes.ts.
-    name: "API-route task reads api-contracts AND pulls the architecture-reviewer",
+    name: "multi-package task loads client/server/reviewer-core nested rules AND pulls the architecture-reviewer",
     prompt:
-      "Я планую додати НОВИЙ, ще не реалізований ендпоінт GET /reviews/:id/export (віддає ревʼю як " +
-      "markdown). Спершу звірся з конвенціями API цього репо. Потім ОБОВʼЯЗКОВО запусти сабагента " +
-      "architecture-reviewer, щоб він оцінив мій план на відповідність onion-шарам — не рецензуй сам.",
-    expectFilesRead: ["server/docs/api-contracts.md"],
+      "Я планую зміну, що зачіпає три пакети: новий хук у client/src/lib/hooks/reviews.ts, новий " +
+      "метод у server/src/modules/reviews/service.ts і правку у reviewer-core/src/grounding.ts. " +
+      "Розпочни з того, що відкриєш ці три файли й дотримаєшся настанов цього репо для кожного пакета. " +
+      "Потім ОБОВʼЯЗКОВО запусти сабагента architecture-reviewer, щоб він оцінив мій план на " +
+      "відповідність архітектурним межам — не рецензуй сам.",
+    expectFilesRead: ["client/INSIGHTS.md", "server/INSIGHTS.md", "reviewer-core/INSIGHTS.md"],
     expectSubagents: ["architecture-reviewer"],
-    maxTurns: 8,
+    maxTurns: 12,
   },
 
-  // --- trace (1 session): two "Read When" rows at once -----------------------------------------
+  // --- trace (1 session): nested CLAUDE.md in the two small packages ----------------------------
   {
     kind: "trace",
-    // Tests the CLAUDE.md "Read When" routing, so the prompt must push toward CONSULTING the docs,
-    // not exploring source. Earlier phrasing ("розберись, як усе влаштовано") sent the model straight
-    // into schema.ts / pipeline.run.ts and it never opened the routed doc. One anchor doc (pipeline.md)
-    // keeps this a deterministic routing check — asserting two docs in one session is inherently flaky.
-    name: "pipeline task follows CLAUDE.md routing to pipeline.md",
+    name: "mcp and e2e tasks load their own nested rules",
     prompt:
-      "Я збираюся змінити review pipeline. Перш ніж торкатися коду — звірся з настановами цього репо " +
-      "(CLAUDE.md) щодо того, яку документацію треба прочитати для змін у pipeline, і прочитай саме ці документи.",
-    expectFilesRead: ["reviewer-core/docs/pipeline.md"],
+      "Мені треба зробити дві дрібні правки: у mcp/src/tools/get-conventions.ts і додати новий flow " +
+      "поруч із e2e/specs/01-app-boot.flow.json. Перш ніж щось міняти, відкрий ці файли й дотримайся " +
+      "настанов цього репо для кожного з двох пакетів. Нічого не редагуй — лише підготуйся.",
+    expectFilesRead: ["mcp/INSIGHTS.md", "e2e/INSIGHTS.md"],
     maxTurns: 8,
-  },
-
-  // --- trace (1 session): CLAUDE.md "Hit unexpected behavior" routing -> gotchas ----------------
-  // Was a contrast case, but the control run (empty tmpdir) could still reach the real repo by
-  // absolute path and read gotchas.md, making the negative flaky. As a single-session trace it
-  // reliably checks the same routing rule: in the real repo, the discovery prompt reads gotchas.md.
-  {
-    kind: "trace",
-    name: "CLAUDE.md routes a gotchas lookup to reviewer-core/insights",
-    prompt:
-      "У reviewer-core я стикнувся з несподіваною поведінкою — щось працює не так, як я очікував. " +
-      "За настановами цього репо, де це вже могло бути задокументовано? Прочитай той файл.",
-    expectFilesRead: ["reviewer-core/insights/gotchas.md"],
-    maxTurns: 5,
   },
 
   // --- activation pair (2 sessions): positive + near-miss negative ------------------------------
   {
-    kind: "activation",
-    name: "engineering-insights activates on a genuine discovery",
+    // Trace, not activation: the model goes straight to the package's INSIGHTS.md (via the nested
+    // AGENTS.md rule or the skill — the trace cannot tell which), so what we can assert reliably is
+    // that a genuine discovery is routed to the right file. See the negative case below for the
+    // skill-must-not-fire side.
+    kind: "trace",
+    name: "a genuine discovery in server/ is routed to server/INSIGHTS.md",
     prompt:
-      "Щойно з'ясував, чому pgvector-запит повертав нуль рядків — розмірність колонки не збіглася " +
-      "після зміни моделі ембедингів. Хочу це зафіксувати, щоб більше не наступати.",
-    skill: "engineering-insights",
-    shouldActivate: true,
+      "Щойно виправив баг у server/: pgvector-запит повертав нуль рядків, бо розмірність колонки не " +
+      "збіглася після зміни моделі ембедингів. Це неочевидна пастка — зафіксуй цей урок у нотатках " +
+      "пакета server, щоб команда більше на неї не наступала.",
+    expectFilesRead: ["server/INSIGHTS.md"],
     maxTurns: 4,
   },
   {

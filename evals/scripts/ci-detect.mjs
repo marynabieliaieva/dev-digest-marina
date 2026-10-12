@@ -34,12 +34,17 @@ function hasEvals(tier, name) {
   return readdirSync(dir).some((f) => f.endsWith(".eval.ts"));
 }
 
+/** Names end up in matrix values and shell commands downstream — accept plain slugs only. */
+const SAFE_NAME = /^[A-Za-z0-9._-]+$/;
+/** `*-lite` artifacts are deliberately weakened A/B controls: their evals are EXPECTED to fail. */
+const isControlVariant = (n) => n.endsWith("-lite");
+
 /** Collect distinct artifact names touched under a `.claude` and/or `evals` prefix. */
 function touched(reClaude, reEvals) {
   const names = new Set();
   for (const f of changed) {
     const m = f.match(reClaude) ?? f.match(reEvals);
-    if (m) names.add(m[1]);
+    if (m && SAFE_NAME.test(m[1])) names.add(m[1]);
   }
   return [...names].sort();
 }
@@ -53,18 +58,24 @@ const agentNames = touched(
   /^evals\/agents\/([^/]+)\//,
 );
 
-const skills = skillNames.filter((n) => hasEvals("skills", n));
-const skippedSkills = skillNames.filter((n) => !hasEvals("skills", n));
-const agents = agentNames.filter((n) => hasEvals("agents", n));
-const skippedAgents = agentNames.filter((n) => !hasEvals("agents", n));
+const controlSkills = skillNames.filter(isControlVariant);
+const controlAgents = agentNames.filter(isControlVariant);
+const realSkills = skillNames.filter((n) => !isControlVariant(n));
+const realAgents = agentNames.filter((n) => !isControlVariant(n));
+
+const skills = realSkills.filter((n) => hasEvals("skills", n));
+const skippedSkills = realSkills.filter((n) => !hasEvals("skills", n));
+const agents = realAgents.filter((n) => hasEvals("agents", n));
+const skippedAgents = realAgents.filter((n) => !hasEvals("agents", n));
 
 // The workflow tier measures the LIVE harness, so anything that changes it re-triggers it:
-// the root or .claude CLAUDE.md, any agent definition, the workflow cases, or the engine itself.
+// any CLAUDE.md / AGENTS.md (root, .claude or a package — a package CLAUDE.md is just `@AGENTS.md`,
+// the real rules live in AGENTS.md), any real agent definition, the workflow cases, the engine.
+const agentDef = /^\.claude\/agents\/([^/]+)\.md$/;
 const runWorkflow = changed.some(
   (f) =>
-    f === "CLAUDE.md" ||
-    f === ".claude/CLAUDE.md" ||
-    /^\.claude\/agents\/.+\.md$/.test(f) ||
+    /(^|\/)(CLAUDE|AGENTS)\.md$/.test(f) ||
+    (agentDef.test(f) && !isControlVariant(f.match(agentDef)[1])) ||
     /^evals\/workflow\//.test(f) ||
     /^evals\/src\//.test(f),
 );
@@ -86,3 +97,23 @@ console.error(`agents → run  : ${agents.join(", ") || "(none)"}`);
 console.error(`workflow tier : ${runWorkflow ? "run" : "skip"}`);
 if (skippedSkills.length) console.error(`SKIP skills (no evals): ${skippedSkills.join(", ")}`);
 if (skippedAgents.length) console.error(`SKIP agents (no evals): ${skippedAgents.join(", ")}`);
+const controls = [...controlSkills, ...controlAgents];
+if (controls.length) console.error(`SKIP eval-only control variants: ${controls.join(", ")}`);
+
+// The same report as a table on the workflow run page ($GITHUB_STEP_SUMMARY).
+const summaryFile = process.env.GITHUB_STEP_SUMMARY;
+if (summaryFile) {
+  const row = (kind, name, action) => `| ${kind} | \`${name}\` | ${action} |`;
+  const rows = [
+    ...skills.map((n) => row("skill", n, "▶️ run")),
+    ...skippedSkills.map((n) => row("skill", n, "⏭️ SKIP — no evals written")),
+    ...agents.map((n) => row("agent", n, "▶️ run")),
+    ...skippedAgents.map((n) => row("agent", n, "⏭️ SKIP — no evals written")),
+    ...controls.map((n) => row("control", n, "⏭️ SKIP — eval-only variant")),
+    `| workflow | harness | ${runWorkflow ? "▶️ run" : "⏭️ SKIP — no harness files changed"} |`,
+  ];
+  appendFileSync(
+    summaryFile,
+    `### Eval selection\n\n| Kind | Name | Action |\n|---|---|---|\n${rows.join("\n")}\n`,
+  );
+}
