@@ -21,7 +21,7 @@
     { "cmd": ["wait", "--text", "Merged from 2 accepted conventions"], "label": "modal subtitle confirms the merge count" },
     { "cmd": ["wait", "--fn", "document.querySelector('input[type=text]')?.value === 'payments-api-conventions'"], "label": "draft name is pre-filled from the repo" },
 
-    { "cmd": ["find", "role", "button", "click", "--name", "Create skill"], "label": "save the merged skill" },
+    { "cmd": ["find", "last", "[role=dialog] button", "click"], "label": "save the merged skill (the modal footer button — the page toolbar has a same-named \"Create skill\" behind the overlay)" },
     { "cmd": ["wait", "--url", "/skills/"], "label": "navigated to the new skill's detail page" },
     { "cmd": ["wait", "--load", "networkidle"], "label": "skill detail fetch settles" },
     { "cmd": ["wait", "--text", "payments-api-conventions"], "label": "the new skill's name renders on its detail page" }

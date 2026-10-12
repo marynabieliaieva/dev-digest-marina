@@ -12,6 +12,7 @@
  *   E2E_BASE_URL       web app origin (default http://localhost:3000)
  *   AGENT_BROWSER_BIN  binary name/path (default "agent-browser")
  *   E2E_STEP_TIMEOUT   per-command timeout in ms (default 60000)
+ *   E2E_VIEWPORT       browser window as "WIDTHxHEIGHT" (default 1440x3200 — see below)
  *   E2E_FLOWS          optional comma-separated filename prefixes to run only
  *                      some flows, e.g. "10,11-agent" (default: all)
  *
@@ -38,6 +39,13 @@ const RESULTS_DIR = join(HERE, "test-results");
 const BASE = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 const BIN = process.env.AGENT_BROWSER_BIN ?? "agent-browser";
 const STEP_TIMEOUT = Number(process.env.E2E_STEP_TIMEOUT ?? 60_000);
+/**
+ * Tall on purpose: agent-browser's default window is ~568px high, and `find text|role … click`
+ * does NOT scroll to its target — a card or checkbox below the fold either reports "Element not
+ * found" or "Done" without the click landing (the page just doesn't react). Making the window as
+ * tall as the longest seeded list means every target is on screen, so no spec needs scroll steps.
+ */
+const VIEWPORT = (process.env.E2E_VIEWPORT ?? "1440x3200").split("x");
 const FLOW_PREFIXES = (process.env.E2E_FLOWS ?? "")
   .split(",")
   .map((p) => p.trim())
@@ -128,6 +136,7 @@ async function main(): Promise<void> {
 
   const results: FlowResult[] = [];
   try {
+    await ab(["set", "viewport", VIEWPORT[0], VIEWPORT[1]]);
     for (const { file, flow } of flows) {
       results.push(await runFlow(file, flow));
     }
