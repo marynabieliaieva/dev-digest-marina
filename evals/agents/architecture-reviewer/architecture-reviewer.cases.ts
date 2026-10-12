@@ -46,7 +46,10 @@ export const cases: AgentCase[] = [
     prompt: REVIEW_PROMPT,
     practices: [
       "flags the domain file (checkout.ts) importing a type from 'fastify' as an architecture finding (the domain layer depending on a web framework)",
-      "does NOT flag the `new PgCheckoutRepository()` call inside service.ts as a violation — a service constructing its own module repository is this repo's convention (see agents/blast/brief services)",
+      // Phrased as a quotable positive (the summary line) on purpose: a "does NOT flag X" criterion
+      // has nothing to cite, and weaker judges answer `evidence: null` → FAIL even when the agent is
+      // right. A service constructing its own module repository is this repo's convention.
+      "the findings contain exactly ONE item — the fastify import in checkout.ts — and nothing about service.ts or `new PgCheckoutRepository()` (a service building its own module repository is this repo's convention); quote the Findings entry or the summary counts line (e.g. `CRITICAL: 1 · HIGH: 0 · MEDIUM: 0`) as evidence",
       "names a documented rule id (one of A1–A6, B1, F1–F4, X1–X3, D1–D2) in the `rule id` field of EVERY finding, rather than describing the problem only in prose",
       "assigns a severity (CRITICAL, HIGH or MEDIUM) to each finding",
       "quotes the offending line verbatim as evidence for each finding, not a paraphrase",
