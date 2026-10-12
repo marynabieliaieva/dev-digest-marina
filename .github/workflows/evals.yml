@@ -1,0 +1,242 @@
+# Harness evals (skills / agents / workflow) on pull requests — everything goes through OpenRouter.
+#
+#   .claude/skills/<name>/**  → evals/skills/<name>        (content tier, no proxy, blocking)
+#   .claude/agents/<name>.md  → evals/agents/<name>        (tool tier via LiteLLM proxy, blocking)
+#   any CLAUDE.md / AGENTS.md, any agent, evals/workflow|src  → evals/workflow  (non-blocking)
+#
+# An artifact WITHOUT written evals is not tested and not a failure: the run page shows
+# "SKIP — no evals written". `*-lite` control variants are always skipped (their evals fail by design).
+#
+# Model switch (no UI): repo Actions *Variables* EVAL_MODEL_SKILLS / EVAL_MODEL_TOOLS /
+# EVAL_JUDGE_MODEL, or the inputs of a manual run (Actions → evals → Run workflow).
+# Defaults follow evals/README.md "Which cheap model — verified": the tool tiers need a model that
+# really dispatches subagents (google/gemini-2.5-flash ✅; deepseek-chat ❌ — it does the work inline).
+#
+# Security: `pull_request` only (never pull_request_target) → fork PRs get no secrets, and the
+# `changes` job refuses to run for them; read-only token; the key lives in Actions secrets only.
+name: evals
+
+on:
+  pull_request:
+    paths:
+      - '.claude/skills/**'
+      - '.claude/agents/**'
+      - '**/CLAUDE.md'
+      - '**/AGENTS.md'
+      - 'evals/**'
+      - '.github/workflows/evals.yml'
+      - '.github/actions/evals-setup/**'
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: Which tiers to run (every artifact that has evals)
+        type: choice
+        options: [all, skills, agents, workflow]
+        default: all
+      model_skills:
+        description: OpenRouter model for skill evals (blank = repo variable / default)
+        type: string
+        default: ''
+      model_tools:
+        description: OpenRouter model for agent + workflow evals (blank = repo variable / default)
+        type: string
+        default: ''
+      judge_model:
+        description: OpenRouter model for the judge (blank = repo variable / default)
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evals-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  EVAL_BACKEND: openrouter   # every tier goes through OpenRouter — no Anthropic tokens needed
+
+jobs:
+  changes:
+    name: select evals
+    # No secrets for forks / Dependabot → don't even start.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.actor != 'dependabot[bot]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      skills: ${{ steps.detect.outputs.skills }}
+      agents: ${{ steps.detect.outputs.agents }}
+      run_workflow: ${{ steps.detect.outputs.run_workflow }}
+      have_key: ${{ steps.key.outputs.have_key }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check OpenRouter key
+        id: key
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          if [ -n "$OPENROUTER_API_KEY" ]; then
+            echo "have_key=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "have_key=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::OPENROUTER_API_KEY secret is not set — evals SKIPPED"
+            echo "### Evals skipped — no \`OPENROUTER_API_KEY\` Actions secret" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Detect which evals to run
+        id: detect
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then
+            CHANGED_FILES="$(git diff --name-only "$BASE_SHA...$HEAD_SHA")"
+          else
+            # Manual run: treat every artifact + every AGENTS.md as changed.
+            CHANGED_FILES="$(git ls-files '.claude/skills/*/SKILL.md' '.claude/agents/*.md' '*AGENTS.md')"
+          fi
+          export CHANGED_FILES
+          node evals/scripts/ci-detect.mjs
+
+  skills:
+    name: skill evals · ${{ matrix.skill }}
+    needs: changes
+    if: >-
+      needs.changes.outputs.have_key == 'true' &&
+      needs.changes.outputs.skills != '[]' &&
+      (github.event_name == 'pull_request' || inputs.tier == 'all' || inputs.tier == 'skills')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        skill: ${{ fromJSON(needs.changes.outputs.skills) }}
+    env:
+      # content tier (no tool use) → the cheapest verified model is enough
+      EVAL_MODEL: ${{ inputs.model_skills || vars.EVAL_MODEL_SKILLS || 'deepseek/deepseek-chat' }}
+      EVAL_JUDGE_MODEL: ${{ inputs.judge_model || vars.EVAL_JUDGE_MODEL || 'google/gemini-2.5-flash' }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      EVAL_QUIET: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/evals-setup
+      - name: Run skills/${{ matrix.skill }}
+        working-directory: evals
+        env:
+          SKILL: ${{ matrix.skill }}
+        run: pnpm vitest run "skills/$SKILL"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evals-skill-${{ matrix.skill }}
+          path: evals/results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  agents:
+    name: agent evals · ${{ matrix.agent }}
+    needs: changes
+    if: >-
+      needs.changes.outputs.have_key == 'true' &&
+      needs.changes.outputs.agents != '[]' &&
+      (github.event_name == 'pull_request' || inputs.tier == 'all' || inputs.tier == 'agents')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 1   # tool tiers get throttled by OpenRouter under load (README) — run sequentially
+      matrix:
+        agent: ${{ fromJSON(needs.changes.outputs.agents) }}
+    env:
+      # tool tiers must really dispatch subagents → google/gemini-2.5-flash (README, verified)
+      EVAL_MODEL: ${{ inputs.model_tools || vars.EVAL_MODEL_TOOLS || 'google/gemini-2.5-flash' }}
+      EVAL_JUDGE_MODEL: ${{ inputs.judge_model || vars.EVAL_JUDGE_MODEL || 'google/gemini-2.5-flash' }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      OPENROUTER_BASE_URL: http://localhost:4000
+      EVAL_QUIET: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/evals-setup
+      - name: Start OpenRouter proxy
+        working-directory: evals
+        run: |
+          docker compose -f proxy/docker-compose.yml up -d
+          pnpm proxy:wait
+      - name: Run agents/${{ matrix.agent }}
+        working-directory: evals
+        env:
+          AGENT: ${{ matrix.agent }}
+        run: pnpm vitest run "agents/$AGENT" --retry 1
+      - name: Proxy logs
+        if: failure()
+        working-directory: evals
+        run: docker compose -f proxy/docker-compose.yml logs --tail 100
+      - name: Stop proxy
+        if: always()
+        working-directory: evals
+        run: docker compose -f proxy/docker-compose.yml down
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evals-agent-${{ matrix.agent }}
+          path: evals/results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  workflow:
+    name: workflow evals (non-blocking)
+    needs: changes
+    if: >-
+      needs.changes.outputs.have_key == 'true' &&
+      needs.changes.outputs.run_workflow == 'true' &&
+      (github.event_name == 'pull_request' || inputs.tier == 'all' || inputs.tier == 'workflow')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Activation/dispatch cases are behaviour-shaped and flaky on non-Anthropic models (README):
+    # report the result, but don't block the PR on it.
+    continue-on-error: true
+    env:
+      # tool tiers must really dispatch subagents → google/gemini-2.5-flash (README, verified)
+      EVAL_MODEL: ${{ inputs.model_tools || vars.EVAL_MODEL_TOOLS || 'google/gemini-2.5-flash' }}
+      EVAL_JUDGE_MODEL: ${{ inputs.judge_model || vars.EVAL_JUDGE_MODEL || 'google/gemini-2.5-flash' }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      OPENROUTER_BASE_URL: http://localhost:4000
+      EVAL_QUIET: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/evals-setup
+      - name: Start OpenRouter proxy
+        working-directory: evals
+        run: |
+          docker compose -f proxy/docker-compose.yml up -d
+          pnpm proxy:wait
+      - name: Run workflow evals
+        working-directory: evals
+        run: pnpm vitest run workflow --retry 1
+      - name: Proxy logs
+        if: failure()
+        working-directory: evals
+        run: docker compose -f proxy/docker-compose.yml logs --tail 100
+      - name: Stop proxy
+        if: always()
+        working-directory: evals
+        run: docker compose -f proxy/docker-compose.yml down
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evals-workflow
+          path: evals/results/
+          retention-days: 7
+          if-no-files-found: ignore
