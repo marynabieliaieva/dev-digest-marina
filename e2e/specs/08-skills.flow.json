@@ -27,7 +27,7 @@
     { "cmd": ["find", "role", "button", "click", "--name", "Skills", "--exact"], "label": "switch to the Skills tab" },
     { "cmd": ["wait", "--load", "networkidle"], "label": "skill links fetch settles" },
     { "cmd": ["wait", "--text", "test-quality-rubric"], "label": "the agent's linked skill is listed" },
-    { "cmd": ["wait", "--text", "Filter skills"], "label": "the skill filter input is available" },
+    { "cmd": ["wait", "--fn", "!!document.querySelector('input[placeholder^=\"Filter skills\"]')"], "label": "the skill filter input is available" },
     { "cmd": ["wait", "--text", "of"], "label": "the enabled-count badge is rendered" }
   ]
 }
