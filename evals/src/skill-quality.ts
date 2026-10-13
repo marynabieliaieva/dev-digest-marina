@@ -22,7 +22,10 @@ interface Report {
 }
 
 function* internalLinks(body: string): Generator<[string, string]> {
-  for (const m of body.matchAll(LINK_RE)) {
+  // Markdown inside code (fences or `inline`) is literal text, not a link — e.g. a template
+  // like `- [<date> <label>](<file>)` documents a format and must not be resolved as a path.
+  const prose = body.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "");
+  for (const m of prose.matchAll(LINK_RE)) {
     const target = m[2];
     if (/^(https?:|#|mailto:)/.test(target)) continue;
     const path = target.split("#")[0];

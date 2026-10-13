@@ -6,7 +6,7 @@ import type { WorkflowCase } from "../src/index.js";
  * documented. Organized by scenario, not by a single artifact, because these behaviors are
  * cross-cutting.
  *
- * Budget: 4 Claude sessions total (merged from 5 + the planned extras).
+ * Budget: 6 Claude sessions total.
  *   - 2 × trace     → 1 session each; each folds SEVERAL assertions into one session = 2
  *   - 1 × discovery pair (positive trace on INSIGHTS.md + near-miss negative activation)   = 2
  *
@@ -23,19 +23,29 @@ import type { WorkflowCase } from "../src/index.js";
  * (CI smoke: this comment was touched to exercise .github/workflows/evals.yml.)
  */
 export const cases: WorkflowCase[] = [
-  // --- trace (1 session): nested CLAUDE.md in 3 packages + subagent dispatch, together ----------
+  // --- dispatch (1 session): the architecture-reviewer subagent is actually launched -----------
+  {
+    kind: "dispatch",
+    name: "an architecture-boundary check dispatches the architecture-reviewer subagent",
+    prompt:
+      "Перевір мій план на відповідність архітектурним межам цього репо: у server/src/modules/reviews/service.ts " +
+      "я хочу імпортувати drizzle-orm напряму, а в reviewer-core/src/grounding.ts — читати файл через node:fs. " +
+      "Для такої перевірки в репо є окремий сабагент architecture-reviewer — запусти його, не рецензуй сам.",
+    expectSubagent: "architecture-reviewer",
+    maxTurns: 8,
+  },
+
+  // --- trace (1 session): nested CLAUDE.md in 3 packages -----------------------------------------
   {
     kind: "trace",
-    name: "multi-package task loads client/server/reviewer-core nested rules AND pulls the architecture-reviewer",
+    name: "multi-package task loads client/server/reviewer-core nested rules",
     prompt:
       "Я планую зміну, що зачіпає три пакети: новий хук у client/src/lib/hooks/reviews.ts, новий " +
       "метод у server/src/modules/reviews/service.ts і правку у reviewer-core/src/grounding.ts. " +
       "Розпочни з того, що відкриєш ці три файли й дотримаєшся настанов цього репо для кожного пакета. " +
-      "Потім ОБОВʼЯЗКОВО запусти сабагента architecture-reviewer, щоб він оцінив мій план на " +
-      "відповідність архітектурним межам — не рецензуй сам.",
+      "Нічого не редагуй — лише підготуйся.",
     expectFilesRead: ["client/INSIGHTS.md", "server/INSIGHTS.md", "reviewer-core/INSIGHTS.md"],
-    expectSubagents: ["architecture-reviewer"],
-    maxTurns: 12,
+    maxTurns: 10,
   },
 
   // --- trace (1 session): nested CLAUDE.md in the two small packages ----------------------------
@@ -51,6 +61,16 @@ export const cases: WorkflowCase[] = [
   },
 
   // --- activation pair (2 sessions): positive + near-miss negative ------------------------------
+  {
+    kind: "activation",
+    name: "positive — asking to record a lesson with the insights skill activates engineering-insights",
+    prompt:
+      "Щойно з'ясував неочевидну річ у server/: pgvector-запит повертав нуль рядків, бо розмірність " +
+      "колонки не збіглася після зміни моделі ембедингів. Зафіксуй цей урок через skill engineering-insights.",
+    skill: "engineering-insights",
+    shouldActivate: true,
+    maxTurns: 4,
+  },
   {
     // Trace, not activation: the model goes straight to the package's INSIGHTS.md (via the nested
     // AGENTS.md rule or the skill — the trace cannot tell which), so what we can assert reliably is

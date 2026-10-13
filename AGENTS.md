@@ -57,6 +57,22 @@ targeted vitest, summary-only output, full log in `.claude/tmp/`) — see its he
 
 Full strategy: [TESTING.md](TESTING.md). Key rule: DB-backed tests **must** be named `*.it.test.ts`.
 
+## Harness evals — which one to run after a change
+
+Evals live in `evals/` (`cd evals`). CI runs the same mapping on every PR (`.github/workflows/evals.yml`).
+
+| You changed | Run |
+|---|---|
+| any `.claude/skills/<name>/SKILL.md` (structure, links, frontmatter) | `pnpm eval:quality` — must stay green |
+| `.claude/skills/<name>/**` that has `evals/skills/<name>/` | `pnpm vitest run skills/<name>/` |
+| `.claude/agents/<name>.md` that has `evals/agents/<name>/` | `pnpm vitest run agents/<name>/`, then `pnpm eval:workflow` |
+| any `CLAUDE.md` / `AGENTS.md`, or `evals/workflow/**` | `pnpm eval:workflow` |
+| `evals/src/**` (the engine) | `pnpm typecheck` + `pnpm eval:workflow` |
+| an artifact on purpose, to measure the change | `pnpm eval:repeat <path> -n 2 --label before` / `--label after`, then `pnpm eval:delta before after` |
+
+No eval folder for the artifact → nothing to run (CI logs it as SKIP). `*-lite` artifacts are
+eval-only A/B controls whose evals fail by design — never use them as a gate.
+
 ## Session learnings
 
 Each package keeps its own `INSIGHTS.md` (append-only, pointed to from that
