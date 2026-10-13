@@ -32,6 +32,9 @@ concurrency:
 
 env:
   DATABASE_URL: postgres://devdigest:devdigest@localhost:5432/devdigest
+  # The whole suite hits the API from one loopback IP; the default 120 req/min cap
+  # answered 429 to the PR list near the end of the run (flow 13). Raised for e2e only.
+  API_RATE_LIMIT_MAX: "10000"
   NEXT_PUBLIC_API_BASE: http://localhost:3001
   E2E_BASE_URL: http://localhost:3000
 

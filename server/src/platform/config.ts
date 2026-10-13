@@ -34,6 +34,9 @@ const EnvSchema = z.object({
   // Project context: comma-separated repo-relative globs searched for context docs.
   PROJECT_CONTEXT_GLOBS: z.string().optional(),
   API_PORT: z.coerce.number().int().default(3001),
+  // Global per-IP request cap per minute. The e2e suite raises it: every flow
+  // hits the API from one loopback IP and outruns 120/min on a fast CI runner.
+  API_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
   WEB_PORT: z.coerce.number().int().default(3000),
   DEVDIGEST_CLONE_DIR: z.string().optional(),
   // Override for the BYO-keys store (default ~/.devdigest/secrets.json). Tests
@@ -52,6 +55,8 @@ export type AppConfig = {
   databaseUrl: string;
   apiPort: number;
   webPort: number;
+  /** Global rate limit: max requests per IP per minute (API_RATE_LIMIT_MAX, default 120). */
+  rateLimitMax: number;
   /** Absolute path where repos are cloned (~/.devdigest/workspace by default). */
   cloneDir: string;
   /** Absolute path to the writable secrets store (BYO keys from the UI). */
@@ -106,6 +111,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     databaseUrl: parsed.DATABASE_URL,
     apiPort: parsed.API_PORT,
     webPort: parsed.WEB_PORT,
+    rateLimitMax: parsed.API_RATE_LIMIT_MAX,
     cloneDir,
     secretsPath: parsed.DEVDIGEST_SECRETS_PATH || join(homedir(), '.devdigest', 'secrets.json'),
     nodeEnv: parsed.NODE_ENV,
