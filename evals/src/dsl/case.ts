@@ -135,7 +135,15 @@ export function runWorkflowCases(cases: WorkflowCase[]): void {
           record(c.name, { result });
         }
       } else if (c.kind === "activation") {
-        const result = await workflowTask(c.prompt, { maxTurns: c.maxTurns });
+        // Positive case: stop as soon as the skill engages. Otherwise the model goes on to EXECUTE
+        // the skill, runs out of maxTurns, and the SDK's "max turns" error fails the case before
+        // activation is even checked. A negative case must run to the end to prove a non-activation.
+        const result = await workflowTask(c.prompt, {
+          maxTurns: c.maxTurns,
+          ...(c.shouldActivate && {
+            stopWhen: (p: Pick<Result, "skillsInvoked" | "filesRead">) => activated(p as Result, c.skill),
+          }),
+        });
         logTrace(c.name, result);
         try {
           expect(
