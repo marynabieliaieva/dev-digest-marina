@@ -1,0 +1,11 @@
+{
+  "eval_id": 4,
+  "eval_name": "review-invoices-repo-rules",
+  "prompt": "I'm about to open a PR that adds invoices with an email notification. The files changed in the PR are listed in evals/fixtures/invoices-pr/CHANGED.txt and the whole repo snapshot is under evals/fixtures/invoices-pr/ (treat it as the repo root: both server/ and client/ are there). Please review the PR for architecture problems. For every problem give the file, why it is a problem and how to fix it. Write the review to review.md.",
+  "assertions": [
+    "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests",
+    "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand",
+    "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead",
+    "review.md does NOT present repository.ts as a violation"
+  ]
+}

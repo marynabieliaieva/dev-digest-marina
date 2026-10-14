@@ -32,6 +32,9 @@ concurrency:
 
 env:
   DATABASE_URL: postgres://devdigest:devdigest@localhost:5432/devdigest
+  # The whole suite hits the API from one loopback IP; the default 120 req/min cap
+  # answered 429 to the PR list near the end of the run (flow 13). Raised for e2e only.
+  API_RATE_LIMIT_MAX: "10000"
   NEXT_PUBLIC_API_BASE: http://localhost:3001
   E2E_BASE_URL: http://localhost:3000
 
@@ -108,9 +111,13 @@ jobs:
           curl -fsS http://localhost:3000 >/dev/null 2>&1 || { echo "::error::web never became reachable"; cat "$RUNNER_TEMP/web.log"; exit 1; }
 
       # --- agent-browser CLI (Rust + CDP) + Chrome for Testing ---
+      # Pinned: an unpinned `npm i -g agent-browser` floats to the newest release, and the flows
+      # (e.g. `find role checkbox … --name`) were written and verified against 0.38.1. Bump it
+      # deliberately, together with a local run of the whole suite.
       - name: Install agent-browser
         run: |
-          npm i -g agent-browser
+          npm i -g agent-browser@0.38.1
+          agent-browser --version
           agent-browser install --with-deps
 
       - name: Run e2e flows
@@ -119,6 +126,14 @@ jobs:
           npm ci
           npm test
 
+      # Server-side view of a failing flow (slow/hung requests, warnings) — the screenshot alone
+      # only shows the symptom.
+      - name: Show API + web logs
+        if: failure()
+        run: |
+          echo "::group::api.log (tail)"; tail -n 300 "$RUNNER_TEMP/api.log" || true; echo "::endgroup::"
+          echo "::group::web.log (tail)"; tail -n 100 "$RUNNER_TEMP/web.log" || true; echo "::endgroup::"
+
       - name: Upload failure artifacts
         if: failure()
         uses: actions/upload-artifact@v4
@@ -126,4 +141,6 @@ jobs:
           name: e2e-failure
           path: |
             e2e/test-results/**
+            ${{ runner.temp }}/api.log
+            ${{ runner.temp }}/web.log
           if-no-files-found: ignore

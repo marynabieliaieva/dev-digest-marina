@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)",
+      "passed": true,
+      "evidence": "without_skill run-1: reviews/service.ts: this.notifications = new NotificationService(container) (or default param equal to it)."
+    },
+    {
+      "text": "No new getter or facade for the notifications service is added to container.ts",
+      "passed": true,
+      "evidence": "without_skill run-1: Only reviews/service.ts (+NOTES.md) was written; container.ts unchanged."
+    },
+    {
+      "text": "The reviews module does not import NotificationRepository or anything from db/schema for notifications",
+      "passed": true,
+      "evidence": "without_skill run-1: reviews/service.ts imports only NotificationService, no NotificationRepository or db/schema."
+    },
+    {
+      "text": "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)",
+      "passed": true,
+      "evidence": "without_skill run-1: No adapters.ts, mocks.ts or adapter files were created."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  }
+}

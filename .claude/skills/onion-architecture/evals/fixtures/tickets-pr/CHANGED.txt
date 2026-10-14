@@ -1,0 +1,5 @@
+Files changed in this PR:
+server/src/adapters/github/issues.ts
+server/src/modules/tickets/repository.ts
+server/src/modules/tickets/service.ts
+server/src/modules/tickets/routes.ts

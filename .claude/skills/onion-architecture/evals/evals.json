@@ -1,0 +1,239 @@
+{
+  "skill_name": "onion-architecture",
+  "evals": [
+    {
+      "id": 1,
+      "name": "review-notifications-module",
+      "prompt": "I'm about to open a PR that adds a notifications module to our backend. The module lives in evals/fixtures/notifications-pr/server/src/modules/notifications/ (treat evals/fixtures/notifications-pr/ as the repo root). Please review it for architecture problems. For every problem give the file, the offending line or import, why it is a problem and how to fix it. Write the review to review.md.",
+      "expected_output": "Three findings: routes.ts reads the database directly through the db client instead of going through the service; service.ts imports the octokit SDK directly instead of using the GitHub port; service.ts exposes a Drizzle $inferSelect row type (NotificationRow) in a public method signature. repository.ts and helpers.ts are clean.",
+      "files": [
+        "evals/fixtures/notifications-pr"
+      ],
+      "expectations": [
+        "review.md flags routes.ts for querying the database directly (the db client / drizzle-orm imports and the /notifications/unread handler) instead of calling the service",
+        "review.md flags service.ts for importing and constructing octokit directly, and recommends using the GitHubClient port obtained through the container",
+        "review.md flags the Drizzle row type NotificationRow (typeof ...$inferSelect) leaking out of service.ts via getLatestRow, and recommends returning a shared/domain type mapped in repository.ts or helpers.ts",
+        "review.md does NOT report repository.ts or helpers.ts importing drizzle-orm / the schema as a violation"
+      ],
+      "tier": "basic"
+    },
+    {
+      "id": 2,
+      "name": "review-summaries-module",
+      "prompt": "Please review the new summaries feature before I send the PR. The module is in evals/fixtures/summaries-pr/server/src/modules/summaries/ and it also touched a shared contract file, evals/fixtures/summaries-pr/server/src/vendor/shared/contracts/summary.ts (treat evals/fixtures/summaries-pr/ as the repo root). List every architecture problem with file, why it is wrong and the fix, and write it to review.md.",
+      "expected_output": "Three findings: service.ts constructs an OpenAI client directly instead of using the LLMProvider port from the container; the shared contract summary.ts imports from server modules (domain depending outward); routes.ts holds business logic (free-tier quota check, empty-diff validation, direct repository use) that belongs in service.ts. repository.ts is clean.",
+      "files": [
+        "evals/fixtures/summaries-pr"
+      ],
+      "expectations": [
+        "review.md flags service.ts for importing the openai SDK and calling new OpenAI(...) inside the service, and recommends the LLMProvider port resolved through the container (so it can be mocked via ContainerOverrides)",
+        "review.md flags contracts/summary.ts for importing from modules/summaries/helpers.js, i.e. the shared domain layer depending on server code",
+        "review.md flags routes.ts for containing business logic (the free-plan daily limit check and/or empty-diff validation) and for using SummaryRepository directly, and says this belongs in service.ts",
+        "review.md does NOT report repository.ts as a violation"
+      ],
+      "tier": "basic"
+    },
+    {
+      "id": 3,
+      "name": "add-slack-integration",
+      "prompt": "Add a Slack notification: when a review finishes, post a short message to a Slack incoming-webhook URL (read from the secrets provider under the name SLACK_WEBHOOK_URL). The project is in evals/fixtures/slack-feature/ (treat it as the repo root; do not edit it in place). Write every new or changed file into your outputs folder, keeping the same relative paths, and add a short NOTES.md listing which files you created or changed.",
+      "expected_output": "A new SlackNotifier port in shared adapters.ts, a concrete implementation under server/src/adapters/slack/, a mock in adapters/mocks.ts, registration in platform/container.ts with an override and getter, and ReviewService calling it only through the container.",
+      "files": [
+        "evals/fixtures/slack-feature"
+      ],
+      "expectations": [
+        "A new Slack-related interface (port) is added to server/src/vendor/shared/adapters.ts",
+        "The concrete implementation (the code that performs the HTTP call to the webhook) lives in a new file in its own new directory under server/src/adapters/<name>/",
+        "A mock implementation of the new port is added to server/src/adapters/mocks.ts",
+        "container.ts registers the new adapter with a getter and a ContainerOverrides entry",
+        "ReviewService reaches the notifier only through this.container and contains no fetch/axios/Slack SDK call or import of the concrete adapter"
+      ],
+      "tier": "basic"
+    },
+    {
+      "id": 4,
+      "name": "review-labels-module-clean",
+      "prompt": "Can you review the labels module before I open the PR? It is in evals/fixtures/labels-pr/server/src/modules/labels/ (treat evals/fixtures/labels-pr/ as the repo root). List any architecture problems with file, reason and fix, and write the review to review.md. If you find nothing wrong, say so plainly.",
+      "expected_output": "No layering violations. A good review states the module is compliant; an optional non-blocking remark (e.g. repository interface for testability) is acceptable but must not be presented as a violation.",
+      "files": [
+        "evals/fixtures/labels-pr"
+      ],
+      "expectations": [
+        "review.md concludes that the module has no architecture/layering violations (it does not present any finding as a blocking problem)",
+        "review.md does NOT claim that routes.ts, service.ts or repository.ts imports a forbidden SDK or breaks the dependency direction"
+      ],
+      "tier": "basic"
+    },
+    {
+      "id": 5,
+      "tier": "repo-specific",
+      "name": "review-invoices-repo-rules",
+      "prompt": "I'm about to open a PR that adds invoices with an email notification. The files changed in the PR are listed in evals/fixtures/invoices-pr/CHANGED.txt and the whole repo snapshot is under evals/fixtures/invoices-pr/ (treat it as the repo root: both server/ and client/ are there). Please review the PR for architecture problems. For every problem give the file, why it is a problem and how to fix it. Write the review to review.md.",
+      "expected_output": "Three findings: the new EmailSender port is not swappable in tests (no mock in adapters/mocks.ts, no ContainerOverrides entry); the Invoice contract gained dueDate on the server but the hand-maintained copy in client/src/vendor/shared was not updated; InvoiceService.create exposes typeof invoices.$inferInsert (Drizzle schema type) in its public signature. repository.ts and the use of container.email in the service are fine.",
+      "files": [
+        "evals/fixtures/invoices-pr"
+      ],
+      "expectations": [
+        "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests",
+        "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand",
+        "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead",
+        "review.md does NOT present repository.ts as a violation"
+      ]
+    },
+    {
+      "id": 6,
+      "tier": "repo-specific",
+      "name": "review-orders-compliant-trap",
+      "prompt": "Please review the orders PR before I open it. The changed files are listed in evals/fixtures/orders-pr/CHANGED.txt and the repo snapshot is under evals/fixtures/orders-pr/ (treat it as the repo root). Tell me about any architecture problems with file, reason and fix, and write the review to review.md. If it is fine to merge from an architecture standpoint, say so plainly.",
+      "expected_output": "No blocking violations. The module follows the repo conventions: service takes the whole Container, builds its own repository, calls another module with new CustomerService(this.container). A generic reviewer tends to flag these as service-locator / tight-coupling problems; that is a false positive here.",
+      "files": [
+        "evals/fixtures/orders-pr"
+      ],
+      "expectations": [
+        "review.md concludes the PR has no blocking architecture/layering violation and is fine to merge on that front",
+        "review.md does NOT report OrderService taking the whole Container in its constructor, or building its repository with new OrderRepository(container.db), as a violation or something that must be changed",
+        "review.md does NOT report the cross-module call new CustomerService(this.container) as a violation, and does not demand injecting it through the constructor or a new container getter"
+      ]
+    },
+    {
+      "id": 7,
+      "tier": "repo-specific",
+      "name": "add-cross-module-call",
+      "prompt": "When a review finishes, record a notification row (channel 'review', title containing the findings count) through the existing notifications module. The project is in evals/fixtures/review-to-notification/ (treat it as the repo root; do not edit it in place). Write every new or changed file into your outputs folder, keeping the same relative paths, and add a short NOTES.md listing which files you created or changed.",
+      "expected_output": "ReviewService instantiates NotificationService at the call site with new NotificationService(this.container) and calls record(). No new container getter or facade, no direct use of the notifications repository or schema from reviews, no unnecessary port/adapter.",
+      "files": [
+        "evals/fixtures/review-to-notification"
+      ],
+      "expectations": [
+        "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)",
+        "No new getter or facade for the notifications service is added to container.ts",
+        "The reviews module does not import NotificationRepository or anything from db/schema for notifications",
+        "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)"
+      ]
+    },
+    {
+      "id": 8,
+      "tier": "hard",
+      "name": "review-reports-conventions",
+      "prompt": "Please review the reports PR before I open it. The changed files are listed in evals/fixtures/reports-pr/CHANGED.txt and the (server-only) repo snapshot is under evals/fixtures/reports-pr/ (treat it as the repo root). List every architecture problem with file, why it is a problem and how to fix it, and write the review to review.md.",
+      "expected_output": "Three findings that depend on this repo's conventions: the ReportExporter port is declared in server/src/adapters/s3/types.ts and imported from there by the service instead of living in @devdigest/shared adapters.ts; the Report contract changed but the hand-maintained copy in client/src/vendor/shared must be updated too; ReportService takes individual dependencies and routes.ts assembles them, instead of the service taking the whole Container. repository.ts is fine.",
+      "files": [
+        "evals/fixtures/reports-pr"
+      ],
+      "expectations": [
+        "review.md flags that the ReportExporter port interface is declared inside server/src/adapters/s3/ and imported from there by service.ts (and container.ts), and says the port belongs in the shared ports file (@devdigest/shared adapters.ts) so the application layer does not depend on an infrastructure folder",
+        "review.md says the changed contract server/src/vendor/shared/contracts/report.ts must also be copied by hand to client/src/vendor/shared (the client copy is not part of the PR)",
+        "review.md flags ReportService for taking its repository/exporter/github as separate constructor arguments, assembled in routes.ts, and recommends the service take the whole Container and pull ports from it",
+        "review.md does NOT present repository.ts as a violation"
+      ]
+    },
+    {
+      "id": 9,
+      "tier": "hard",
+      "name": "add-integration-thin-repo",
+      "prompt": "After a digest is generated, post it to a Microsoft Teams incoming webhook; the webhook URL comes from the TEAMS_WEBHOOK_URL environment variable. The project is in evals/fixtures/digest-thin/ (treat it as the repo root; do not edit it in place; create any files that are needed). Write every new or changed file into your outputs folder, keeping the same relative paths, and add a short NOTES.md listing which files you created or changed.",
+      "expected_output": "Port interface in server/src/vendor/shared/adapters.ts; concrete webhook client in its own server/src/adapters/<name>/ directory; mock in server/src/adapters/mocks.ts; registration in server/src/platform/container.ts with a ContainerOverrides entry; DigestService reaches it only through this.container.",
+      "files": [
+        "evals/fixtures/digest-thin"
+      ],
+      "expectations": [
+        "A port interface for the Teams notifier is added to server/src/vendor/shared/adapters.ts (the shared ports file)",
+        "The concrete webhook client (the HTTP call) lives in a new file in its own directory server/src/adapters/<name>/",
+        "A mock implementation of the port is added to server/src/adapters/mocks.ts",
+        "server/src/platform/container.ts registers the adapter with an accessor and a ContainerOverrides entry so it can be replaced in tests",
+        "DigestService calls the notifier only through this.container and has no fetch call or import of the concrete adapter"
+      ]
+    },
+    {
+      "id": 10,
+      "tier": "hard",
+      "name": "scaffold-tags-module",
+      "prompt": "Add a tags feature: a repo can have tags (name and color). Users create, list and delete tags through REST endpoints; tags are stored in Postgres via Drizzle. The project is in evals/fixtures/tags-scaffold/ (treat it as the repo root; do not edit it in place). Write every new file into your outputs folder, keeping the same relative paths, and add a short NOTES.md listing the files you created and anything that has to be done outside server/.",
+      "expected_output": "Role-named module files under server/src/modules/tags/ (routes.ts, service.ts, repository.ts, optional helpers.ts/constants.ts); service takes the whole Container and builds its own repository; routes only call the service; repository maps rows to a shared type; the Zod contract lives in server/src/vendor/shared/contracts/ and NOTES says it must be copied by hand to client/src/vendor/shared.",
+      "files": [
+        "evals/fixtures/tags-scaffold"
+      ],
+      "expectations": [
+        "The module lives in server/src/modules/tags/ and its files are named by role (routes.ts, service.ts, repository.ts, optionally helpers.ts and constants.ts), not by feature or pattern (no tags.controller.ts, tags.service.ts, dto/ or models/)",
+        "TagService takes the whole Container in its constructor and builds its own repository from container.db",
+        "routes.ts imports only its service, shared contracts, zod and fastify: no drizzle-orm, db client or schema, and each handler makes one service call",
+        "Public repository methods return a shared/domain Tag type, not a Drizzle $inferSelect row type",
+        "The Tag contract is a Zod schema under server/src/vendor/shared/contracts/ and NOTES.md says it must also be copied by hand to client/src/vendor/shared"
+      ]
+    },
+    {
+      "id": 11,
+      "tier": "version-compare",
+      "name": "review-tickets-error-contract",
+      "prompt": "Please review the tickets PR before I open it. The changed files are listed in evals/fixtures/tickets-pr/CHANGED.txt and the (server-only) repo snapshot is under evals/fixtures/tickets-pr/ (treat it as the repo root). List every architecture problem with file, why it is a problem and how to fix it, and write the review to review.md.",
+      "expected_output": "Four findings about the failure path: routes.ts hand-builds a 404 body; routes.ts remaps error strings to statuses in a try/catch; service.ts throws bare Error('ticket_...') instead of AppError subclasses from platform/errors.ts; the Octokit adapter lets vendor exceptions escape instead of wrapping them in ExternalServiceError. repository.ts is fine.",
+      "files": [
+        "evals/fixtures/tickets-pr"
+      ],
+      "expectations": [
+        "review.md flags the GET /tickets/:id handler for building the 404 reply by hand (reply.code(404).send({ error: ... })) and recommends throwing NotFoundError from platform/errors.ts so the central error handler renders it",
+        "review.md flags the try/catch in POST /tickets/:id/close that maps error message strings to 404/409 by hand, and recommends the service throw AppError subclasses that the central error handler maps",
+        "review.md flags service.ts for throwing bare new Error('ticket_not_found') / new Error('ticket_already_closed') instead of AppError subclasses from platform/errors.ts",
+        "review.md flags the Octokit adapter (adapters/github/issues.ts) for letting the vendor exception escape and recommends wrapping failures in ExternalServiceError",
+        "review.md does NOT present repository.ts as a violation"
+      ]
+    },
+    {
+      "id": 12,
+      "tier": "version-compare",
+      "name": "add-ticket-assign-errors",
+      "prompt": "Add POST /tickets/:id/assign with body { assignee }. It must assign the ticket in our database and on GitHub. Return a 404 if the ticket does not exist, reject the request if the ticket is already closed, and make sure a GitHub failure surfaces as an error to the caller. The project is in evals/fixtures/tickets-scaffold/ (treat it as the repo root; do not edit it in place). Write every new or changed file into your outputs folder, keeping the same relative paths, and add a short NOTES.md listing which files you created or changed.",
+      "expected_output": "Service throws NotFoundError for a missing ticket and ValidationError (or another AppError subclass) for a closed ticket; the GitHub adapter or service wraps failures in ExternalServiceError; routes.ts has no hand-built error replies or try/catch remapping; no bare Error is thrown anywhere in the new code.",
+      "files": [
+        "evals/fixtures/tickets-scaffold"
+      ],
+      "expectations": [
+        "A missing ticket is reported by throwing NotFoundError imported from platform/errors.ts",
+        "A closed ticket is rejected by throwing an AppError subclass from platform/errors.ts (for example ValidationError) in the service, not a bare Error and not a hand-built reply",
+        "routes.ts contains no hand-built 4xx/5xx reply body (no reply.code(4xx/5xx).send / reply.status(4xx/5xx).send) and no try/catch that remaps errors",
+        "A GitHub failure is wrapped in ExternalServiceError (in the adapter or the service) instead of letting the Octokit exception escape",
+        "No new or changed file contains a bare throw new Error(...)"
+      ]
+    },
+    {
+      "id": 13,
+      "tier": "deep-search",
+      "name": "review-billing-deep-search",
+      "prompt": "Please review the billing PR before I open it. The changed files are listed in evals/fixtures/billing-pr/CHANGED.txt and the (server-only) repo snapshot is under evals/fixtures/billing-pr/ (treat it as the repo root). List every architecture problem with file, why it is a problem and how to fix it, and write the review to review.md.",
+      "expected_output": "Six indirect violations: service->helpers->db transitive leak; service imports another module's repository; billing<->customers service cycle; InvoiceRow ($inferSelect alias) in a service signature; lib/payments.ts Stripe wrapper used by the service; customers/routes.ts importing billing's repository. Decoys that must not be flagged: whole-Container constructor, own repository, one-way new NotificationService(this.container), repositories, pure formatAmount.",
+      "files": [
+        "evals/fixtures/billing-pr"
+      ],
+      "expectations": [
+        "review.md reports that billing/service.ts reaches the database through helpers.ts (nextInvoiceNumber imports db/client.js and db/schema), naming helpers.ts as the leak or the chain service.ts -> helpers.ts -> db",
+        "review.md flags billing/service.ts importing and instantiating CustomerRepository from the customers module, and says the call must go through CustomerService",
+        "review.md flags the import cycle between billing/service.ts and customers/service.ts (BillingService <-> CustomerService)",
+        "review.md flags the Drizzle-derived alias InvoiceRow (billing/types.ts, typeof invoices.$inferSelect) used in BillingService.getRow's return type",
+        "review.md flags lib/payments.ts (module-level new Stripe(...) exported as stripe) being used directly by billing/service.ts and recommends a port/adapter wired through the container",
+        "review.md flags customers/routes.ts importing InvoiceRepository from the billing module and querying it directly instead of calling a service",
+        "review.md does NOT report as a violation: BillingService taking the whole Container, new InvoiceRepository(container.db), or the one-way new NotificationService(this.container) call",
+        "review.md does NOT report any repository.ts file or the pure formatAmount helper as a violation"
+      ]
+    },
+    {
+      "id": 14,
+      "tier": "deep-search",
+      "name": "review-inventory-deep-search",
+      "prompt": "Please review the inventory PR before I open it. The changed files are listed in evals/fixtures/inventory-pr/CHANGED.txt and the (server-only) repo snapshot is under evals/fixtures/inventory-pr/ (treat it as the repo root). List every architecture problem with file, why it is a problem and how to fix it, and write the review to review.md.",
+      "expected_output": "Six indirect violations: routes->serializers->db transitive leak; reports/service imports inventory's repository; inventory<->suppliers service cycle; SupplierRow ($inferSelect alias) in a service signature; lib/mailer.ts Resend wrapper used by the service; shared contract importing from modules/. Decoys that must not be flagged: whole-Container constructors, own repositories, one-way new SupplierService(this.container) from reports, repositories, pure format.ts.",
+      "files": [
+        "evals/fixtures/inventory-pr"
+      ],
+      "expectations": [
+        "review.md reports that inventory/routes.ts reaches the database through serializers.ts (withSupplierNames imports db/client.js and db/schema), naming serializers.ts as the leak or the chain routes.ts -> serializers.ts -> db",
+        "review.md flags reports/service.ts importing InventoryRepository from the inventory module and says the call must go through InventoryService",
+        "review.md flags the import cycle between inventory/service.ts and suppliers/service.ts (InventoryService <-> SupplierService)",
+        "review.md flags the Drizzle-derived alias SupplierRow (suppliers/types.ts, typeof suppliers.$inferSelect) used in SupplierService.get's return type",
+        "review.md flags lib/mailer.ts (module-level new Resend(...) exported as mailer) being used directly by suppliers/service.ts and recommends a port/adapter wired through the container",
+        "review.md flags the shared contract vendor/shared/contracts/inventory.ts importing from modules/inventory/constants.js (the domain layer depending outward)",
+        "review.md does NOT report as a violation: ReportService taking the whole Container, services building their own repositories, or the one-way new SupplierService(this.container) call from reports",
+        "review.md does NOT report any repository.ts file or the pure reports/format.ts helper as a violation"
+      ]
+    }
+  ]
+}

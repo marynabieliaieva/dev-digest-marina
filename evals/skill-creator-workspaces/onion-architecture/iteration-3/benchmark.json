@@ -1,0 +1,779 @@
+{
+  "metadata": {
+    "skill_name": "onion-architecture",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-10-11T16:11:49Z",
+    "evals_run": [
+      7,
+      8,
+      9
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 8,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 48.5,
+        "tokens": 82967,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "A port interface for the Teams notifier is added to server/src/vendor/shared/adapters.ts (the shared ports file)",
+          "passed": true,
+          "evidence": "with_skill run-1: Port DigestNotifier in server/src/vendor/shared/adapters.ts."
+        },
+        {
+          "text": "The concrete webhook client (the HTTP call) lives in a new file in its own directory server/src/adapters/<name>/",
+          "passed": true,
+          "evidence": "with_skill run-1: Concrete fetch client in server/src/adapters/teams/."
+        },
+        {
+          "text": "A mock implementation of the port is added to server/src/adapters/mocks.ts",
+          "passed": true,
+          "evidence": "with_skill run-1: MockDigestNotifier class in server/src/adapters/mocks.ts."
+        },
+        {
+          "text": "server/src/platform/container.ts registers the adapter with an accessor and a ContainerOverrides entry so it can be replaced in tests",
+          "passed": true,
+          "evidence": "with_skill run-1: container.ts has ContainerOverrides plus an accessor reading TEAMS_WEBHOOK_URL."
+        },
+        {
+          "text": "DigestService calls the notifier only through this.container and has no fetch call or import of the concrete adapter",
+          "passed": true,
+          "evidence": "with_skill run-1: DigestService uses this.container accessor; no fetch, no adapter import."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 8,
+      "configuration": "with_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 48.7,
+        "tokens": 82843,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "A port interface for the Teams notifier is added to server/src/vendor/shared/adapters.ts (the shared ports file)",
+          "passed": true,
+          "evidence": "with_skill run-2: Port DigestNotifier in server/src/vendor/shared/adapters.ts."
+        },
+        {
+          "text": "The concrete webhook client (the HTTP call) lives in a new file in its own directory server/src/adapters/<name>/",
+          "passed": true,
+          "evidence": "with_skill run-2: Concrete fetch client in server/src/adapters/teams/."
+        },
+        {
+          "text": "A mock implementation of the port is added to server/src/adapters/mocks.ts",
+          "passed": true,
+          "evidence": "with_skill run-2: MockDigestNotifier class in server/src/adapters/mocks.ts."
+        },
+        {
+          "text": "server/src/platform/container.ts registers the adapter with an accessor and a ContainerOverrides entry so it can be replaced in tests",
+          "passed": true,
+          "evidence": "with_skill run-2: container.ts has ContainerOverrides plus an accessor reading TEAMS_WEBHOOK_URL."
+        },
+        {
+          "text": "DigestService calls the notifier only through this.container and has no fetch call or import of the concrete adapter",
+          "passed": true,
+          "evidence": "with_skill run-2: DigestService uses this.container accessor; no fetch, no adapter import."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 8,
+      "configuration": "with_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 55.9,
+        "tokens": 87280,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "A port interface for the Teams notifier is added to server/src/vendor/shared/adapters.ts (the shared ports file)",
+          "passed": true,
+          "evidence": "with_skill run-3: Port DigestNotifier in server/src/vendor/shared/adapters.ts."
+        },
+        {
+          "text": "The concrete webhook client (the HTTP call) lives in a new file in its own directory server/src/adapters/<name>/",
+          "passed": true,
+          "evidence": "with_skill run-3: Concrete fetch client in server/src/adapters/teams/."
+        },
+        {
+          "text": "A mock implementation of the port is added to server/src/adapters/mocks.ts",
+          "passed": true,
+          "evidence": "with_skill run-3: MockDigestNotifier class in server/src/adapters/mocks.ts."
+        },
+        {
+          "text": "server/src/platform/container.ts registers the adapter with an accessor and a ContainerOverrides entry so it can be replaced in tests",
+          "passed": true,
+          "evidence": "with_skill run-3: container.ts has ContainerOverrides plus an accessor reading TEAMS_WEBHOOK_URL."
+        },
+        {
+          "text": "DigestService calls the notifier only through this.container and has no fetch call or import of the concrete adapter",
+          "passed": true,
+          "evidence": "with_skill run-3: DigestService uses this.container accessor; no fetch, no adapter import."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 7,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 59.3,
+        "tokens": 86213,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md flags that the ReportExporter port interface is declared inside server/src/adapters/s3/ and imported from there by service.ts (and container.ts), and says the port belongs in the shared ports file (@devdigest/shared adapters.ts) so the application layer does not depend on an infrastructure folder",
+          "passed": true,
+          "evidence": "with_skill run-1: review.md: port in adapters/s3/ must move to server/src/vendor/shared/adapters.ts."
+        },
+        {
+          "text": "review.md says the changed contract server/src/vendor/shared/contracts/report.ts must also be copied by hand to client/src/vendor/shared (the client copy is not part of the PR)",
+          "passed": true,
+          "evidence": "with_skill run-1: review.md: contract must be copied by hand to client/src/vendor/shared."
+        },
+        {
+          "text": "review.md flags ReportService for taking its repository/exporter/github as separate constructor arguments, assembled in routes.ts, and recommends the service take the whole Container and pull ports from it",
+          "passed": true,
+          "evidence": "with_skill run-1: review.md: ReportService must take the whole Container (convention of ReviewService/RepoService)."
+        },
+        {
+          "text": "review.md does NOT present repository.ts as a violation",
+          "passed": true,
+          "evidence": "with_skill run-1: repository.ts not reported as a violation (at most an optional note)."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 7,
+      "configuration": "with_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 60.7,
+        "tokens": 88926,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md flags that the ReportExporter port interface is declared inside server/src/adapters/s3/ and imported from there by service.ts (and container.ts), and says the port belongs in the shared ports file (@devdigest/shared adapters.ts) so the application layer does not depend on an infrastructure folder",
+          "passed": true,
+          "evidence": "with_skill run-2: review.md: port in adapters/s3/ must move to server/src/vendor/shared/adapters.ts."
+        },
+        {
+          "text": "review.md says the changed contract server/src/vendor/shared/contracts/report.ts must also be copied by hand to client/src/vendor/shared (the client copy is not part of the PR)",
+          "passed": true,
+          "evidence": "with_skill run-2: review.md: contract must be copied by hand to client/src/vendor/shared."
+        },
+        {
+          "text": "review.md flags ReportService for taking its repository/exporter/github as separate constructor arguments, assembled in routes.ts, and recommends the service take the whole Container and pull ports from it",
+          "passed": true,
+          "evidence": "with_skill run-2: review.md: ReportService must take the whole Container (convention of ReviewService/RepoService)."
+        },
+        {
+          "text": "review.md does NOT present repository.ts as a violation",
+          "passed": true,
+          "evidence": "with_skill run-2: repository.ts not reported as a violation (at most an optional note)."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 7,
+      "configuration": "with_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 62.3,
+        "tokens": 85194,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md flags that the ReportExporter port interface is declared inside server/src/adapters/s3/ and imported from there by service.ts (and container.ts), and says the port belongs in the shared ports file (@devdigest/shared adapters.ts) so the application layer does not depend on an infrastructure folder",
+          "passed": true,
+          "evidence": "with_skill run-3: review.md: port in adapters/s3/ must move to server/src/vendor/shared/adapters.ts."
+        },
+        {
+          "text": "review.md says the changed contract server/src/vendor/shared/contracts/report.ts must also be copied by hand to client/src/vendor/shared (the client copy is not part of the PR)",
+          "passed": true,
+          "evidence": "with_skill run-3: review.md: contract must be copied by hand to client/src/vendor/shared."
+        },
+        {
+          "text": "review.md flags ReportService for taking its repository/exporter/github as separate constructor arguments, assembled in routes.ts, and recommends the service take the whole Container and pull ports from it",
+          "passed": true,
+          "evidence": "with_skill run-3: review.md: ReportService must take the whole Container (convention of ReviewService/RepoService)."
+        },
+        {
+          "text": "review.md does NOT present repository.ts as a violation",
+          "passed": true,
+          "evidence": "with_skill run-3: repository.ts not reported as a violation (at most an optional note)."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 9,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 57.9,
+        "tokens": 84084,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The module lives in server/src/modules/tags/ and its files are named by role (routes.ts, service.ts, repository.ts, optionally helpers.ts and constants.ts), not by feature or pattern (no tags.controller.ts, tags.service.ts, dto/ or models/)",
+          "passed": true,
+          "evidence": "with_skill run-1: modules/tags/ has constants, helpers, repository, routes, service."
+        },
+        {
+          "text": "TagService takes the whole Container in its constructor and builds its own repository from container.db",
+          "passed": true,
+          "evidence": "with_skill run-1: TagService constructor(container: Container) and repository from container.db."
+        },
+        {
+          "text": "routes.ts imports only its service, shared contracts, zod and fastify: no drizzle-orm, db client or schema, and each handler makes one service call",
+          "passed": true,
+          "evidence": "with_skill run-1: routes.ts imports fastify, zod, shared contracts, Container type, TagService only."
+        },
+        {
+          "text": "The Tag contract is a Zod schema under server/src/vendor/shared/contracts/ and NOTES.md says it must also be copied by hand to client/src/vendor/shared",
+          "passed": true,
+          "evidence": "with_skill run-1: Contract in server/src/vendor/shared/contracts/tags.ts; NOTES.md mentions manual copy to client/src/vendor/shared."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 9,
+      "configuration": "with_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 57.2,
+        "tokens": 83244,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The module lives in server/src/modules/tags/ and its files are named by role (routes.ts, service.ts, repository.ts, optionally helpers.ts and constants.ts), not by feature or pattern (no tags.controller.ts, tags.service.ts, dto/ or models/)",
+          "passed": true,
+          "evidence": "with_skill run-2: modules/tags/ has constants, helpers, repository, routes, service."
+        },
+        {
+          "text": "TagService takes the whole Container in its constructor and builds its own repository from container.db",
+          "passed": true,
+          "evidence": "with_skill run-2: TagService constructor(container: Container) and repository from container.db."
+        },
+        {
+          "text": "routes.ts imports only its service, shared contracts, zod and fastify: no drizzle-orm, db client or schema, and each handler makes one service call",
+          "passed": true,
+          "evidence": "with_skill run-2: routes.ts imports fastify, zod, shared contracts, Container type, TagService only."
+        },
+        {
+          "text": "The Tag contract is a Zod schema under server/src/vendor/shared/contracts/ and NOTES.md says it must also be copied by hand to client/src/vendor/shared",
+          "passed": true,
+          "evidence": "with_skill run-2: Contract in server/src/vendor/shared/contracts/tags.ts; NOTES.md mentions manual copy to client/src/vendor/shared."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 9,
+      "configuration": "with_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 57.8,
+        "tokens": 85693,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The module lives in server/src/modules/tags/ and its files are named by role (routes.ts, service.ts, repository.ts, optionally helpers.ts and constants.ts), not by feature or pattern (no tags.controller.ts, tags.service.ts, dto/ or models/)",
+          "passed": true,
+          "evidence": "with_skill run-3: modules/tags/ has constants, helpers, repository, routes, service."
+        },
+        {
+          "text": "TagService takes the whole Container in its constructor and builds its own repository from container.db",
+          "passed": true,
+          "evidence": "with_skill run-3: TagService constructor(container: Container) and repository from container.db."
+        },
+        {
+          "text": "routes.ts imports only its service, shared contracts, zod and fastify: no drizzle-orm, db client or schema, and each handler makes one service call",
+          "passed": true,
+          "evidence": "with_skill run-3: routes.ts imports fastify, zod, shared contracts, Container type, TagService only."
+        },
+        {
+          "text": "The Tag contract is a Zod schema under server/src/vendor/shared/contracts/ and NOTES.md says it must also be copied by hand to client/src/vendor/shared",
+          "passed": true,
+          "evidence": "with_skill run-3: Contract in server/src/vendor/shared/contracts/tags.ts; NOTES.md mentions manual copy to client/src/vendor/shared."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 8,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.2,
+        "passed": 1,
+        "failed": 4,
+        "total": 5,
+        "time_seconds": 43.1,
+        "tokens": 71401,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "A port interface for the Teams notifier is added to server/src/vendor/shared/adapters.ts (the shared ports file)",
+          "passed": false,
+          "evidence": "without_skill run-1: Port placed in server/src/modules/digests/ports.ts."
+        },
+        {
+          "text": "The concrete webhook client (the HTTP call) lives in a new file in its own directory server/src/adapters/<name>/",
+          "passed": false,
+          "evidence": "without_skill run-1: Adapter placed in server/src/platform/, not an adapters/<name>/ directory."
+        },
+        {
+          "text": "A mock implementation of the port is added to server/src/adapters/mocks.ts",
+          "passed": false,
+          "evidence": "without_skill run-1: No mock added; adapters/mocks.ts not created."
+        },
+        {
+          "text": "server/src/platform/container.ts registers the adapter with an accessor and a ContainerOverrides entry so it can be replaced in tests",
+          "passed": false,
+          "evidence": "without_skill run-1: container.ts has no ContainerOverrides entry."
+        },
+        {
+          "text": "DigestService calls the notifier only through this.container and has no fetch call or import of the concrete adapter",
+          "passed": true,
+          "evidence": "without_skill run-1: DigestService uses the notifier through container; no fetch or adapter import."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 8,
+      "configuration": "without_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.2,
+        "passed": 1,
+        "failed": 4,
+        "total": 5,
+        "time_seconds": 39.7,
+        "tokens": 72684,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "A port interface for the Teams notifier is added to server/src/vendor/shared/adapters.ts (the shared ports file)",
+          "passed": false,
+          "evidence": "without_skill run-2: Port placed in server/src/modules/digests/ports.ts."
+        },
+        {
+          "text": "The concrete webhook client (the HTTP call) lives in a new file in its own directory server/src/adapters/<name>/",
+          "passed": false,
+          "evidence": "without_skill run-2: Adapter placed in server/src/platform/, not an adapters/<name>/ directory."
+        },
+        {
+          "text": "A mock implementation of the port is added to server/src/adapters/mocks.ts",
+          "passed": false,
+          "evidence": "without_skill run-2: No mock added; adapters/mocks.ts not created."
+        },
+        {
+          "text": "server/src/platform/container.ts registers the adapter with an accessor and a ContainerOverrides entry so it can be replaced in tests",
+          "passed": false,
+          "evidence": "without_skill run-2: container.ts has no ContainerOverrides entry."
+        },
+        {
+          "text": "DigestService calls the notifier only through this.container and has no fetch call or import of the concrete adapter",
+          "passed": true,
+          "evidence": "without_skill run-2: DigestService uses the notifier through container; no fetch or adapter import."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 8,
+      "configuration": "without_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 0.2,
+        "passed": 1,
+        "failed": 4,
+        "total": 5,
+        "time_seconds": 39.3,
+        "tokens": 72616,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "A port interface for the Teams notifier is added to server/src/vendor/shared/adapters.ts (the shared ports file)",
+          "passed": false,
+          "evidence": "without_skill run-3: Port placed in server/src/modules/digests/ports.ts."
+        },
+        {
+          "text": "The concrete webhook client (the HTTP call) lives in a new file in its own directory server/src/adapters/<name>/",
+          "passed": false,
+          "evidence": "without_skill run-3: Adapter placed in server/src/platform/, not an adapters/<name>/ directory."
+        },
+        {
+          "text": "A mock implementation of the port is added to server/src/adapters/mocks.ts",
+          "passed": false,
+          "evidence": "without_skill run-3: No mock added; adapters/mocks.ts not created."
+        },
+        {
+          "text": "server/src/platform/container.ts registers the adapter with an accessor and a ContainerOverrides entry so it can be replaced in tests",
+          "passed": false,
+          "evidence": "without_skill run-3: container.ts has no ContainerOverrides entry."
+        },
+        {
+          "text": "DigestService calls the notifier only through this.container and has no fetch call or import of the concrete adapter",
+          "passed": true,
+          "evidence": "without_skill run-3: DigestService uses the notifier through container; no fetch or adapter import."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 7,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.25,
+        "passed": 1,
+        "failed": 3,
+        "total": 4,
+        "time_seconds": 59.6,
+        "tokens": 74467,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md flags that the ReportExporter port interface is declared inside server/src/adapters/s3/ and imported from there by service.ts (and container.ts), and says the port belongs in the shared ports file (@devdigest/shared adapters.ts) so the application layer does not depend on an infrastructure folder",
+          "passed": false,
+          "evidence": "without_skill run-1: Recommends modules/reports/ports.ts or shared contracts, not the shared ports file."
+        },
+        {
+          "text": "review.md says the changed contract server/src/vendor/shared/contracts/report.ts must also be copied by hand to client/src/vendor/shared (the client copy is not part of the PR)",
+          "passed": false,
+          "evidence": "without_skill run-1: No mention of the client copy."
+        },
+        {
+          "text": "review.md flags ReportService for taking its repository/exporter/github as separate constructor arguments, assembled in routes.ts, and recommends the service take the whole Container and pull ports from it",
+          "passed": false,
+          "evidence": "without_skill run-1: Recommends building the service in the container; never says the service should take Container."
+        },
+        {
+          "text": "review.md does NOT present repository.ts as a violation",
+          "passed": true,
+          "evidence": "without_skill run-1: repository.ts called correctly confined."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 7,
+      "configuration": "without_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.25,
+        "passed": 1,
+        "failed": 3,
+        "total": 4,
+        "time_seconds": 60.6,
+        "tokens": 75221,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md flags that the ReportExporter port interface is declared inside server/src/adapters/s3/ and imported from there by service.ts (and container.ts), and says the port belongs in the shared ports file (@devdigest/shared adapters.ts) so the application layer does not depend on an infrastructure folder",
+          "passed": false,
+          "evidence": "without_skill run-2: Offers modules/reports/ports.ts first, shared ports file not the recommendation."
+        },
+        {
+          "text": "review.md says the changed contract server/src/vendor/shared/contracts/report.ts must also be copied by hand to client/src/vendor/shared (the client copy is not part of the PR)",
+          "passed": false,
+          "evidence": "without_skill run-2: No mention of the client copy."
+        },
+        {
+          "text": "review.md flags ReportService for taking its repository/exporter/github as separate constructor arguments, assembled in routes.ts, and recommends the service take the whole Container and pull ports from it",
+          "passed": false,
+          "evidence": "without_skill run-2: Recommends registering reportService in the container instead."
+        },
+        {
+          "text": "review.md does NOT present repository.ts as a violation",
+          "passed": true,
+          "evidence": "without_skill run-2: repository.ts called correctly confined."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 7,
+      "configuration": "without_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 0.0,
+        "passed": 0,
+        "failed": 4,
+        "total": 4,
+        "time_seconds": 59.3,
+        "tokens": 74505,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md flags that the ReportExporter port interface is declared inside server/src/adapters/s3/ and imported from there by service.ts (and container.ts), and says the port belongs in the shared ports file (@devdigest/shared adapters.ts) so the application layer does not depend on an infrastructure folder",
+          "passed": false,
+          "evidence": "without_skill run-3: Offers modules/reports/ports.ts first, shared ports file not the recommendation."
+        },
+        {
+          "text": "review.md says the changed contract server/src/vendor/shared/contracts/report.ts must also be copied by hand to client/src/vendor/shared (the client copy is not part of the PR)",
+          "passed": false,
+          "evidence": "without_skill run-3: No mention of the client copy."
+        },
+        {
+          "text": "review.md flags ReportService for taking its repository/exporter/github as separate constructor arguments, assembled in routes.ts, and recommends the service take the whole Container and pull ports from it",
+          "passed": false,
+          "evidence": "without_skill run-3: Recommends registering reportService in the container; praises constructor-injected abstractions."
+        },
+        {
+          "text": "review.md does NOT present repository.ts as a violation",
+          "passed": false,
+          "evidence": "without_skill run-3: Reports repository.ts (returns wire contract, cast) as finding #5."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 9,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.5,
+        "passed": 2,
+        "failed": 2,
+        "total": 4,
+        "time_seconds": 37.1,
+        "tokens": 76578,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The module lives in server/src/modules/tags/ and its files are named by role (routes.ts, service.ts, repository.ts, optionally helpers.ts and constants.ts), not by feature or pattern (no tags.controller.ts, tags.service.ts, dto/ or models/)",
+          "passed": true,
+          "evidence": "without_skill run-1: routes/service/repository present; extras types.ts and index.ts but no feature or pattern naming."
+        },
+        {
+          "text": "TagService takes the whole Container in its constructor and builds its own repository from container.db",
+          "passed": false,
+          "evidence": "without_skill run-1: TagService takes a TagRepository, not Container."
+        },
+        {
+          "text": "routes.ts imports only its service, shared contracts, zod and fastify: no drizzle-orm, db client or schema, and each handler makes one service call",
+          "passed": true,
+          "evidence": "without_skill run-1: routes.ts has no db, drizzle or repository import."
+        },
+        {
+          "text": "The Tag contract is a Zod schema under server/src/vendor/shared/contracts/ and NOTES.md says it must also be copied by hand to client/src/vendor/shared",
+          "passed": false,
+          "evidence": "without_skill run-1: No contract under vendor/shared/contracts; NOTES.md has no client copy step."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 9,
+      "configuration": "without_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.5,
+        "passed": 2,
+        "failed": 2,
+        "total": 4,
+        "time_seconds": 55.6,
+        "tokens": 73660,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The module lives in server/src/modules/tags/ and its files are named by role (routes.ts, service.ts, repository.ts, optionally helpers.ts and constants.ts), not by feature or pattern (no tags.controller.ts, tags.service.ts, dto/ or models/)",
+          "passed": true,
+          "evidence": "without_skill run-2: routes/service/repository present; extras types.ts, index.ts, constants.ts."
+        },
+        {
+          "text": "TagService takes the whole Container in its constructor and builds its own repository from container.db",
+          "passed": false,
+          "evidence": "without_skill run-2: TagService takes a TagRepositoryPort, not Container."
+        },
+        {
+          "text": "routes.ts imports only its service, shared contracts, zod and fastify: no drizzle-orm, db client or schema, and each handler makes one service call",
+          "passed": true,
+          "evidence": "without_skill run-2: routes.ts has no db, drizzle or repository import."
+        },
+        {
+          "text": "The Tag contract is a Zod schema under server/src/vendor/shared/contracts/ and NOTES.md says it must also be copied by hand to client/src/vendor/shared",
+          "passed": false,
+          "evidence": "without_skill run-2: No contract under vendor/shared/contracts; NOTES.md has no client copy step."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 9,
+      "configuration": "without_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 0.25,
+        "passed": 1,
+        "failed": 3,
+        "total": 4,
+        "time_seconds": 51.2,
+        "tokens": 73891,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The module lives in server/src/modules/tags/ and its files are named by role (routes.ts, service.ts, repository.ts, optionally helpers.ts and constants.ts), not by feature or pattern (no tags.controller.ts, tags.service.ts, dto/ or models/)",
+          "passed": true,
+          "evidence": "without_skill run-3: routes/service/repository present; extras ports.ts, schemas.ts, types.ts."
+        },
+        {
+          "text": "TagService takes the whole Container in its constructor and builds its own repository from container.db",
+          "passed": false,
+          "evidence": "without_skill run-3: TagService takes a TagRepository, not Container."
+        },
+        {
+          "text": "routes.ts imports only its service, shared contracts, zod and fastify: no drizzle-orm, db client or schema, and each handler makes one service call",
+          "passed": false,
+          "evidence": "without_skill run-3: routes.ts imports DrizzleTagRepository from ./repository.js."
+        },
+        {
+          "text": "The Tag contract is a Zod schema under server/src/vendor/shared/contracts/ and NOTES.md says it must also be copied by hand to client/src/vendor/shared",
+          "passed": false,
+          "evidence": "without_skill run-3: No contract under vendor/shared/contracts; NOTES.md has no client copy step."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 56.4778,
+        "stddev": 4.8535,
+        "min": 48.5,
+        "max": 62.3
+      },
+      "tokens": {
+        "mean": 85160.4444,
+        "stddev": 2093.9728,
+        "min": 82843,
+        "max": 88926
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.2611,
+        "stddev": 0.1557,
+        "min": 0.0,
+        "max": 0.5
+      },
+      "time_seconds": {
+        "mean": 49.5,
+        "stddev": 9.7221,
+        "min": 37.1,
+        "max": 60.6
+      },
+      "tokens": {
+        "mean": 73891.4444,
+        "stddev": 1542.4645,
+        "min": 71401,
+        "max": 76578
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.74",
+      "time_seconds": "+7.0",
+      "tokens": "+11269"
+    }
+  },
+  "notes": []
+}

@@ -1,0 +1,15 @@
+{
+  "eval_id": 12,
+  "eval_name": "review-billing-deep-search",
+  "prompt": "Please review the billing PR before I open it. The changed files are listed in evals/fixtures/billing-pr/CHANGED.txt and the (server-only) repo snapshot is under evals/fixtures/billing-pr/ (treat it as the repo root). List every architecture problem with file, why it is a problem and how to fix it, and write the review to review.md.",
+  "assertions": [
+    "review.md reports that billing/service.ts reaches the database through helpers.ts (nextInvoiceNumber imports db/client.js and db/schema), naming helpers.ts as the leak or the chain service.ts -> helpers.ts -> db",
+    "review.md flags billing/service.ts importing and instantiating CustomerRepository from the customers module, and says the call must go through CustomerService",
+    "review.md flags the import cycle between billing/service.ts and customers/service.ts (BillingService <-> CustomerService)",
+    "review.md flags the Drizzle-derived alias InvoiceRow (billing/types.ts, typeof invoices.$inferSelect) used in BillingService.getRow's return type",
+    "review.md flags lib/payments.ts (module-level new Stripe(...) exported as stripe) being used directly by billing/service.ts and recommends a port/adapter wired through the container",
+    "review.md flags customers/routes.ts importing InvoiceRepository from the billing module and querying it directly instead of calling a service",
+    "review.md does NOT report as a violation: BillingService taking the whole Container, new InvoiceRepository(container.db), or the one-way new NotificationService(this.container) call",
+    "review.md does NOT report any repository.ts file or the pure formatAmount helper as a violation"
+  ]
+}

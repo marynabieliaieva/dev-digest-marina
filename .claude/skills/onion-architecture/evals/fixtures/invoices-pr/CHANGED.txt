@@ -1,0 +1,8 @@
+Files changed in this PR:
+server/src/vendor/shared/adapters.ts
+server/src/vendor/shared/contracts/invoice.ts
+server/src/adapters/email/sendgrid.ts
+server/src/platform/container.ts
+server/src/modules/invoices/repository.ts
+server/src/modules/invoices/service.ts
+server/src/modules/invoices/routes.ts
