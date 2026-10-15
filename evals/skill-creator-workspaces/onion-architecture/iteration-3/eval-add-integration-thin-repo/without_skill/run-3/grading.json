@@ -1,0 +1,35 @@
+{
+  "expectations": [
+    {
+      "text": "A port interface for the Teams notifier is added to server/src/vendor/shared/adapters.ts (the shared ports file)",
+      "passed": false,
+      "evidence": "without_skill run-3: Port placed in server/src/modules/digests/ports.ts."
+    },
+    {
+      "text": "The concrete webhook client (the HTTP call) lives in a new file in its own directory server/src/adapters/<name>/",
+      "passed": false,
+      "evidence": "without_skill run-3: Adapter placed in server/src/platform/, not an adapters/<name>/ directory."
+    },
+    {
+      "text": "A mock implementation of the port is added to server/src/adapters/mocks.ts",
+      "passed": false,
+      "evidence": "without_skill run-3: No mock added; adapters/mocks.ts not created."
+    },
+    {
+      "text": "server/src/platform/container.ts registers the adapter with an accessor and a ContainerOverrides entry so it can be replaced in tests",
+      "passed": false,
+      "evidence": "without_skill run-3: container.ts has no ContainerOverrides entry."
+    },
+    {
+      "text": "DigestService calls the notifier only through this.container and has no fetch call or import of the concrete adapter",
+      "passed": true,
+      "evidence": "without_skill run-3: DigestService uses the notifier through container; no fetch or adapter import."
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 4,
+    "total": 5,
+    "pass_rate": 0.2
+  }
+}

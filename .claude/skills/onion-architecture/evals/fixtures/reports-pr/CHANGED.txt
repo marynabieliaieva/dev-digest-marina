@@ -1,0 +1,8 @@
+Files changed in this PR:
+server/src/vendor/shared/contracts/report.ts
+server/src/adapters/s3/types.ts
+server/src/adapters/s3/exporter.ts
+server/src/platform/container.ts
+server/src/modules/reports/repository.ts
+server/src/modules/reports/service.ts
+server/src/modules/reports/routes.ts

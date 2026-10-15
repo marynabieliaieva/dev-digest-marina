@@ -1,0 +1,20 @@
+{
+  "expectations": [
+    {
+      "text": "review.md concludes that the module has no architecture/layering violations (it does not present any finding as a blocking problem)",
+      "passed": true,
+      "evidence": "review.md verdict: 'No architecture problems found'; only non-blocking notes."
+    },
+    {
+      "text": "review.md does NOT claim that routes.ts, service.ts or repository.ts imports a forbidden SDK or breaks the dependency direction",
+      "passed": true,
+      "evidence": "Checklist items 1-4 answered 'No' for routes/service/repository."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 0,
+    "total": 2,
+    "pass_rate": 1.0
+  }
+}

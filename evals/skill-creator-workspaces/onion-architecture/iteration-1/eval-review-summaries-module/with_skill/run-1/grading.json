@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "review.md flags service.ts for importing the openai SDK and calling new OpenAI(...) inside the service, and recommends the LLMProvider port resolved through the container (so it can be mocked via ContainerOverrides)",
+      "passed": true,
+      "evidence": "review.md #1: service.ts imports openai and does new OpenAI(...); fix uses the existing LLMProvider port via this.container.llm and ContainerOverrides."
+    },
+    {
+      "text": "review.md flags contracts/summary.ts for importing from modules/summaries/helpers.js, i.e. the shared domain layer depending on server code",
+      "passed": true,
+      "evidence": "review.md #5: contracts/summary.ts imports modules/summaries/helpers; domain contract depends outward."
+    },
+    {
+      "text": "review.md flags routes.ts for containing business logic (the free-plan daily limit check and/or empty-diff validation) and for using SummaryRepository directly, and says this belongs in service.ts",
+      "passed": true,
+      "evidence": "review.md #2 and #3: routes.ts imports SummaryRepository and holds quota/date math/empty-diff rule; move to service."
+    },
+    {
+      "text": "review.md does NOT report repository.ts as a violation",
+      "passed": true,
+      "evidence": "review.md 'What is fine': repository.ts only file importing drizzle, returns shared Summary; only a non-blocking note about a missing port."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  }
+}

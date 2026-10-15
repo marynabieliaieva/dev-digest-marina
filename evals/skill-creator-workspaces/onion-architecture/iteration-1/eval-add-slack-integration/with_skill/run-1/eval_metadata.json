@@ -1,0 +1,12 @@
+{
+  "eval_id": 2,
+  "eval_name": "add-slack-integration",
+  "prompt": "Add a Slack notification: when a review finishes, post a short message to a Slack incoming-webhook URL (read from the secrets provider under the name SLACK_WEBHOOK_URL). The project is in evals/fixtures/slack-feature/ (treat it as the repo root; do not edit it in place). Write every new or changed file into your outputs folder, keeping the same relative paths, and add a short NOTES.md listing which files you created or changed.",
+  "assertions": [
+    "A new Slack-related interface (port) is added to server/src/vendor/shared/adapters.ts",
+    "The concrete implementation (the code that performs the HTTP call to the webhook) lives in a new file in its own new directory under server/src/adapters/<name>/",
+    "A mock implementation of the new port is added to server/src/adapters/mocks.ts",
+    "container.ts registers the new adapter with a getter and a ContainerOverrides entry",
+    "ReviewService reaches the notifier only through this.container and contains no fetch/axios/Slack SDK call or import of the concrete adapter"
+  ]
+}
