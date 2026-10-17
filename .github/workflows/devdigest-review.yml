@@ -1,0 +1,48 @@
+name: DevDigest Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    name: DevDigest Review
+    runs-on: ubuntu-latest
+    # Fork PRs never receive OPENROUTER_API_KEY / GITHUB_TOKEN: this job simply
+    # does not run for them (AC-17). The workflow uses the standard
+    # 'pull_request' event, never the base-repo-privileged variant that would
+    # run with base-repo secrets/permissions against untrusted fork code.
+    if: github.event.pull_request.head.repo.fork == false
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+
+      - name: Run DevDigest review
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REPOSITORY_ID: ${{ github.repository_id }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          DEVDIGEST_POST_AS: github_review
+        run: node .devdigest/runner/index.js
+
+      - name: Upload review result artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: devdigest-result
+          path: devdigest-result.json
