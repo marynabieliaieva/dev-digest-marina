@@ -42,6 +42,18 @@ export const NAV: NavGroup[] = [
       },
     ],
   },
+  {
+    section: "AUTOMATION",
+    items: [
+      {
+        key: "ci-runs",
+        label: "CI Runs",
+        icon: "Workflow",
+        href: "/ci",
+        gKey: "i",
+      },
+    ],
+  },
 ];
 
 export const SETTINGS_ITEM: NavItemDef = {
@@ -71,6 +83,7 @@ export const SHORTCUTS: ShortcutDef[] = [
   { keys: "g s", label: "Go to Skills", group: "Navigation" },
   { keys: "g a", label: "Go to Agents", group: "Navigation" },
   { keys: "g c", label: "Go to Conventions", group: "Navigation" },
+  { keys: "g i", label: "Go to CI Runs", group: "Navigation" },
   { keys: "j / k", label: "Next / previous finding", group: "Findings" },
   { keys: "a", label: "Accept finding", group: "Findings" },
   { keys: "d", label: "Dismiss finding", group: "Findings" },
