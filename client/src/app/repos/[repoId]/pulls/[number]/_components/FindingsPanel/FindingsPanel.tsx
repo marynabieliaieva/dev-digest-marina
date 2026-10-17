@@ -6,8 +6,9 @@ import React from "react";
 import { useTranslations } from "next-intl";
 import { Toggle, EmptyState } from "@devdigest/ui";
 import type { FindingRecord, Severity } from "@devdigest/shared";
-import { FindingCard } from "../FindingCard";
-import { useFindingAction } from "../../../../../../../lib/hooks/reviews";
+import { FindingCard } from "@/components/finding-card";
+import { useFindingAction, usePrReviews } from "../../../../../../../lib/hooks/reviews";
+import { useCreateEvalCase } from "../../../../../../../lib/hooks/evals";
 import { KEY_TO_ACTION } from "./constants";
 import { visibleFindings } from "./helpers";
 import { s } from "./styles";
@@ -28,6 +29,10 @@ export function FindingsPanel({
 }) {
   const t = useTranslations("prReview");
   const action = useFindingAction();
+  const createEvalCase = useCreateEvalCase();
+  const { data: reviews } = usePrReviews(prId);
+  // Findings carry only `review_id`; the owning review gives the agent id/name.
+  const reviewById = React.useMemo(() => new Map((reviews ?? []).map((r) => [r.id, r])), [reviews]);
   const [hideLow, setHideLow] = React.useState(false);
   const [focusIdx, setFocusIdx] = React.useState(0);
 
@@ -74,6 +79,14 @@ export function FindingsPanel({
               repoFullName={repoFullName}
               headSha={headSha}
               onAction={(act) => action.mutate({ findingId: f.id, action: act, prId })}
+              agentName={reviewById.get(f.review_id)?.agent_name}
+              onCreateEvalCase={() =>
+                createEvalCase.mutateAsync({
+                  findingId: f.id,
+                  prId,
+                  agentId: reviewById.get(f.review_id)?.agent_id,
+                })
+              }
             />
           ))
         )}

@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "review.md flags routes.ts for querying the database directly (the db client / drizzle-orm imports and the /notifications/unread handler) instead of calling the service",
+      "passed": true,
+      "evidence": "review.md #1: routes.ts imports drizzle/db/schema (lines 2,4,5), /unread handler queries db directly."
+    },
+    {
+      "text": "review.md flags service.ts for importing and constructing octokit directly, and recommends using the GitHubClient port obtained through the container",
+      "passed": true,
+      "evidence": "review.md #2: service.ts imports Octokit directly; fix: port in shared adapters, implement in adapters/github, use this.container.github."
+    },
+    {
+      "text": "review.md flags the Drizzle row type NotificationRow (typeof ...$inferSelect) leaking out of service.ts via getLatestRow, and recommends returning a shared/domain type mapped in repository.ts or helpers.ts",
+      "passed": true,
+      "evidence": "review.md #4: getLatestRow returns NotificationRow; fix: return Notification DTO."
+    },
+    {
+      "text": "review.md does NOT report repository.ts or helpers.ts importing drizzle-orm / the schema as a violation",
+      "passed": true,
+      "evidence": "Closing line: 'The repository itself and the DTO mapper are otherwise cleanly placed'; #6 on helpers.ts is explicitly 'acceptable direction', low severity."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  }
+}

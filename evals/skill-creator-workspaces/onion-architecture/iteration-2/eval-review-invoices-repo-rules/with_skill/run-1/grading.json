@@ -1,0 +1,26 @@
+{
+  "expectations": [
+    {
+      "text": "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests",
+      "passed": true,
+      "evidence": "with_skill run-1: review.md: email adapter has no MockEmailSender in adapters/mocks.ts and no email entry in ContainerOverrides, so tests cannot swap it."
+    },
+    {
+      "text": "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand",
+      "passed": true,
+      "evidence": "with_skill run-1: review.md: client/src/vendor/shared/contracts/invoice.ts is missing dueDate and has drifted from the server contract."
+    },
+    {
+      "text": "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead",
+      "passed": true,
+      "evidence": "with_skill run-1: review.md: service.ts imports db/schema/invoices and exposes typeof invoices.$inferInsert in create(); recommends a domain/shared input type."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "notes": "4th expectation ('does NOT present repository.ts as a violation') excluded: fixture v1 had repository.insert(values: typeof invoices.$inferInsert), a real leak, so flagging repository.ts was legitimate."
+}

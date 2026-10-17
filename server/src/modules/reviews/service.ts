@@ -284,8 +284,11 @@ export class ReviewService {
         if (a) names.set(review.agentId, a.name);
       }
     }
+    const evalCaseIds = await this.repo.evalCaseIdsForFindings(
+      rows.flatMap(({ findings }) => findings.map((f) => f.id)),
+    );
     return rows.map(({ review, findings }) =>
-      reviewToDto(review, findings, review.agentId ? names.get(review.agentId) : null),
+      reviewToDto(review, findings, evalCaseIds, review.agentId ? names.get(review.agentId) : null),
     );
   }
 
@@ -295,7 +298,10 @@ export class ReviewService {
     if (!ctx) throw new NotFoundError('Run not found');
     const reviewRow =
       ctx.run.status === 'done' ? await this.repo.reviewForRun(workspaceId, runId) : undefined;
-    return runDetailToDto(ctx, reviewRow);
+    const evalCaseIds = await this.repo.evalCaseIdsForFindings(
+      reviewRow ? reviewRow.findings.map((f) => f.id) : [],
+    );
+    return runDetailToDto(ctx, reviewRow, evalCaseIds);
   }
 
   async getRunTrace(runId: string): Promise<RunTrace | undefined> {

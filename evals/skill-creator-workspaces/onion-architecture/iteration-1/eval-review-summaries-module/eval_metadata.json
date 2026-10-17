@@ -1,0 +1,11 @@
+{
+  "eval_id": 1,
+  "eval_name": "review-summaries-module",
+  "prompt": "Please review the new summaries feature before I send the PR. The module is in evals/fixtures/summaries-pr/server/src/modules/summaries/ and it also touched a shared contract file, evals/fixtures/summaries-pr/server/src/vendor/shared/contracts/summary.ts (treat evals/fixtures/summaries-pr/ as the repo root). List every architecture problem with file, why it is wrong and the fix, and write it to review.md.",
+  "assertions": [
+    "review.md flags service.ts for importing the openai SDK and calling new OpenAI(...) inside the service, and recommends the LLMProvider port resolved through the container (so it can be mocked via ContainerOverrides)",
+    "review.md flags contracts/summary.ts for importing from modules/summaries/helpers.js, i.e. the shared domain layer depending on server code",
+    "review.md flags routes.ts for containing business logic (the free-plan daily limit check and/or empty-diff validation) and for using SummaryRepository directly, and says this belongs in service.ts",
+    "review.md does NOT report repository.ts as a violation"
+  ]
+}

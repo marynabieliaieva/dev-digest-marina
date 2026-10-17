@@ -1,5 +1,53 @@
 import { describe, it, expect } from 'vitest';
-import { filterReviewableDiff, taskLine } from '../src/modules/reviews/helpers.js';
+import {
+  filterReviewableDiff,
+  findingRowToDto,
+  reviewToDto,
+  taskLine,
+} from '../src/modules/reviews/helpers.js';
+
+const findingRow = (id: string) =>
+  ({
+    id,
+    reviewId: 'r1',
+    severity: 'high',
+    category: 'security',
+    title: 't',
+    file: 'a.ts',
+    startLine: 1,
+    endLine: 2,
+    rationale: 'why',
+    suggestion: null,
+    confidence: 0.9,
+    kind: 'finding',
+    trifectaComponents: null,
+    acceptedAt: null,
+    dismissedAt: null,
+  }) as never;
+
+describe('eval_case_id on finding DTOs', () => {
+  it('findingRowToDto carries the given case id or null', () => {
+    expect(findingRowToDto(findingRow('f1'), 'c1').eval_case_id).toBe('c1');
+    expect(findingRowToDto(findingRow('f1'), null).eval_case_id).toBeNull();
+  });
+
+  it('reviewToDto maps ids from the map', () => {
+    const review = {
+      id: 'r1',
+      prId: 'p1',
+      agentId: 'a1',
+      runId: null,
+      kind: 'review',
+      verdict: null,
+      summary: null,
+      score: null,
+      model: null,
+      createdAt: new Date(),
+    } as never;
+    const dto = reviewToDto(review, [findingRow('f1'), findingRow('f2')], new Map([['f1', 'c1']]));
+    expect(dto.findings.map((f) => f.eval_case_id)).toEqual(['c1', null]);
+  });
+});
 
 /**
  * Unit coverage for the review task-line. The key invariant: our trusted

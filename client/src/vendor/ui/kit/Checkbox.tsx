@@ -28,17 +28,19 @@ export function Checkbox({
         aria-checked={checked}
         onClick={() => onChange?.(!checked)}
         style={{
-          width: 16,
-          height: 16,
-          borderRadius: 4,
-          border: "1.5px solid " + (checked ? "var(--accent)" : "var(--border-strong)"),
-          background: checked ? "var(--accent)" : "transparent",
+          width: 20,
+          height: 20,
+          borderRadius: 5,
+          border: "2px solid " + (checked ? "var(--accent)" : "var(--text-secondary)"),
+          background: checked ? "var(--accent)" : "var(--bg-elevated)",
+          flexShrink: 0,
+          cursor: "pointer",
           display: "grid",
           placeItems: "center",
           padding: 0,
         }}
       >
-        {checked && <Icon.Check size={11} style={{ color: "#fff" }} />}
+        {checked && <Icon.Check size={14} style={{ color: "#fff" }} />}
       </button>
       {label}
     </label>

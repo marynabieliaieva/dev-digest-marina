@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "review.md flags that the ReportExporter port interface is declared inside server/src/adapters/s3/ and imported from there by service.ts (and container.ts), and says the port belongs in the shared ports file (@devdigest/shared adapters.ts) so the application layer does not depend on an infrastructure folder",
+      "passed": true,
+      "evidence": "with_skill run-3: review.md: port in adapters/s3/ must move to server/src/vendor/shared/adapters.ts."
+    },
+    {
+      "text": "review.md says the changed contract server/src/vendor/shared/contracts/report.ts must also be copied by hand to client/src/vendor/shared (the client copy is not part of the PR)",
+      "passed": true,
+      "evidence": "with_skill run-3: review.md: contract must be copied by hand to client/src/vendor/shared."
+    },
+    {
+      "text": "review.md flags ReportService for taking its repository/exporter/github as separate constructor arguments, assembled in routes.ts, and recommends the service take the whole Container and pull ports from it",
+      "passed": true,
+      "evidence": "with_skill run-3: review.md: ReportService must take the whole Container (convention of ReviewService/RepoService)."
+    },
+    {
+      "text": "review.md does NOT present repository.ts as a violation",
+      "passed": true,
+      "evidence": "with_skill run-3: repository.ts not reported as a violation (at most an optional note)."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  }
+}

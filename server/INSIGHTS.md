@@ -43,6 +43,12 @@ non-obvious; never rewritten, only appended to.
   **skip silently and report green**. A passing integration run is only
   meaningful if the output shows the test count — check for `skipped` before
   believing it, and just re-run.
+- 2026-10-17: GitHub's workflow-run API returns `pull_requests: []` once the PR
+  is merged/closed (and always for fork PRs). Cross-checking a CI artifact's
+  `pr_number` against it rejected every post-merge run, and the CI Runs page
+  stayed empty — the reason only shows in `POST /ci/refresh` → `rejected`. Check
+  that first when CI runs "don't appear". `ci/ingest.ts::withVerifiedPullRequest`
+  now falls back to the PR itself (run head SHA = PR head or one of its commits).
 
 ## Decisions
 
@@ -119,5 +125,38 @@ non-obvious; never rewritten, only appended to.
     existing ones.
   Do NOT redirect `HOME`/`USERPROFILE` for this. Testcontainers reads
   `~/.docker`, and every `.it` suite silently skips as "Docker not available".
+
+- 2026-10-12: **pgvector dimensionality mismatch is a silent killer.** When switching 
+  embedding models (e.g., OpenAI `text-embedding-3-large` with 3072 dims vs. old 
+  1536-dim model), pgvector columns have a **fixed dimensionality** baked into 
+  their type definition. If the schema says `vector('embedding', { dimensions: 1536 })` 
+  but you're now writing 3072-dim embeddings, similarity queries return **zero rows 
+  silently** (pgvector cannot compute distance across mismatched vector spaces).
+  
+  **How it broke:** A diff query that used to return 3–5 matching embeddings suddenly 
+  returned nothing, but `SELECT COUNT(*)` showed the vectors were stored. No error, 
+  no warning — just an empty result set that made the feature silently break.
+  
+  **The fix (in order):**
+  1. Update `schema/*.ts` to match the new embedding dimensions: 
+     `vector('embedding', { dimensions: 3072 })`
+  2. Run `drizzle-kit generate` to scaffold a migration
+  3. Apply it: `pnpm db:migrate`
+  4. Backfill/truncate: either regenerate embeddings from source content, or truncate 
+     the old rows if they're pre-computed (e.g., knowledge base / RAG tables can be 
+     backfilled from stored `content` field)
+  
+  **Checklist before deploying a model switch:**
+  - [ ] Verified embedding model output dimensions (e.g., `len(embed("text"))`)
+  - [ ] Updated schema file `dimensions` to match
+  - [ ] Ran `drizzle-kit generate` and reviewed the migration SQL
+  - [ ] Tested migration locally: `pnpm db:migrate`
+  - [ ] Verified the table was altered (check Postgres `\d+ table_name`)
+  - [ ] Backfilled or truncated old vectors as appropriate
+  - [ ] A test query returns results (not zero rows)
+  
+  **Symptom to recognize:** pgvector query (e.g., `similarity_search` for RAG) 
+  suddenly returns 0 rows, but the table has rows (verified via COUNT). The column 
+  `dimensions` in the schema does NOT match what the embedding model actually outputs.
 
 ## Open Questions

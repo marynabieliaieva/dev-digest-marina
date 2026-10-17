@@ -308,6 +308,17 @@ export const RunRequest = z.object({
 });
 export type RunRequest = z.infer<typeof RunRequest>;
 
+/** Body of POST /pulls/:id/multi-agent-run: 1–5 unique agent ids. */
+export const MultiAgentRunRequest = z
+  .object({
+    agentIds: z.array(z.string().min(1)).min(1).max(5),
+  })
+  .refine((v) => new Set(v.agentIds).size === v.agentIds.length, {
+    message: 'agentIds must be unique',
+    path: ['agentIds'],
+  });
+export type MultiAgentRunRequest = z.infer<typeof MultiAgentRunRequest>;
+
 // ---- Structured API error envelope (returned by the API; UX taxonomy is FE) ----
 export const ApiErrorBody = z.object({
   error: z.object({

@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { Verdict, Finding } from './findings.js';
-import { EvalRun, EvalOwnerKind, Conformance } from './knowledge.js';
+import { Verdict, Finding, FindingKind } from './findings.js';
+import { EvalRun, EvalCase, EvalOwnerKind, Conformance, Provider, CiFailOn } from './knowledge.js';
 
 /**
  * A4 — Eval / CI / Compose / Conformance API contracts (L06).
@@ -29,11 +29,86 @@ export const EvalCaseInput = z.object({
 });
 export type EvalCaseInput = z.infer<typeof EvalCaseInput>;
 
+/** What an eval case expects (stored as `eval_cases.expected_output`). */
+export const EvalExpectation = z.object({
+  type: z.enum(['must_find', 'must_not_flag']),
+  file: z.string(),
+  start_line: z.number().int(),
+  end_line: z.number().int(),
+  kind: FindingKind,
+  severity: z.string(),
+  category: z.string(),
+  title: z.string(),
+  source_finding_id: z.string(),
+});
+export type EvalExpectation = z.infer<typeof EvalExpectation>;
+
+/** The latest result of a case (either batch scope), as shown in the Evals tab. */
+export const EvalCaseLastResult = z.object({
+  pass: z.boolean().nullable(),
+  error: z.string().nullable(),
+  ran_at: z.string(),
+  actual_count: z.number().int(),
+  matched_count: z.number().int(),
+});
+export type EvalCaseLastResult = z.infer<typeof EvalCaseLastResult>;
+
+/** An eval case in API form. */
+export const EvalCaseDto = EvalCase.extend({
+  source_finding_id: z.string().nullable(),
+  created_at: z.string(),
+  expectation: EvalExpectation,
+  last_result: EvalCaseLastResult.nullable(),
+});
+export type EvalCaseDto = z.infer<typeof EvalCaseDto>;
+
+export const EvalBatchStatus = z.enum(['running', 'done', 'failed']);
+export type EvalBatchStatus = z.infer<typeof EvalBatchStatus>;
+
+export const EvalBatchScope = z.enum(['set', 'case']);
+export type EvalBatchScope = z.infer<typeof EvalBatchScope>;
+
+/** The agent config frozen when a batch starts (what the run actually used). */
+export const EvalConfigSnapshot = z.object({
+  provider: z.string(),
+  model: z.string(),
+  system_prompt: z.string(),
+  strategy: z.string(),
+  skills: z.array(z.object({ name: z.string(), body: z.string() })),
+});
+export type EvalConfigSnapshot = z.infer<typeof EvalConfigSnapshot>;
+
+/** One `eval_batches` row in API form. `config_snapshot` only on single-batch/compare responses. */
+export const EvalBatch = z.object({
+  id: z.string(),
+  agent_id: z.string(),
+  agent_name: z.string(),
+  scope: EvalBatchScope,
+  agent_version: z.number().int(),
+  status: EvalBatchStatus,
+  error: z.string().nullable(),
+  started_at: z.string(),
+  finished_at: z.string().nullable(),
+  cases_total: z.number().int(),
+  cases_done: z.number().int(),
+  traces_passed: z.number().int().nullable(),
+  traces_total: z.number().int().nullable(),
+  recall: z.number().nullable(),
+  precision: z.number().nullable(),
+  citation_accuracy: z.number().nullable(),
+  cost_usd: z.number().nullable(),
+  duration_ms: z.number().int().nullable(),
+  config_snapshot: EvalConfigSnapshot.optional(),
+});
+export type EvalBatch = z.infer<typeof EvalBatch>;
+
 /** A persisted eval run row (one execution of a case), returned by the API. */
 export const EvalRunRecord = z.object({
   id: z.string(),
   case_id: z.string(),
+  batch_id: z.string(),
   case_name: z.string().nullish(),
+  error: z.string().nullable(),
   ran_at: z.string(),
   actual_output: z.unknown(),
   pass: z.boolean().nullable(),
@@ -53,12 +128,45 @@ export const EvalRunResult = z.object({
 });
 export type EvalRunResult = z.infer<typeof EvalRunResult>;
 
-/** One point on the dashboard trend (per run, chronological). */
+/** A batch with its per-case runs and frozen config (`GET /eval-runs/:batchId`). */
+export const EvalBatchDetail = EvalBatch.extend({
+  runs: z.array(EvalRunRecord),
+  config_snapshot: EvalConfigSnapshot,
+});
+export type EvalBatchDetail = z.infer<typeof EvalBatchDetail>;
+
+/** What the model actually produced for a case (`eval_runs.actual_output`). */
+export const EvalActualOutput = z.object({
+  findings: z.array(Finding),
+  dropped: z.array(z.object({ finding: Finding, reason: z.string() })),
+  matched_finding_ids: z.array(z.string()),
+});
+export type EvalActualOutput = z.infer<typeof EvalActualOutput>;
+
+/** Response of the run-starting POSTs (202). */
+export const EvalRunStarted = z.object({ batch_id: z.string() });
+export type EvalRunStarted = z.infer<typeof EvalRunStarted>;
+
+/** Response of `POST /eval-runs/all`. */
+export const EvalRunAllResult = z.object({
+  started: z.array(z.object({ agent_id: z.string(), batch_id: z.string() })),
+  skipped: z.array(
+    z.object({
+      agent_id: z.string(),
+      reason: z.enum(['running', 'no_cases', 'disabled']),
+    }),
+  ),
+});
+export type EvalRunAllResult = z.infer<typeof EvalRunAllResult>;
+
+/** One point on the dashboard trend (per done set batch, chronological). */
 export const EvalTrendPoint = z.object({
+  batch_id: z.string(),
+  agent_version: z.number().int(),
   ran_at: z.string(),
-  recall: z.number(),
-  precision: z.number(),
-  citation_accuracy: z.number(),
+  recall: z.number().nullable(),
+  precision: z.number().nullable(),
+  citation_accuracy: z.number().nullable(),
   pass_rate: z.number(),
   cost_usd: z.number().nullable(),
 });
@@ -69,24 +177,64 @@ export const EvalDashboard = z.object({
   owner_kind: EvalOwnerKind.nullable(),
   owner_id: z.string().nullable(),
   cases_total: z.number().int(),
-  current: z.object({
-    recall: z.number(),
-    precision: z.number(),
-    citation_accuracy: z.number(),
-    traces_passed: z.number().int(),
-    traces_total: z.number().int(),
-    cost_usd: z.number().nullable(),
-  }),
+  // null = no `done` set batch yet
+  current: z
+    .object({
+      recall: z.number().nullable(),
+      precision: z.number().nullable(),
+      citation_accuracy: z.number().nullable(),
+      traces_passed: z.number().int(),
+      traces_total: z.number().int(),
+      cost_usd: z.number().nullable(),
+    })
+    .nullable(),
   delta: z.object({
-    recall: z.number(),
-    precision: z.number(),
-    citation_accuracy: z.number(),
+    recall: z.number().nullable(),
+    precision: z.number().nullable(),
+    citation_accuracy: z.number().nullable(),
   }),
   trend: z.array(EvalTrendPoint),
   recent_runs: z.array(EvalRunRecord),
+  recent_batches: z.array(EvalBatch),
+  running_batch_id: z.string().nullable(),
   alert: z.string().nullable(),
 });
 export type EvalDashboard = z.infer<typeof EvalDashboard>;
+
+/** One agent row on the workspace Eval Dashboard. */
+export const AgentEvalSummary = z.object({
+  agent_id: z.string(),
+  agent_name: z.string(),
+  model: z.string(),
+  enabled: z.boolean(),
+  cases_total: z.number().int(),
+  last_batch: EvalBatch.nullable(),
+  sparkline: z.array(z.number()),
+  running_batch_id: z.string().nullable(),
+});
+export type AgentEvalSummary = z.infer<typeof AgentEvalSummary>;
+
+/** `GET /eval-dashboard`. */
+export const EvalWorkspaceDashboard = z.object({
+  agents: z.array(AgentEvalSummary),
+  recent_batches: z.array(EvalBatch),
+});
+export type EvalWorkspaceDashboard = z.infer<typeof EvalWorkspaceDashboard>;
+
+/** `GET /eval-runs/compare?base=&head=`. */
+export const EvalCompare = z.object({
+  base: EvalBatch,
+  head: EvalBatch,
+  delta: z.object({
+    recall: z.number().nullable(),
+    precision: z.number().nullable(),
+    citation_accuracy: z.number().nullable(),
+    cost_usd: z.number().nullable(),
+  }),
+  prompt_diff: z.array(z.object({ op: z.enum(['same', 'add', 'del']), text: z.string() })),
+  model_changed: z.boolean(),
+});
+export type EvalCompare = z.infer<typeof EvalCompare>;
 
 // ===========================================================================
 // Compose Review
@@ -141,6 +289,35 @@ export const CiFile = z.object({
 });
 export type CiFile = z.infer<typeof CiFile>;
 
+/**
+ * AgentManifest — the agent contract shared by the studio and the CI runner.
+ *
+ * The studio (`CiService.agentYaml`) WRITES this shape to
+ * `.devdigest/agents/<slug>.yaml`; the agent-runner READS it. Keeping one Zod
+ * schema for both ends guarantees the formats never drift. `skills` are slugs
+ * resolved to `.devdigest/skills/<slug>.md`.
+ */
+export const AgentManifest = z.object({
+  name: z.string().min(1),
+  provider: Provider.default('openrouter'),
+  model: z.string().min(1),
+  system_prompt: z.string(),
+  // Tolerate both a missing key and an explicit `null` (YAML `skills:` with no
+  // value parses to null, which `.default([])` does NOT catch) — normalize both
+  // to an empty array so manifests without skills validate cleanly.
+  skills: z
+    .array(z.string())
+    .nullish()
+    .transform((v) => v ?? []),
+  strategy: z.enum(['auto', 'single-pass', 'map-reduce']).default('auto'),
+  // CI gate policy (see CiFailOn) — when the posted review should BLOCK
+  // (REQUEST_CHANGES + fail the check) vs just comment. Default: block on critical.
+  ci_fail_on: CiFailOn.default('critical'),
+});
+export type AgentManifest = z.infer<typeof AgentManifest>;
+/** Caller-facing input type — `.default()` fields stay optional. */
+export type AgentManifestInput = z.input<typeof AgentManifest>;
+
 /** Request body for `POST /agents/:id/export-ci`. */
 export const CiExportInput = z.object({
   repo: z.string().min(1), // "owner/name"
@@ -150,10 +327,17 @@ export const CiExportInput = z.object({
   post_as: z.enum(['github_review', 'pr_comment', 'none']).default('github_review'),
   triggers: z.array(z.string()).default(['opened', 'synchronize', 'reopened']),
   base: z.string().default('main'),
+  /** User-edited workflow YAML from the wizard's Preview step; when present and
+   *  non-empty, ships in place of freshly-generated YAML for GHA exports. */
+  workflow_override: z.string().nullish(),
 });
 export type CiExportInput = z.infer<typeof CiExportInput>;
 /** Caller-facing input type — `.default()` fields stay optional (web hooks). */
 export type CiExportInputBody = z.input<typeof CiExportInput>;
+
+/** Lifecycle state of a CI installation — surfaced on the CI Runs dashboard. */
+export const CiInstallationStatus = z.enum(['active', 'pr_open', 'error']);
+export type CiInstallationStatus = z.infer<typeof CiInstallationStatus>;
 
 /** A persisted CI installation (mirrors `ci_installations`). */
 export const CiInstallation = z.object({
@@ -162,6 +346,10 @@ export const CiInstallation = z.object({
   repo: z.string(),
   target_type: CiTarget,
   installed_at: z.string(),
+  /** Current install state: awaiting PR merge, live, or erroring on runs. */
+  status: CiInstallationStatus,
+  /** Version of the generated workflow file last installed (for drift/upgrade checks). */
+  workflow_version: z.string(),
 });
 export type CiInstallation = z.infer<typeof CiInstallation>;
 
@@ -176,19 +364,32 @@ export type CiExport = z.infer<typeof CiExport>;
 export const CiRunStatus = z.enum(['succeeded', 'failed', 'no_findings', 'running']);
 export type CiRunStatus = z.infer<typeof CiRunStatus>;
 
-/** A CI run row (mirrors `ci_runs`) — ingested from GitHub Actions artifacts. */
+/**
+ * A CI run row — the CI Runs API response, backed by `agent_runs` (not a
+ * dedicated `ci_runs` table). `id` is the `agent_runs.id`; `ci_installation_id`
+ * and `pr_id` are nullable because a run can be ingested from a workflow that
+ * fired before/without a matching installation or PR record.
+ */
 export const CiRun = z.object({
   id: z.string(),
   ci_installation_id: z.string().nullable(),
+  /** Internal PR linkage, when the run is associated with a tracked PR. */
+  pr_id: z.string().nullable(),
+  repo: z.string(),
   pr_number: z.number().int().nullable(),
   ran_at: z.string().nullable(),
-  status: z.string().nullable(),
-  findings_count: z.number().int().nullable(),
-  cost_usd: z.number().nullable(),
-  github_url: z.string().nullable(),
-  source: z.string().nullable(),
   agent: z.string().nullish(),
+  status: z.string().nullable(),
+  verdict: Verdict.nullable(),
+  findings_count: z.number().int().nullable(),
+  /** Findings that would block the PR under the agent's `ci_fail_on` policy. */
+  blockers: z.number().int().nullable(),
+  score: z.number().nullable(),
+  cost_usd: z.number().nullable(),
   duration_s: z.number().nullish(),
+  /** Link to the GitHub Actions job that produced this run (was `github_url`). */
+  actions_job_url: z.string().nullable(),
+  source: z.string().nullable(),
 });
 export type CiRun = z.infer<typeof CiRun>;
 
@@ -206,7 +407,17 @@ export const CiResultArtifact = z.object({
   agent: z.string(),
   version: z.string().nullish(),
   pr_number: z.number().int().nullish(),
-});
+  /** Provenance — the studio's ingest cross-checks these against GitHub's own
+   *  run metadata and REJECTS an artifact that omits or mismatches them. */
+  agent_slug: z.string().nullish(),
+  repository: z.string().nullish(),
+  repository_id: z.number().int().nullish(),
+  head_sha: z
+    .string()
+    .regex(/^[0-9a-f]{40}$/)
+    .nullish(),
+  // Strict: an unknown key can never smuggle a secret / log dump into the studio.
+}).strict();
 export type CiResultArtifact = z.infer<typeof CiResultArtifact>;
 
 // ===========================================================================

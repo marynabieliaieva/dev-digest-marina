@@ -1,0 +1,13 @@
+Files changed in this PR:
+server/src/lib/mailer.ts
+server/src/vendor/shared/contracts/inventory.ts
+server/src/modules/inventory/constants.ts
+server/src/modules/inventory/serializers.ts
+server/src/modules/inventory/repository.ts
+server/src/modules/inventory/service.ts
+server/src/modules/inventory/routes.ts
+server/src/modules/suppliers/types.ts
+server/src/modules/suppliers/repository.ts
+server/src/modules/suppliers/service.ts
+server/src/modules/reports/service.ts
+server/src/modules/reports/routes.ts

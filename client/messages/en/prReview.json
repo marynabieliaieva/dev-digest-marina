@@ -6,10 +6,26 @@
     "accept": "Accept",
     "dismiss": "Dismiss",
     "learn": "Learn",
+    "learnUnavailable": "Not available yet",
     "replyToAuthor": "Reply to author",
     "replyPlaceholder": "Reply to the author about this finding…",
     "sendReply": "Send reply",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "evalCase": {
+      "action": "Turn into eval case",
+      "inSet": "In eval set",
+      "undecidedHint": "Accept or dismiss the finding first",
+      "created": "Eval case created for {agent}",
+      "createdGeneric": "Eval case created",
+      "errors": {
+        "already_eval_case": "Already an eval case",
+        "finding_undecided": "Accept or dismiss the finding first",
+        "agent_missing": "The agent that produced this finding was deleted",
+        "file_not_in_diff": "File is not in the PR diff",
+        "diff_too_large": "Diff section is too large",
+        "generic": "Could not create the eval case"
+      }
+    }
   },
   "trifecta": {
     "lethal": "LETHAL TRIFECTA — ALL 3 PRESENT",
@@ -41,7 +57,14 @@
     "running": "Running…",
     "runReview": "Run Review",
     "mergedWarning": "Already merged — review is informational",
-    "mergedTooltip": "This PR is already merged; running a review won’t affect the merged code."
+    "mergedTooltip": "This PR is already merged; running a review won’t affect the merged code.",
+    "pickAgents": "Pick agents to run",
+    "clear": "Clear",
+    "runMulti": "Run multi-agent review ({count})",
+    "noEstimate": "no estimate",
+    "maxHint": "Up to 5 agents per run",
+    "noEnabled": "Enable agents to run reviews",
+    "goToAgents": "Go to Agents"
   },
   "runStatus": {
     "elapsed": "Running · {count} agent(s)",

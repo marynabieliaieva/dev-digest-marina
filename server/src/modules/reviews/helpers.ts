@@ -59,6 +59,8 @@ export interface ReviewDtoFinding extends Finding {
   review_id: string;
   accepted_at: string | null;
   dismissed_at: string | null;
+  /** Id of the agent-owned eval case created from this finding, or null. */
+  eval_case_id: string | null;
 }
 
 export interface ReviewDto {
@@ -77,7 +79,14 @@ export interface ReviewDto {
   findings: ReviewDtoFinding[];
 }
 
-export function findingRowToDto(row: FindingRow): ReviewDtoFinding {
+/** Finding id -> eval case id (only findings that have a case are present). */
+export type EvalCaseIdMap = ReadonlyMap<string, string>;
+
+/**
+ * `evalCaseId` is a REQUIRED parameter on purpose: a default would let a write
+ * path silently blank the derived field on the client's cache.
+ */
+export function findingRowToDto(row: FindingRow, evalCaseId: string | null): ReviewDtoFinding {
   return {
     id: row.id,
     severity: row.severity as Finding['severity'],
@@ -95,12 +104,14 @@ export function findingRowToDto(row: FindingRow): ReviewDtoFinding {
     review_id: row.reviewId,
     accepted_at: row.acceptedAt?.toISOString() ?? null,
     dismissed_at: row.dismissedAt?.toISOString() ?? null,
+    eval_case_id: evalCaseId,
   };
 }
 
 export function reviewToDto(
   review: ReviewRow,
   findings: FindingRow[],
+  evalCaseIds: EvalCaseIdMap,
   agentName?: string | null,
 ): ReviewDto {
   return {
@@ -115,7 +126,7 @@ export function reviewToDto(
     score: review.score,
     model: review.model,
     created_at: review.createdAt.toISOString(),
-    findings: findings.map(findingRowToDto),
+    findings: findings.map((f) => findingRowToDto(f, evalCaseIds.get(f.id) ?? null)),
   };
 }
 
@@ -134,6 +145,7 @@ export function normalizeRunStatus(status: string | null): RunStatus {
 export function runDetailToDto(
   ctx: RunContextRow,
   reviewRow: { review: ReviewRow; findings: FindingRow[] } | undefined,
+  evalCaseIds: EvalCaseIdMap,
 ): RunDetail {
   const { run } = ctx;
   const status = normalizeRunStatus(run.status);
@@ -156,7 +168,7 @@ export function runDetailToDto(
             verdict: reviewRow.review.verdict as Verdict | null,
             score: reviewRow.review.score,
             summary: reviewRow.review.summary,
-            findings: reviewRow.findings.map(findingRowToDto),
+            findings: reviewRow.findings.map((f) => findingRowToDto(f, evalCaseIds.get(f.id) ?? null)),
           }
         : null,
   };

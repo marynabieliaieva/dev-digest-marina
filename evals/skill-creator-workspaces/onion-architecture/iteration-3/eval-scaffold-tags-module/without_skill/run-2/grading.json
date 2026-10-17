@@ -1,0 +1,31 @@
+{
+  "expectations": [
+    {
+      "text": "The module lives in server/src/modules/tags/ and its files are named by role (routes.ts, service.ts, repository.ts, optionally helpers.ts and constants.ts), not by feature or pattern (no tags.controller.ts, tags.service.ts, dto/ or models/)",
+      "passed": true,
+      "evidence": "without_skill run-2: routes/service/repository present; extras types.ts, index.ts, constants.ts."
+    },
+    {
+      "text": "TagService takes the whole Container in its constructor and builds its own repository from container.db",
+      "passed": false,
+      "evidence": "without_skill run-2: TagService takes a TagRepositoryPort, not Container."
+    },
+    {
+      "text": "routes.ts imports only its service, shared contracts, zod and fastify: no drizzle-orm, db client or schema, and each handler makes one service call",
+      "passed": true,
+      "evidence": "without_skill run-2: routes.ts has no db, drizzle or repository import."
+    },
+    {
+      "text": "The Tag contract is a Zod schema under server/src/vendor/shared/contracts/ and NOTES.md says it must also be copied by hand to client/src/vendor/shared",
+      "passed": false,
+      "evidence": "without_skill run-2: No contract under vendor/shared/contracts; NOTES.md has no client copy step."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  },
+  "notes": "4th expectation (repository returns shared Tag, not Drizzle row) excluded for both configs: the skill's own layer-map allows a row type at the repository-service seam when the service maps it."
+}

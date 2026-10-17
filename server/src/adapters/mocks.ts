@@ -18,6 +18,10 @@ import type {
   CommitFilesPayload,
   IssueMeta,
   RepoFileContent,
+  ListWorkflowRunsOptions,
+  WorkflowRunSummary,
+  ArtifactRef,
+  ArtifactDownload,
   GitClient,
   CloneOptions,
   UnifiedDiff,
@@ -130,6 +134,10 @@ export interface MockGitHubOptions {
   comments?: PrReviewComment[];
   /** File contents for getFileContent, keyed "<path>@<ref>" or "<path>". */
   files?: Record<string, string>;
+  /** Fixture returned by listWorkflowRuns (default: empty list). */
+  workflowRunsFixture?: WorkflowRunSummary[];
+  /** Fixture returned by downloadArtifact (default: a tiny empty-zip stand-in). */
+  artifactFixture?: ArtifactDownload;
 }
 
 export class MockGitHubClient implements GitHubClient {
@@ -137,6 +145,10 @@ export class MockGitHubClient implements GitHubClient {
   public openedPrs: OpenPrPayload[] = [];
   public committed: CommitFilesPayload[] = [];
   public createdComments: CreateReviewCommentInput[] = [];
+  /** Captures every listWorkflowRuns call — (repo, opts) pairs — for assertions. */
+  public listWorkflowRunsCalls: { repo: RepoRef; opts?: ListWorkflowRunsOptions }[] = [];
+  /** Captures every downloadArtifact call — (repo, artifactRef) pairs — for assertions. */
+  public downloadArtifactCalls: { repo: RepoRef; artifactRef: ArtifactRef }[] = [];
 
   constructor(private opts: MockGitHubOptions = {}) {}
 
@@ -249,6 +261,25 @@ export class MockGitHubClient implements GitHubClient {
 
   async currentLogin(): Promise<string> {
     return this.opts.login ?? 'mock-user';
+  }
+
+  async listWorkflowRuns(
+    repo: RepoRef,
+    opts?: ListWorkflowRunsOptions,
+  ): Promise<WorkflowRunSummary[]> {
+    this.listWorkflowRunsCalls.push({ repo, opts });
+    return this.opts.workflowRunsFixture ?? [];
+  }
+
+  async downloadArtifact(repo: RepoRef, artifactRef: ArtifactRef): Promise<ArtifactDownload> {
+    this.downloadArtifactCalls.push({ repo, artifactRef });
+    return (
+      this.opts.artifactFixture ?? {
+        name: artifactRef.name ?? 'devdigest-result',
+        sizeBytes: 0,
+        contents: Buffer.alloc(0),
+      }
+    );
   }
 }
 
