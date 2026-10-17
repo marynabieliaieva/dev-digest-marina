@@ -21,7 +21,7 @@ import { useCreateEvalCase } from "@/lib/hooks/evals";
 import { RunCostBadge } from "@/components/run-cost-badge";
 import { notify } from "@/lib/toast";
 import type { PrFile } from "@devdigest/shared";
-import { FindingCard } from "../FindingCard";
+import { FindingCard } from "@/components/finding-card";
 import { SmartDiffGroup } from "../SmartDiffGroup";
 import { filesForGroup, findingsByPath, selectLatestFindings, selectLatestRunUsage, severityCounts } from "./helpers";
 import { s } from "./styles";

@@ -20,8 +20,8 @@ import {
 import type { FindingRecord, FindingActionKind } from "@devdigest/shared";
 import { SEV_COLOR, SEV_COLOR_FALLBACK } from "./constants";
 import { lineLabel, evalCaseErrorKey } from "./helpers";
-import { notify } from "../../../../../../../lib/toast";
-import { githubBlobUrl } from "../../../../../../../lib/github-urls";
+import { notify } from "@/lib/toast";
+import { githubBlobUrl } from "@/lib/github-urls";
 import { s } from "./styles";
 
 export function FindingCard({
@@ -34,6 +34,7 @@ export function FindingCard({
   headSha,
   onCreateEvalCase,
   agentName,
+  showLearn = false,
 }: {
   f: FindingRecord;
   focused?: boolean;
@@ -47,6 +48,8 @@ export function FindingCard({
   onCreateEvalCase?: () => Promise<unknown>;
   /** Name of the agent that produced the finding (toast copy). */
   agentName?: string | null;
+  /** Opt-in per call site: renders a disabled "Learn" button ("Not available yet"). */
+  showLearn?: boolean;
 }) {
   const t = useTranslations("prReview");
   const [expanded, setExpanded] = React.useState(defaultExpanded ?? false);
@@ -59,7 +62,9 @@ export function FindingCard({
   const dismissed = !!f.dismissed_at;
   const muted = accepted || dismissed;
   const decided = accepted || dismissed;
-  const hintId = `${React.useId()}-eval-hint`;
+  const idBase = React.useId();
+  const hintId = `${idBase}-eval-hint`;
+  const learnHintId = `${idBase}-learn-hint`;
   const [creating, setCreating] = React.useState(false);
   const inFlight = React.useRef(false);
   // `eval_case_id` is the single source of truth; the create hook updates/invalidates
@@ -147,6 +152,22 @@ export function FindingCard({
             >
               {t("finding.dismiss")}
             </Button>
+            {showLearn && (
+              <>
+                <Button
+                  kind="secondary"
+                  size="sm"
+                  disabled
+                  aria-describedby={learnHintId}
+                  title={t("finding.learnUnavailable")}
+                >
+                  {t("finding.learn")}
+                </Button>
+                <span id={learnHintId} style={s.srOnly}>
+                  {t("finding.learnUnavailable")}
+                </span>
+              </>
+            )}
             {onCreateEvalCase && (
               <>
                 <Button
