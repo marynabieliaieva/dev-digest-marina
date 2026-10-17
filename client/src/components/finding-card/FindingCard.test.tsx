@@ -2,11 +2,11 @@ import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import type { FindingRecord } from "@devdigest/shared";
-import messages from "../../../../../../../../messages/en/prReview.json";
-import { ApiError } from "../../../../../../../lib/api";
+import messages from "../../../messages/en/prReview.json";
+import { ApiError } from "@/lib/api";
 
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
-vi.mock("../../../../../../../lib/toast", () => ({ notify: toast }));
+vi.mock("@/lib/toast", () => ({ notify: toast }));
 
 import { FindingCard } from "./FindingCard";
 

@@ -8,7 +8,7 @@ import React from "react";
 import { useTranslations } from "next-intl";
 import { Badge } from "@devdigest/ui";
 import type { FindingRecord } from "@devdigest/shared";
-import { FindingCard } from "../../../FindingCard";
+import { FindingCard } from "@/components/finding-card";
 import { s } from "../../styles";
 import { TraceSection } from "../TraceSection";
 

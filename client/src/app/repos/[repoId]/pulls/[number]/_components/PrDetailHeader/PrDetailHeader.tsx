@@ -92,6 +92,7 @@ export function PrDetailHeader({
           {prId && (
             <RunReviewDropdown
               prId={prId}
+              prNumber={pr.number}
               warnMerged={pr.status === "merged" || pr.status === "closed"}
               onRunStart={handleRunStart}
               onRunsStarted={handleRunsStarted}

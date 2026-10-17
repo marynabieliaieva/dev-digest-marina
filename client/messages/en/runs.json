@@ -5,13 +5,34 @@
   },
   "column": {
     "noFindings": "No findings.",
-    "findingsCount": "{count, plural, one {# finding} other {# findings}}"
+    "findingsCount": "{count, plural, one {# finding} other {# findings}}",
+    "status": {
+      "running": "Running…",
+      "done": "Done",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    },
+    "deletedAgent": "Deleted agent"
   },
   "conflicts": {
     "title": "Where agents disagree",
     "onlyConflicts": "Show only conflicts",
     "empty": "No conflicts — the agents agree on every flagged location.",
-    "didNotFlag": "did not flag"
+    "didNotFlag": "did not flag",
+    "verdict": {
+      "failed": "failed",
+      "cancelled": "cancelled"
+    },
+    "notes": {
+      "ignored": "did not flag",
+      "failed": "run failed",
+      "cancelled": "run cancelled"
+    },
+    "waitingForAll": "The comparison appears when all agents finish."
+  },
+  "start": {
+    "alreadyRunning": "Already running: {agents}",
+    "failed": "Couldn't start the multi-agent review"
   },
   "tabs": {
     "noSummary": "No summary."
@@ -114,7 +135,19 @@
   },
   "page": {
     "title": "Multi-Agent Review",
-    "subtitle": "this PR through every enabled agent in parallel",
+    "subtitle": "{count} selected agents · parallel",
+    "configureRun": "Configure run",
+    "refreshFailed": "Couldn't refresh",
+    "configure": {
+      "title": "Configure run",
+      "pickPrFirst": "Pick a pull request first",
+      "selectAll": "Select all",
+      "runButton": "Run multi-agent review ({count})",
+      "footer": "{estimate} · parallel fan-out",
+      "partial": "(partial)",
+      "noEstimate": "no estimate",
+      "maxHint": "Up to 5 agents per run"
+    },
     "selectPr": "Select PR",
     "prItem": "#{number} · {title}",
     "view": {
@@ -123,7 +156,7 @@
     },
     "runAll": "Run all agents",
     "running": "Running…",
-    "meta": "{count} agents · fan-out via p-queue · {duration}s total · {cost}",
+    "meta": "{count} agents · parallel · {duration}s total · {cost}",
     "noAgents": {
       "title": "Enable agents to run reviews",
       "body": "Multi-agent review runs the PR through every enabled agent in parallel. You have no agents enabled yet.",
@@ -133,7 +166,8 @@
       "title": "No multi-agent run yet",
       "bodyReady": "Run all enabled agents on this PR to see N columns + conflicts.",
       "bodySelect": "Select a PR to begin.",
-      "cta": "Run all agents"
+      "cta": "Run all agents",
+      "ctaConfigure": "Configure a run"
     },
     "crumb": "Multi-Agent Review"
   }

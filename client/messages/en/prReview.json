@@ -6,6 +6,7 @@
     "accept": "Accept",
     "dismiss": "Dismiss",
     "learn": "Learn",
+    "learnUnavailable": "Not available yet",
     "replyToAuthor": "Reply to author",
     "replyPlaceholder": "Reply to the author about this finding…",
     "sendReply": "Send reply",
@@ -56,7 +57,14 @@
     "running": "Running…",
     "runReview": "Run Review",
     "mergedWarning": "Already merged — review is informational",
-    "mergedTooltip": "This PR is already merged; running a review won’t affect the merged code."
+    "mergedTooltip": "This PR is already merged; running a review won’t affect the merged code.",
+    "pickAgents": "Pick agents to run",
+    "clear": "Clear",
+    "runMulti": "Run multi-agent review ({count})",
+    "noEstimate": "no estimate",
+    "maxHint": "Up to 5 agents per run",
+    "noEnabled": "Enable agents to run reviews",
+    "goToAgents": "Go to Agents"
   },
   "runStatus": {
     "elapsed": "Running · {count} agent(s)",

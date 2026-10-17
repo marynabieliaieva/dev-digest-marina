@@ -54,8 +54,11 @@ export const agentRuns = pgTable(
     actionsRunId: text('actions_run_id'),
     /** Link to the GitHub Actions job that produced this run. */
     actionsJobUrl: text('actions_job_url'),
+    /** Set when this run was started as one column of a multi-agent review; null otherwise. */
+    multiRunId: uuid('multi_run_id').references(() => multiAgentRuns.id, { onDelete: 'set null' }),
   },
   (t) => ({
+    multiRunIdx: index('agent_runs_multi_run_id_idx').on(t.multiRunId),
     ciInstallationIdx: index('agent_runs_ci_installation_id_idx').on(t.ciInstallationId),
     ciInstallationActionsRunUq: uniqueIndex('agent_runs_ci_installation_actions_run_uq').on(
       t.ciInstallationId,
