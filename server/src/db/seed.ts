@@ -13,6 +13,7 @@ import {
 } from './seed-prompts.js';
 import { SEED_SKILLS } from './seed-skills.js';
 import { CONTROL_PRS } from './seed-control-prs.js';
+import { SEED_EVAL_FINDINGS } from './seed-eval-findings.js';
 import { SEED_CONVENTIONS, SEED_EXTRACTION } from './seed-conventions.js';
 import { seedProjectContextFixture } from './seed-project-context.js';
 import { loadConfig } from '../platform/config.js';
@@ -276,6 +277,7 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
   await seedSkills(db, workspaceId);
   await seedAgentSkillLinks(db, workspaceId);
   await seedControlPrs(db, workspaceId, repoId);
+  await seedEvalFindings(db, workspaceId, repoId);
   await seedConventions(db, workspaceId, repoId);
   await seedPrBrief(db, pr!.id);
 
@@ -394,6 +396,68 @@ async function seedControlPrs(db: Db, workspaceId: string, repoId: string): Prom
       message: spec.commitMessage,
       author: spec.author,
     });
+  }
+}
+
+/**
+ * Undecided starter findings per built-in agent, for building eval sets. One
+ * review per (agent, PR); skipped when that review already exists so a re-seed
+ * never resurrects findings the user has accepted, dismissed or deleted.
+ */
+async function seedEvalFindings(db: Db, workspaceId: string, repoId: string): Promise<void> {
+  const groups = new Map<string, typeof SEED_EVAL_FINDINGS>();
+  for (const f of SEED_EVAL_FINDINGS) {
+    const key = `${f.agent}|${f.pr}`;
+    groups.set(key, [...(groups.get(key) ?? []), f]);
+  }
+
+  for (const [key, items] of groups) {
+    const [agentName, prNumber] = key.split('|') as [string, string];
+    const [agent] = await db
+      .select()
+      .from(t.agents)
+      .where(and(eq(t.agents.workspaceId, workspaceId), eq(t.agents.name, agentName)));
+    const [pull] = await db
+      .select()
+      .from(t.pullRequests)
+      .where(and(eq(t.pullRequests.repoId, repoId), eq(t.pullRequests.number, Number(prNumber))));
+    if (!agent || !pull) continue;
+
+    const [existing] = await db
+      .select()
+      .from(t.reviews)
+      .where(
+        and(eq(t.reviews.prId, pull.id), eq(t.reviews.agentId, agent.id), eq(t.reviews.model, 'seed-eval')),
+      );
+    if (existing) continue;
+
+    const [review] = await db
+      .insert(t.reviews)
+      .values({
+        workspaceId,
+        prId: pull.id,
+        agentId: agent.id,
+        kind: 'review',
+        verdict: 'comment',
+        summary: `Seeded ${agentName} findings for building an eval set.`,
+        model: 'seed-eval',
+      })
+      .returning();
+
+    await db.insert(t.findings).values(
+      items.map((f) => ({
+        reviewId: review!.id,
+        file: f.file,
+        startLine: f.startLine,
+        endLine: f.endLine,
+        severity: f.severity,
+        category: f.category,
+        title: f.title,
+        rationale: f.rationale,
+        suggestion: f.suggestion,
+        confidence: f.confidence,
+      })),
+    );
   }
 }
 

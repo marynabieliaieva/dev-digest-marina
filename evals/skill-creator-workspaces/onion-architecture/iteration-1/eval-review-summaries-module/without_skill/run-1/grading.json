@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "review.md flags service.ts for importing the openai SDK and calling new OpenAI(...) inside the service, and recommends the LLMProvider port resolved through the container (so it can be mocked via ContainerOverrides)",
+      "passed": false,
+      "evidence": "review.md #2 flags the direct OpenAI usage but recommends inventing a new 'LlmPort / SummaryGenerator' in platform/llm/ instead of the existing LLMProvider port."
+    },
+    {
+      "text": "review.md flags contracts/summary.ts for importing from modules/summaries/helpers.js, i.e. the shared domain layer depending on server code",
+      "passed": true,
+      "evidence": "review.md #1: shared contract imports modules/summaries/helpers.js; wrong direction."
+    },
+    {
+      "text": "review.md flags routes.ts for containing business logic (the free-plan daily limit check and/or empty-diff validation) and for using SummaryRepository directly, and says this belongs in service.ts",
+      "passed": true,
+      "evidence": "review.md #3: route instantiates SummaryRepository and implements the free-tier quota inline; move to service."
+    },
+    {
+      "text": "review.md does NOT report repository.ts as a violation",
+      "passed": false,
+      "evidence": "review.md #6 lists repository.ts under 'Problems' (no port, leaks DTO shape, duplicated mapping), i.e. reports it as a problem."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  }
+}

@@ -1,0 +1,689 @@
+{
+  "metadata": {
+    "skill_name": "onion-architecture",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-10-11T15:56:12Z",
+    "evals_run": [
+      4,
+      5,
+      6
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 6,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 68.2,
+        "tokens": 78535,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)",
+          "passed": true,
+          "evidence": "with_skill run-1: reviews/service.ts: this.notifications = new NotificationService(container) (or default param equal to it)."
+        },
+        {
+          "text": "No new getter or facade for the notifications service is added to container.ts",
+          "passed": true,
+          "evidence": "with_skill run-1: Only reviews/service.ts (+NOTES.md) was written; container.ts unchanged."
+        },
+        {
+          "text": "The reviews module does not import NotificationRepository or anything from db/schema for notifications",
+          "passed": true,
+          "evidence": "with_skill run-1: reviews/service.ts imports only NotificationService, no NotificationRepository or db/schema."
+        },
+        {
+          "text": "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)",
+          "passed": true,
+          "evidence": "with_skill run-1: No adapters.ts, mocks.ts or adapter files were created."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 6,
+      "configuration": "with_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 63.4,
+        "tokens": 78314,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)",
+          "passed": true,
+          "evidence": "with_skill run-2: reviews/service.ts: this.notifications = new NotificationService(container) (or default param equal to it)."
+        },
+        {
+          "text": "No new getter or facade for the notifications service is added to container.ts",
+          "passed": true,
+          "evidence": "with_skill run-2: Only reviews/service.ts (+NOTES.md) was written; container.ts unchanged."
+        },
+        {
+          "text": "The reviews module does not import NotificationRepository or anything from db/schema for notifications",
+          "passed": true,
+          "evidence": "with_skill run-2: reviews/service.ts imports only NotificationService, no NotificationRepository or db/schema."
+        },
+        {
+          "text": "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)",
+          "passed": true,
+          "evidence": "with_skill run-2: No adapters.ts, mocks.ts or adapter files were created."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 6,
+      "configuration": "with_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 62.0,
+        "tokens": 78726,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)",
+          "passed": true,
+          "evidence": "with_skill run-3: reviews/service.ts: this.notifications = new NotificationService(container) (or default param equal to it)."
+        },
+        {
+          "text": "No new getter or facade for the notifications service is added to container.ts",
+          "passed": true,
+          "evidence": "with_skill run-3: Only reviews/service.ts (+NOTES.md) was written; container.ts unchanged."
+        },
+        {
+          "text": "The reviews module does not import NotificationRepository or anything from db/schema for notifications",
+          "passed": true,
+          "evidence": "with_skill run-3: reviews/service.ts imports only NotificationService, no NotificationRepository or db/schema."
+        },
+        {
+          "text": "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)",
+          "passed": true,
+          "evidence": "with_skill run-3: No adapters.ts, mocks.ts or adapter files were created."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 3,
+        "failed": 0,
+        "total": 3,
+        "time_seconds": 79.9,
+        "tokens": 91379,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests",
+          "passed": true,
+          "evidence": "with_skill run-1: review.md: email adapter has no MockEmailSender in adapters/mocks.ts and no email entry in ContainerOverrides, so tests cannot swap it."
+        },
+        {
+          "text": "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand",
+          "passed": true,
+          "evidence": "with_skill run-1: review.md: client/src/vendor/shared/contracts/invoice.ts is missing dueDate and has drifted from the server contract."
+        },
+        {
+          "text": "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead",
+          "passed": true,
+          "evidence": "with_skill run-1: review.md: service.ts imports db/schema/invoices and exposes typeof invoices.$inferInsert in create(); recommends a domain/shared input type."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "with_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 3,
+        "failed": 0,
+        "total": 3,
+        "time_seconds": 79.2,
+        "tokens": 87125,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests",
+          "passed": true,
+          "evidence": "with_skill run-2: review.md: email adapter has no MockEmailSender in adapters/mocks.ts and no email entry in ContainerOverrides, so tests cannot swap it."
+        },
+        {
+          "text": "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand",
+          "passed": true,
+          "evidence": "with_skill run-2: review.md: client/src/vendor/shared/contracts/invoice.ts is missing dueDate and has drifted from the server contract."
+        },
+        {
+          "text": "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead",
+          "passed": true,
+          "evidence": "with_skill run-2: review.md: service.ts imports db/schema/invoices and exposes typeof invoices.$inferInsert in create(); recommends a domain/shared input type."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "with_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 3,
+        "failed": 0,
+        "total": 3,
+        "time_seconds": 89.1,
+        "tokens": 90453,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests",
+          "passed": true,
+          "evidence": "with_skill run-3: review.md: email adapter has no MockEmailSender in adapters/mocks.ts and no email entry in ContainerOverrides, so tests cannot swap it."
+        },
+        {
+          "text": "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand",
+          "passed": true,
+          "evidence": "with_skill run-3: review.md: client/src/vendor/shared/contracts/invoice.ts is missing dueDate and has drifted from the server contract."
+        },
+        {
+          "text": "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead",
+          "passed": true,
+          "evidence": "with_skill run-3: review.md: service.ts imports db/schema/invoices and exposes typeof invoices.$inferInsert in create(); recommends a domain/shared input type."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 3,
+        "failed": 0,
+        "total": 3,
+        "time_seconds": 77.0,
+        "tokens": 81363,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md concludes the PR has no blocking architecture/layering violation and is fine to merge on that front",
+          "passed": true,
+          "evidence": "with_skill run-1: review.md verdict: no architecture problems, fine to merge."
+        },
+        {
+          "text": "review.md does NOT report OrderService taking the whole Container in its constructor, or building its repository with new OrderRepository(container.db), as a violation or something that must be changed",
+          "passed": true,
+          "evidence": "with_skill run-1: review.md does not flag whole-Container constructor or new OrderRepository(container.db) as a problem."
+        },
+        {
+          "text": "review.md does NOT report the cross-module call new CustomerService(this.container) as a violation, and does not demand injecting it through the constructor or a new container getter",
+          "passed": true,
+          "evidence": "with_skill run-1: review.md treats new CustomerService(this.container) as acceptable; at most an optional cosmetic nit about where it is created, no demand for constructor injection or a container getter."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "with_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 3,
+        "failed": 0,
+        "total": 3,
+        "time_seconds": 63.0,
+        "tokens": 85764,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md concludes the PR has no blocking architecture/layering violation and is fine to merge on that front",
+          "passed": true,
+          "evidence": "with_skill run-2: review.md verdict: no architecture problems, fine to merge."
+        },
+        {
+          "text": "review.md does NOT report OrderService taking the whole Container in its constructor, or building its repository with new OrderRepository(container.db), as a violation or something that must be changed",
+          "passed": true,
+          "evidence": "with_skill run-2: review.md does not flag whole-Container constructor or new OrderRepository(container.db) as a problem."
+        },
+        {
+          "text": "review.md does NOT report the cross-module call new CustomerService(this.container) as a violation, and does not demand injecting it through the constructor or a new container getter",
+          "passed": true,
+          "evidence": "with_skill run-2: review.md treats new CustomerService(this.container) as acceptable; at most an optional cosmetic nit about where it is created, no demand for constructor injection or a container getter."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "with_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 3,
+        "failed": 0,
+        "total": 3,
+        "time_seconds": 75.4,
+        "tokens": 84127,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md concludes the PR has no blocking architecture/layering violation and is fine to merge on that front",
+          "passed": true,
+          "evidence": "with_skill run-3: review.md verdict: no architecture problems, fine to merge."
+        },
+        {
+          "text": "review.md does NOT report OrderService taking the whole Container in its constructor, or building its repository with new OrderRepository(container.db), as a violation or something that must be changed",
+          "passed": true,
+          "evidence": "with_skill run-3: review.md does not flag whole-Container constructor or new OrderRepository(container.db) as a problem."
+        },
+        {
+          "text": "review.md does NOT report the cross-module call new CustomerService(this.container) as a violation, and does not demand injecting it through the constructor or a new container getter",
+          "passed": true,
+          "evidence": "with_skill run-3: review.md treats new CustomerService(this.container) as acceptable; at most an optional cosmetic nit about where it is created, no demand for constructor injection or a container getter."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 6,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 52.7,
+        "tokens": 72235,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)",
+          "passed": true,
+          "evidence": "without_skill run-1: reviews/service.ts: this.notifications = new NotificationService(container) (or default param equal to it)."
+        },
+        {
+          "text": "No new getter or facade for the notifications service is added to container.ts",
+          "passed": true,
+          "evidence": "without_skill run-1: Only reviews/service.ts (+NOTES.md) was written; container.ts unchanged."
+        },
+        {
+          "text": "The reviews module does not import NotificationRepository or anything from db/schema for notifications",
+          "passed": true,
+          "evidence": "without_skill run-1: reviews/service.ts imports only NotificationService, no NotificationRepository or db/schema."
+        },
+        {
+          "text": "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)",
+          "passed": true,
+          "evidence": "without_skill run-1: No adapters.ts, mocks.ts or adapter files were created."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 6,
+      "configuration": "without_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 54.7,
+        "tokens": 72634,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)",
+          "passed": true,
+          "evidence": "without_skill run-2: reviews/service.ts: this.notifications = new NotificationService(container) (or default param equal to it)."
+        },
+        {
+          "text": "No new getter or facade for the notifications service is added to container.ts",
+          "passed": true,
+          "evidence": "without_skill run-2: Only reviews/service.ts (+NOTES.md) was written; container.ts unchanged."
+        },
+        {
+          "text": "The reviews module does not import NotificationRepository or anything from db/schema for notifications",
+          "passed": true,
+          "evidence": "without_skill run-2: reviews/service.ts imports only NotificationService, no NotificationRepository or db/schema."
+        },
+        {
+          "text": "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)",
+          "passed": true,
+          "evidence": "without_skill run-2: No adapters.ts, mocks.ts or adapter files were created."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 6,
+      "configuration": "without_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 55.8,
+        "tokens": 72642,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)",
+          "passed": true,
+          "evidence": "without_skill run-3: reviews/service.ts: this.notifications = new NotificationService(container) (or default param equal to it)."
+        },
+        {
+          "text": "No new getter or facade for the notifications service is added to container.ts",
+          "passed": true,
+          "evidence": "without_skill run-3: Only reviews/service.ts (+NOTES.md) was written; container.ts unchanged."
+        },
+        {
+          "text": "The reviews module does not import NotificationRepository or anything from db/schema for notifications",
+          "passed": true,
+          "evidence": "without_skill run-3: reviews/service.ts imports only NotificationService, no NotificationRepository or db/schema."
+        },
+        {
+          "text": "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)",
+          "passed": true,
+          "evidence": "without_skill run-3: No adapters.ts, mocks.ts or adapter files were created."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 3,
+        "failed": 0,
+        "total": 3,
+        "time_seconds": 131.3,
+        "tokens": 76305,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests",
+          "passed": true,
+          "evidence": "without_skill run-1: review.md: email adapter has no MockEmailSender in adapters/mocks.ts and no email entry in ContainerOverrides, so tests cannot swap it."
+        },
+        {
+          "text": "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand",
+          "passed": true,
+          "evidence": "without_skill run-1: review.md: client/src/vendor/shared/contracts/invoice.ts is missing dueDate and has drifted from the server contract."
+        },
+        {
+          "text": "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead",
+          "passed": true,
+          "evidence": "without_skill run-1: review.md: service.ts imports db/schema/invoices and exposes typeof invoices.$inferInsert in create(); recommends a domain/shared input type."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "without_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 3,
+        "failed": 0,
+        "total": 3,
+        "time_seconds": 76.9,
+        "tokens": 74581,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests",
+          "passed": true,
+          "evidence": "without_skill run-2: review.md: email adapter has no MockEmailSender in adapters/mocks.ts and no email entry in ContainerOverrides, so tests cannot swap it."
+        },
+        {
+          "text": "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand",
+          "passed": true,
+          "evidence": "without_skill run-2: review.md: client/src/vendor/shared/contracts/invoice.ts is missing dueDate and has drifted from the server contract."
+        },
+        {
+          "text": "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead",
+          "passed": true,
+          "evidence": "without_skill run-2: review.md: service.ts imports db/schema/invoices and exposes typeof invoices.$inferInsert in create(); recommends a domain/shared input type."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "without_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 3,
+        "failed": 0,
+        "total": 3,
+        "time_seconds": 41.0,
+        "tokens": 77720,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests",
+          "passed": true,
+          "evidence": "without_skill run-3: review.md: email adapter has no MockEmailSender in adapters/mocks.ts and no email entry in ContainerOverrides, so tests cannot swap it."
+        },
+        {
+          "text": "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand",
+          "passed": true,
+          "evidence": "without_skill run-3: review.md: client/src/vendor/shared/contracts/invoice.ts is missing dueDate and has drifted from the server contract."
+        },
+        {
+          "text": "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead",
+          "passed": true,
+          "evidence": "without_skill run-3: review.md: service.ts imports db/schema/invoices and exposes typeof invoices.$inferInsert in create(); recommends a domain/shared input type."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 3,
+        "failed": 0,
+        "total": 3,
+        "time_seconds": 57.5,
+        "tokens": 71910,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md concludes the PR has no blocking architecture/layering violation and is fine to merge on that front",
+          "passed": true,
+          "evidence": "without_skill run-1: review.md verdict: no architecture problems, fine to merge."
+        },
+        {
+          "text": "review.md does NOT report OrderService taking the whole Container in its constructor, or building its repository with new OrderRepository(container.db), as a violation or something that must be changed",
+          "passed": true,
+          "evidence": "without_skill run-1: review.md does not flag whole-Container constructor or new OrderRepository(container.db) as a problem."
+        },
+        {
+          "text": "review.md does NOT report the cross-module call new CustomerService(this.container) as a violation, and does not demand injecting it through the constructor or a new container getter",
+          "passed": true,
+          "evidence": "without_skill run-1: review.md treats new CustomerService(this.container) as acceptable; at most an optional cosmetic nit about where it is created, no demand for constructor injection or a container getter."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "without_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 3,
+        "failed": 0,
+        "total": 3,
+        "time_seconds": 58.1,
+        "tokens": 71732,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md concludes the PR has no blocking architecture/layering violation and is fine to merge on that front",
+          "passed": true,
+          "evidence": "without_skill run-2: review.md verdict: no architecture problems, fine to merge."
+        },
+        {
+          "text": "review.md does NOT report OrderService taking the whole Container in its constructor, or building its repository with new OrderRepository(container.db), as a violation or something that must be changed",
+          "passed": true,
+          "evidence": "without_skill run-2: review.md does not flag whole-Container constructor or new OrderRepository(container.db) as a problem."
+        },
+        {
+          "text": "review.md does NOT report the cross-module call new CustomerService(this.container) as a violation, and does not demand injecting it through the constructor or a new container getter",
+          "passed": true,
+          "evidence": "without_skill run-2: review.md treats new CustomerService(this.container) as acceptable; at most an optional cosmetic nit about where it is created, no demand for constructor injection or a container getter."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "without_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 3,
+        "failed": 0,
+        "total": 3,
+        "time_seconds": 70.9,
+        "tokens": 72205,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "review.md concludes the PR has no blocking architecture/layering violation and is fine to merge on that front",
+          "passed": true,
+          "evidence": "without_skill run-3: review.md verdict: no architecture problems, fine to merge."
+        },
+        {
+          "text": "review.md does NOT report OrderService taking the whole Container in its constructor, or building its repository with new OrderRepository(container.db), as a violation or something that must be changed",
+          "passed": true,
+          "evidence": "without_skill run-3: review.md does not flag whole-Container constructor or new OrderRepository(container.db) as a problem."
+        },
+        {
+          "text": "review.md does NOT report the cross-module call new CustomerService(this.container) as a violation, and does not demand injecting it through the constructor or a new container getter",
+          "passed": true,
+          "evidence": "without_skill run-3: review.md treats new CustomerService(this.container) as acceptable; at most an optional cosmetic nit about where it is created, no demand for constructor injection or a container getter."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 73.0222,
+        "stddev": 9.3756,
+        "min": 62.0,
+        "max": 89.1
+      },
+      "tokens": {
+        "mean": 83976.2222,
+        "stddev": 5073.7668,
+        "min": 78314,
+        "max": 91379
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 66.5444,
+        "stddev": 26.3925,
+        "min": 41.0,
+        "max": 131.3
+      },
+      "tokens": {
+        "mean": 73551.5556,
+        "stddev": 2157.4973,
+        "min": 71732,
+        "max": 77720
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.00",
+      "time_seconds": "+6.5",
+      "tokens": "+10425"
+    }
+  },
+  "notes": []
+}

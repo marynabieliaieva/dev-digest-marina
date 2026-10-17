@@ -22,6 +22,10 @@ vi.mock("@/lib/hooks/reviews", () => ({
   useFindingAction: () => ({ isPending: false, mutate: mocks.mutate }),
 }));
 
+vi.mock("@/lib/hooks/evals", () => ({
+  useCreateEvalCase: () => ({ mutateAsync: vi.fn() }),
+}));
+
 import { DiffTab } from "./DiffTab";
 
 const PATCH = "@@ -1,2 +1,3 @@\n a\n+b\n c";

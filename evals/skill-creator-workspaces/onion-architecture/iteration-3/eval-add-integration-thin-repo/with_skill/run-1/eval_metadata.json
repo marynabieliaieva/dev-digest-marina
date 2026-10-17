@@ -1,0 +1,12 @@
+{
+  "eval_id": 8,
+  "eval_name": "add-integration-thin-repo",
+  "prompt": "After a digest is generated, post it to a Microsoft Teams incoming webhook; the webhook URL comes from the TEAMS_WEBHOOK_URL environment variable. The project is in evals/fixtures/digest-thin/ (treat it as the repo root; do not edit it in place; create any files that are needed). Write every new or changed file into your outputs folder, keeping the same relative paths, and add a short NOTES.md listing which files you created or changed.",
+  "assertions": [
+    "A port interface for the Teams notifier is added to server/src/vendor/shared/adapters.ts (the shared ports file)",
+    "The concrete webhook client (the HTTP call) lives in a new file in its own directory server/src/adapters/<name>/",
+    "A mock implementation of the port is added to server/src/adapters/mocks.ts",
+    "server/src/platform/container.ts registers the adapter with an accessor and a ContainerOverrides entry so it can be replaced in tests",
+    "DigestService calls the notifier only through this.container and has no fetch call or import of the concrete adapter"
+  ]
+}

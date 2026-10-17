@@ -17,6 +17,7 @@ import {
   useSmartDiff,
   useFindingAction,
 } from "@/lib/hooks/reviews";
+import { useCreateEvalCase } from "@/lib/hooks/evals";
 import { RunCostBadge } from "@/components/run-cost-badge";
 import { notify } from "@/lib/toast";
 import type { PrFile } from "@devdigest/shared";
@@ -58,6 +59,7 @@ export function DiffTab({
   const { data: smartDiff } = useSmartDiff(prId);
   const create = useCreatePrComment(prId);
   const findingAction = useFindingAction();
+  const createEvalCase = useCreateEvalCase();
   // Comments start hidden so the diff is clean by default — toggle to reveal.
   // undefined = untouched: findings default to visible, GitHub comments to hidden.
   const [showOverride, setShowOverride] = React.useState<boolean | undefined>(undefined);
@@ -95,6 +97,7 @@ export function DiffTab({
     renderFinding: (d: DiffFinding) => {
       const rec = byId.get(d.id);
       if (!rec) return null;
+      const owner = (reviews ?? []).find((r) => r.id === rec.review_id);
       return (
         <FindingCard
           f={rec}
@@ -104,6 +107,12 @@ export function DiffTab({
           headSha={headSha}
           onAction={(action) =>
             findingAction.mutate({ findingId: rec.id, action, ...(prId ? { prId } : {}) })
+          }
+          agentName={owner?.agent_name}
+          onCreateEvalCase={
+            prId
+              ? () => createEvalCase.mutateAsync({ findingId: rec.id, prId, agentId: owner?.agent_id })
+              : undefined
           }
         />
       );

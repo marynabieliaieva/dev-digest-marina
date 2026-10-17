@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "onion-architecture", "runs": [{"id": "eval-review-invoices-repo-rules-with_skill-run-1", "prompt": "I'm about to open a PR that adds invoices with an email notification. The files changed in the PR are listed in evals/fixtures/invoices-pr/CHANGED.txt and the whole repo snapshot is under evals/fixtures/invoices-pr/ (treat it as the repo root: both server/ and client/ are there). Please review the PR for architecture problems. For every problem give the file, why it is a problem and how to fix it. Write the review to review.md.", "eval_id": 4, "outputs": [{"name": "review.md", "type": "text", "content": "# Architecture review: invoices + email notification PR\n\nReviewed against the onion-architecture rules: dependencies point inward only; services use ports through the Container; repositories own Drizzle types; new integrations need port + adapter + mock + container wiring.\n\nWhat is already right: the `EmailSender` port is in `shared/adapters.ts`; `sendgrid.ts` is the only file importing `@sendgrid/mail`; `repository.ts` maps rows to the shared `Invoice` type before returning; `routes.ts` parses with a shared contract and delegates to one service method per endpoint.\n\n## Problems\n\n### 1. `server/src/modules/invoices/service.ts` imports the DB schema and exposes a Drizzle type (must fix)\n- Why: `import { invoices } from '../../db/schema/invoices.js'` and `create(values: typeof invoices.$inferInsert)` put a persistence type in the application layer's public signature. Only `repository.ts` may touch `db/schema/*`. The application layer now depends on column shapes, and `routes.ts` has to build a DB-shaped object.\n- Fix: delete the schema import. Make `create` take a domain input, for example `CreateInvoiceBody` (or a type derived from it) from `@devdigest/shared`. Move the mapping to the DB insert shape (`new Date(dueDate)` and so on) into `repository.ts` or `helpers.ts`.\n\n### 2. `server/src/modules/invoices/repository.ts` public `insert` takes `InvoiceInsert` (must fix)\n- Why: the method returns the domain type, but its parameter is `typeof t.invoices.$inferInsert`. That is what forces the leak in item 1. The Drizzle type crosses the repository boundary inward.\n- Fix: `insert(input: CreateInvoiceBody): Promise<Invoice>`. Build the insert values inside the repository (the `dueDate` string becomes a `Date` there). Keep `InvoiceRow` and `InvoiceInsert` private to the file.\n\n### 3. `server/src/platform/container.ts` email adapter cannot be overridden (must fix)\n- Why: `ContainerOverrides` only has `secrets`, so tests cannot inject a fake `EmailSender`. The getter calls `new SendgridEmailSender(...)` directly, so the port is not really inverted. Every `InvoiceService` test would hit SendGrid.\n- Fix: add `email?: EmailSender` to `ContainerOverrides` and return it first in the getter, as the other ports do.\n\n### 4. `server/src/platform/container.ts` bypasses `SecretsProvider` and hardcodes config (should fix)\n- Why: the API key is read from `process.env.SENDGRID_API_KEY ?? ''`, although the container already exposes a `SecretsProvider`. An empty key silently builds a broken sender that fails at send time. The sender address `billing@example.com` is hardcoded in the container.\n- Fix: use an async getter matching the repo's `container.github()` and `container.llm()` convention. Read the key with `await this.secrets.get('SENDGRID_API_KEY')`, throw a clear error if it is missing, and take the from address from config or a secret.\n\n### 5. No mock for the new port: `server/src/adapters/mocks.ts` is not updated (must fix)\n- Why: a new integration needs all four pieces: port, adapter, mock, container registration. The mock is missing, so tests have nothing to inject (this compounds item 3).\n- Fix: add `MockEmailSender implements EmailSender`, recording sent messages in a `sent: EmailMessage[]` array. Use it through `ContainerOverrides` in the invoice service tests.\n\n### 6. `server/src/modules/invoices/service.ts` email failure breaks the create flow (should fix)\n- Why: `await this.container.email.send(...)` runs after the invoice is persisted. A SendGrid outage makes `create` throw, so the client gets a 500 for an invoice that was in fact created. A retry would then create a duplicate. A notification is a side effect and must not decide the outcome.\n- Fix: make the send best-effort: `void sender.send(...).catch(err => log.warn(...))`, or move it into its own `InvoiceNotifier` helper or service called with `new X(this.container)`. If delivery is required, record it and retry from a queue instead of failing the request.\n\n### 7. `client/src/vendor/shared/contracts/invoice.ts` is out of sync with the server copy (should fix)\n- Why: the contract is duplicated by hand. The client copy lacks `dueDate` in both `Invoice` and `CreateInvoiceBody`. The server returns `dueDate`, and the client's `CreateInvoiceBody` will strip or reject it. The two copies must stay identical.\n- Fix: copy the server file over the client file. Note that this file is not in CHANGED.txt, so it was either missed in the PR or changed outside it.\n\n### 8. `server/src/modules/invoices/routes.ts` builds a persistence-shaped object and does unchecked conversion (minor)\n- Why: the route hand-assembles the service input and calls `new Date(body.dueDate)`. This is mapping logic that follows from item 1. An invalid date string becomes an Invalid Date that fails later in the DB layer, and the contract only checks `z.string()`.\n- Fix: once item 1 is fixed, pass `body` straight to `service.create(body)`. Tighten `dueDate` in the contract (`z.string().datetime()` or a date regex) so bad input fails validation with a 400.\n\n### 9. `server/src/modules/invoices/service.ts` constructs the repository directly (note only)\n- Why: `new InvoiceRepository(container.db)` is the known persistence gap, and it matches the existing modules.\n- Fix: acceptable here, since the repository is simple. Consider an `IInvoiceRepository` interface if query logic grows.\n\n## Summary\nBlocking: items 1, 2, 3, 5. Should fix before merge: 4, 6, 7. Minor: 8, 9.\nThe core design is sound: port, adapter and mapping are in the right places. The problems are a Drizzle type leaking through service and repository, an email port that cannot be swapped in tests, and a notification that can fail the create flow.\n"}], "grading": {"expectations": [{"text": "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests", "passed": true, "evidence": "with_skill run-1: review.md: email adapter has no MockEmailSender in adapters/mocks.ts and no email entry in ContainerOverrides, so tests cannot swap it."}, {"text": "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand", "passed": true, "evidence": "with_skill run-1: review.md: client/src/vendor/shared/contracts/invoice.ts is missing dueDate and has drifted from the server contract."}, {"text": "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead", "passed": true, "evidence": "with_skill run-1: review.md: service.ts imports db/schema/invoices and exposes typeof invoices.$inferInsert in create(); recommends a domain/shared input type."}], "summary": {"passed": 3, "failed": 0, "total": 3, "pass_rate": 1.0}, "notes": "4th expectation ('does NOT present repository.ts as a violation') excluded: fixture v1 had repository.insert(values: typeof invoices.$inferInsert), a real leak, so flagging repository.ts was legitimate."}}, {"id": "eval-review-invoices-repo-rules-with_skill-run-2", "prompt": "I'm about to open a PR that adds invoices with an email notification. The files changed in the PR are listed in evals/fixtures/invoices-pr/CHANGED.txt and the whole repo snapshot is under evals/fixtures/invoices-pr/ (treat it as the repo root: both server/ and client/ are there). Please review the PR for architecture problems. For every problem give the file, why it is a problem and how to fix it. Write the review to review.md.", "eval_id": 4, "outputs": [{"name": "review.md", "type": "text", "content": "# Architecture review: invoices + email notification PR\n\nReviewed against the onion-architecture rules (dependency direction, ports/adapters/mocks/container, service/route/repository roles). Summary: the port (`EmailSender`), the adapter and the repository mapping are done well; there are 2 blocking problems, 3 should-fix problems, and 1 minor note.\n\n## Blocking\n\n### 1. `server/src/modules/invoices/service.ts` - service imports the DB schema and exposes a Drizzle type\n- Problem: `import { invoices } from '../../db/schema/invoices.js'` plus `create(values: typeof invoices.$inferInsert)`. The application layer must not import `db/schema/*` (same violation as importing `drizzle-orm`; persistence belongs to `repository.ts`), and a `$inferInsert` type in a service method signature leaks the persistence shape inward/upward to callers (`routes.ts` has to build a DB row).\n- Fix: remove the schema import. Take a shared type: `create(input: CreateInvoiceBody): Promise<Invoice>`. Do the mapping to the insert shape (`dueDate: new Date(input.dueDate)`) inside `repository.ts` (`insert(input: CreateInvoiceBody)`), which is the only file allowed to know `InvoiceInsert`.\n\n### 2. `server/src/platform/container.ts` - concrete SendGrid adapter constructed lazily in a getter, no override, no mock\n- Problem: `get email()` does `new SendgridEmailSender(process.env.SENDGRID_API_KEY ?? '', 'billing@example.com')`. (a) `ContainerOverrides` has no `email`, so tests cannot swap it and the port is not really inverted - any test that calls `InvoiceService.create` will try to talk to SendGrid. (b) The API key is read from `process.env` with an empty-string fallback instead of the existing `SecretsProvider` (`this.secrets.get(...)`), so a missing key fails only at send time, after the invoice is already saved. (c) The sender address is a hardcoded literal.\n- Fix: add `email?: EmailSender` to `ContainerOverrides`; build it in the constructor/getter as `overrides.email ?? new SendgridEmailSender(...)`, resolving the key through `secrets` and failing fast when it is absent; move the from-address to config/constants.\n\n## Should fix\n\n### 3. `server/src/adapters/mocks.ts` - no mock for the new port (file missing from the PR)\n- Problem: a new integration needs all four pieces: port, concrete adapter, mock, container registration. The PR has port (`shared/adapters.ts`), adapter (`sendgrid.ts`) and container wiring, but `adapters/mocks.ts` is untouched - there is no `MockEmailSender`.\n- Fix: add `MockEmailSender implements EmailSender` that records sent messages in an array, and use it through `ContainerOverrides.email` in the invoice service tests.\n\n### 4. `client/src/vendor/shared/contracts/invoice.ts` - manual copy of the shared contract is out of sync (file missing from the PR)\n- Problem: the server contract has `dueDate` in both `Invoice` and `CreateInvoiceBody`; the client copy does not. The shared contracts are duplicated by hand and the PR only updated the server side, so the client will strip/never send `dueDate`, and the create call will fail validation on the server.\n- Fix: copy `server/src/vendor/shared/contracts/invoice.ts` to the client vendor folder byte-for-byte (and add `EmailSender`/`EmailMessage` only if the client needs them - it should not).\n\n### 5. `server/src/modules/invoices/routes.ts` - route builds the persistence row\n- Problem: the handler maps the request body into a DB insert shape, including data conversion (`new Date(body.dueDate)`). This is transformation logic that belongs below transport, and it is only needed because of finding 1. The route should parse, call one service method, and map to a status.\n- Fix: after finding 1, `const invoice = await service.create(body); return reply.code(201).send(invoice);`. Also validate `:id` params with a schema rather than trusting the raw string.\n\n## Minor / design notes\n\n### 6. `server/src/modules/invoices/service.ts` - email sent inline after the insert\n- Problem: if `email.send` throws, the request returns 500 although the invoice is already persisted (client may retry and create a duplicate). The email body formatting (`amountCents / 100`, raw `dueDate`) is also inline.\n- Fix: decide the policy explicitly - catch and log the send failure (invoice creation succeeded) or enqueue the notification; move message building to `helpers.ts` (pure, testable). Not an onion violation, just robustness.\n\n## Checked and fine\n- `EmailSender`/`EmailMessage` port lives in `shared/adapters.ts` with no I/O; `sendgrid.ts` is the only file importing `@sendgrid/mail`; the service uses the port via `container.email`.\n- `repository.ts` maps `$inferSelect` to the shared `Invoice` before returning, and keeps Drizzle contained.\n- Shared contract imports only `zod`. `InvoiceService` takes the whole `Container` and constructs its own repository, matching repo convention. `routes.ts` imports no DB or SDK.\n- Optional: the repository holds little logic, so a repository interface is not required yet.\n"}], "grading": {"expectations": [{"text": "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests", "passed": true, "evidence": "with_skill run-2: review.md: email adapter has no MockEmailSender in adapters/mocks.ts and no email entry in ContainerOverrides, so tests cannot swap it."}, {"text": "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand", "passed": true, "evidence": "with_skill run-2: review.md: client/src/vendor/shared/contracts/invoice.ts is missing dueDate and has drifted from the server contract."}, {"text": "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead", "passed": true, "evidence": "with_skill run-2: review.md: service.ts imports db/schema/invoices and exposes typeof invoices.$inferInsert in create(); recommends a domain/shared input type."}], "summary": {"passed": 3, "failed": 0, "total": 3, "pass_rate": 1.0}, "notes": "4th expectation ('does NOT present repository.ts as a violation') excluded: fixture v1 had repository.insert(values: typeof invoices.$inferInsert), a real leak, so flagging repository.ts was legitimate."}}, {"id": "eval-review-invoices-repo-rules-with_skill-run-3", "prompt": "I'm about to open a PR that adds invoices with an email notification. The files changed in the PR are listed in evals/fixtures/invoices-pr/CHANGED.txt and the whole repo snapshot is under evals/fixtures/invoices-pr/ (treat it as the repo root: both server/ and client/ are there). Please review the PR for architecture problems. For every problem give the file, why it is a problem and how to fix it. Write the review to review.md.", "eval_id": 4, "outputs": [{"name": "review.md", "type": "text", "content": "# Architecture review: invoices + email notification PR\n\nReviewed against the onion-architecture rules (dependencies point inward only; a new integration needs a port, an adapter, a mock and container wiring; services take the whole `Container`; routes only parse, call one service method and map the result).\n\nVerdict: **changes requested.** There are 3 blocking problems and 4 smaller ones. The `SendgridEmailSender` adapter and the `EmailSender` port are themselves correct.\n\n## Blocking\n\n### 1. `server/src/modules/invoices/service.ts` imports the DB schema and exposes a Drizzle type in its public signature\n- **Problem:** The service does `import { invoices } from '../../db/schema/invoices.js'` and declares `create(values: typeof invoices.$inferInsert)`. The application layer now depends on the persistence schema. A `db/schema/*` import is the same violation as importing `drizzle-orm` directly, and a `$inferInsert` type in a service signature is a listed anti-pattern. Any column change now ripples into the service, the routes and every caller.\n- **Fix:** Remove the schema import. Add a domain input type to the shared contracts, for example `CreateInvoice` (infer it from `CreateInvoiceBody`), and make the signature `create(input: CreateInvoice): Promise<Invoice>`. Do the mapping to the insert shape inside `repository.ts`.\n\n### 2. `server/src/modules/invoices/repository.ts` takes `InvoiceInsert` as a public parameter\n- **Problem:** `insert(values: InvoiceInsert)` leaks the raw Drizzle type across the repository boundary. This is why finding 1 happens. The return side is fine, because `toInvoice` maps rows to the shared `Invoice` type.\n- **Fix:** Change it to `insert(input: CreateInvoice): Promise<Invoice>` and build the insert values inside the repository, for example converting the `dueDate` string to a `Date` there. Keep `InvoiceInsert` and `InvoiceRow` local to the file.\n\n### 3. `server/src/platform/container.ts` wires the email integration in a way that cannot be swapped or tested\n- **Problem:**\n  - `email` is a sync getter that hard-codes `new SendgridEmailSender(...)`. There is no `email?: EmailSender` in `ContainerOverrides`, so tests cannot inject a fake and `InvoiceService.create` would hit SendGrid. By the repo's rule, if it cannot be replaced through `ContainerOverrides`, it is not inverted.\n  - It reads `process.env.SENDGRID_API_KEY ?? ''` directly. It bypasses the `SecretsProvider` that the container already owns, and it silently builds a client with an empty key.\n  - The sender address `billing@example.com` is hard-coded.\n  - It does not follow the existing getter convention, which is an async getter that caches and pulls the secret from `this.secrets` (the `container.github()` / `container.llm()` shape).\n- **Fix:**\n  - Add `email?: EmailSender` to `ContainerOverrides`.\n  - Make it `async email(): Promise<EmailSender>`: return the override if present, otherwise return the cached instance, otherwise call `await this.secrets.get('SENDGRID_API_KEY')`, throw if it is missing, and construct `SendgridEmailSender`.\n  - Take the sender address from config or a secret.\n  - Update the service to `const email = await this.container.email(); await email.send(...)`.\n\n## Should fix\n\n### 4. `server/src/adapters/mocks.ts` has no `MockEmailSender`\n- **Problem:** A new integration needs all four pieces: port, adapter, mock and container registration. The port, the adapter and (partly) the registration exist, but the mock is missing. `mocks.ts` still only contains `MockSecretsProvider`.\n- **Fix:** Add `MockEmailSender implements EmailSender` that records messages in `sent: EmailMessage[]`. Use it through `ContainerOverrides.email` in the service tests.\n\n### 5. `server/src/modules/invoices/routes.ts` builds a persistence-shaped input and does not validate the date\n- **Problem:** The route converts `dueDate` with `new Date(body.dueDate)` and passes an insert-shaped object to the service. Shaping data for the DB is not the transport layer's job. `dueDate: z.string()` accepts any string, so a bad value produces `Invalid Date` and a 500 deep in the repository. The `.parse` call also throws a raw ZodError instead of a mapped 400.\n- **Fix:** Pass the validated `body` (the `CreateInvoice` type) straight to `service.create(body)`. Validate the date in the contract, for example `z.string().datetime()` or `z.coerce.date()`. Do the conversion in the repository or service. Map validation errors to 400 using the repo's error handling.\n\n### 6. `server/src/modules/invoices/service.ts` sends the email inline, so an email failure fails an invoice that was already saved\n- **Problem:** `create` inserts the invoice and then awaits `email.send`. If SendGrid is down, the caller gets a 500 even though the invoice exists. A retry then creates a duplicate. The notification is a side effect and must not decide whether the business operation succeeded.\n- **Fix:** Treat the notification as best-effort, as the notifications example does: `void this.sendInvoiceEmail(invoice).catch(err => logger.warn(...))`. Alternatively put the call behind a small `InvoiceNotifier` service. If delivery must be guaranteed, use an outbox. Put the email body formatting in `helpers.ts`.\n\n### 7. Client contract copy is out of sync: `client/src/vendor/shared/contracts/invoice.ts`\n- **Problem:** The shared contracts are duplicated by hand to the client. The server version has `dueDate` in both `Invoice` and `CreateInvoiceBody`. The client copy lacks it in both. The client will drop `dueDate` from responses and will not send it, so every create fails server validation.\n- **Fix:** Copy the server file to the client byte for byte. Also check that `invoice` is re-exported from both `index.ts` files (not part of this PR's file list).\n\n## Notes (non-blocking)\n\n- `InvoiceService` builds `new InvoiceRepository(container.db)`. This matches the existing modules, and the lack of a repository port is a known gap. The invoice logic is small, so it is fine for now. If the invoices module gains real query or business logic, consider an `IInvoiceRepository` interface.\n- `SendgridEmailSender` calls `sgMail.setApiKey` on the SDK's global singleton in its constructor. Constructing a second instance with a different key would change the first. This is acceptable for the adapter, but prefer the SDK's `MailService` instance if multiple senders are ever needed.\n- Layering that is correct and should stay: the `EmailSender` port in `shared/adapters.ts` has no I/O, only `sendgrid.ts` imports `@sendgrid/mail`, and `contracts/invoice.ts` imports only `zod`.\n"}], "grading": {"expectations": [{"text": "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests", "passed": true, "evidence": "with_skill run-3: review.md: email adapter has no MockEmailSender in adapters/mocks.ts and no email entry in ContainerOverrides, so tests cannot swap it."}, {"text": "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand", "passed": true, "evidence": "with_skill run-3: review.md: client/src/vendor/shared/contracts/invoice.ts is missing dueDate and has drifted from the server contract."}, {"text": "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead", "passed": true, "evidence": "with_skill run-3: review.md: service.ts imports db/schema/invoices and exposes typeof invoices.$inferInsert in create(); recommends a domain/shared input type."}], "summary": {"passed": 3, "failed": 0, "total": 3, "pass_rate": 1.0}, "notes": "4th expectation ('does NOT present repository.ts as a violation') excluded: fixture v1 had repository.insert(values: typeof invoices.$inferInsert), a real leak, so flagging repository.ts was legitimate."}}, {"id": "eval-review-invoices-repo-rules-without_skill-run-1", "prompt": "I'm about to open a PR that adds invoices with an email notification. The files changed in the PR are listed in evals/fixtures/invoices-pr/CHANGED.txt and the whole repo snapshot is under evals/fixtures/invoices-pr/ (treat it as the repo root: both server/ and client/ are there). Please review the PR for architecture problems. For every problem give the file, why it is a problem and how to fix it. Write the review to review.md.", "eval_id": 4, "outputs": [{"name": "review.md", "type": "text", "content": "# Architecture review: invoices + email notification PR\n\nScope: files in `fixtures/invoices-pr/CHANGED.txt`, plus the unlisted `client/src/vendor/shared/contracts/invoice.ts` and `server/src/adapters/mocks.ts` that the PR touches or should have touched.\n\nOverall: the email sender is correctly modelled as a port (`EmailSender` in shared, `SendgridEmailSender` as adapter). The problems are in how it is wired, and in what the service layer depends on.\n\n## 1. Service depends on the Drizzle schema (infrastructure leak into application layer)\n**File:** `server/src/modules/invoices/service.ts` (lines 3, 13)\n\n`service.ts` imports `invoices` from `db/schema/invoices.js` and uses `typeof invoices.$inferInsert` as the type of `create()`'s argument. The application layer is now coupled to the table definition, so any column change ripples into the service and the route.\n\n**Fix:** Define a domain/contract input type (e.g. `NewInvoice` in `@devdigest/shared`, or derive it from `CreateInvoiceBody`) and use it in `service.create`. Keep `$inferInsert` private to `repository.ts`, which maps `NewInvoice` to the row insert.\n\n## 2. Container hard-wires the SendGrid adapter and bypasses the secrets port\n**File:** `server/src/platform/container.ts` (lines 6-8, 18-21)\n\n- `process.env.SENDGRID_API_KEY ?? ''` is read directly. The container already has a `SecretsProvider` for this. An empty-string fallback also means a missing key is silently accepted and only fails at send time.\n- The sender address `billing@example.com` is hardcoded in the composition root.\n- `ContainerOverrides` only allows overriding `secrets`, so tests cannot inject a fake `EmailSender`. A `MockEmailSender` is also not added to `server/src/adapters/mocks.ts` next to `MockSecretsProvider`. Every invoice test would either hit the real SendGrid SDK or need module mocking.\n- `email` is a lazy getter, unlike `secrets`, so config errors only surface on the first invoice.\n\n**Fix:** Add `email?: EmailSender` to `ContainerOverrides`; build the sender from `await secrets.get('SENDGRID_API_KEY')` and a config value for `from`; fail fast if missing; add `MockEmailSender` (records sent messages) to `adapters/mocks.ts`.\n\n## 3. Service takes the whole Container (service locator) and builds its own repository\n**Files:** `server/src/modules/invoices/service.ts` (lines 9-11), `server/src/modules/invoices/routes.ts` (line 6)\n\n`InvoiceService` receives the entire `Container` and does `new InvoiceRepository(container.db)` itself. Dependencies are hidden (the constructor signature doesn't say it needs email), the service can't be unit-tested without a full container and a DB, and the service hard-codes a concrete repository. Routes also construct the service with `new`, so the wiring is spread across layers.\n\n**Fix:** Inject exactly what is needed: `new InvoiceService({ repo, email })` (repository as an interface or at least a constructor parameter). Compose it in the container / module registration, and have routes receive the ready service.\n\n## 4. Email is sent inline after insert with no failure handling\n**File:** `server/src/modules/invoices/service.ts` (lines 14-19)\n\nThe invoice is persisted and then `email.send` is awaited in the same request. If SendGrid fails, `create` throws, the client gets a 500, but the invoice already exists, so a retry creates a duplicate. The email is also a slow external call on the critical path.\n\n**Fix:** Decide the semantics explicitly. Either treat notification as best-effort (try/catch, log, still return 201), or record an outbox row / emit a domain event and send from a background handler with retries. At minimum, do not let a notification failure turn a successful create into an error.\n\n## 5. Presentation/formatting logic and a money bug inside the service\n**File:** `server/src/modules/invoices/service.ts` (line 18)\n\nThe service composes the email body, including `invoice.amountCents / 100` (float division, no fixed decimals, so `1050` renders as `10.5`) and a raw ISO date string. Message templating is a separate concern from invoice use cases.\n\n**Fix:** Move message building to a small helper/template (e.g. `modules/invoices/helpers.ts`) that formats currency with `Intl.NumberFormat` and dates properly; the service only calls it.\n\n## 6. Repository returns the transport (Zod/wire) type\n**File:** `server/src/modules/invoices/repository.ts` (lines 4, 9-16)\n\nThe repository maps rows straight to the shared API contract `Invoice` (ISO strings). The persistence layer is therefore shaped by the wire format, and the service/domain never sees real `Date` values. It also forces `dueDate.toISOString()` here.\n\n**Fix:** Return a domain `Invoice` (with `Date`s) from the repository and map to the wire contract in the route (or a mapper). Acceptable as a pragmatic shortcut only if the team's convention explicitly allows it; flag it if not.\n\n## 7. Route validates, but date parsing is unchecked and mapping lives in the route\n**File:** `server/src/modules/invoices/routes.ts` (line 14)\n\n`new Date(body.dueDate)` on a free-form `z.string()` yields `Invalid Date` for bad input, which then reaches Drizzle and produces a 500 instead of a 400. Contract `dueDate: z.string()` is unvalidated.\n\n**Fix:** Make the contract `z.string().datetime()` (or `z.coerce.date()`), so validation fails at the boundary with a 400, and let the service accept the already-typed value.\n\n## 8. Client copy of the shared contract has drifted from the server\n**File:** `client/src/vendor/shared/contracts/invoice.ts`\n\nThe client `Invoice` has no `dueDate`, and `CreateInvoiceBody` has no `dueDate`, while the server contract requires it. The file is not in `CHANGED.txt`, so the PR ships contracts that disagree: a client built from this copy will POST bodies the server rejects with 400, and will drop `dueDate` from responses. The two files are hand-duplicated with no sync mechanism.\n\n**Fix:** Update the client copy in this PR; better, make `vendor/shared` a single source (path alias or a sync script/CI check) so the copies cannot diverge.\n\n## 9. SendGrid adapter configures a process-global singleton in its constructor\n**File:** `server/src/adapters/email/sendgrid.ts` (lines 5-7)\n\n`sgMail.setApiKey` mutates module-global state in the constructor, so two instances share one key, and constructing with `''` silently \"succeeds\". Also `text`-only body, no error mapping to a domain error.\n\n**Fix:** Use `new MailService()` from `@sendgrid/mail` per instance, validate a non-empty key, and wrap SDK errors in an adapter-level error so the service never sees SendGrid types.\n\n## Minor\n- `markPaid` is not idempotent: calling it twice overwrites `paidAt`. Guard with `where paidAt is null` or return the existing value.\n- No tests are included for the new module or the adapter.\n\n## What is fine\n- `EmailSender`/`EmailMessage` port lives in shared and the service uses it via the interface, not the SDK.\n- The SDK import is confined to `adapters/email/sendgrid.ts`.\n- Routes do not touch the DB or SDK directly.\n"}], "grading": {"expectations": [{"text": "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests", "passed": true, "evidence": "without_skill run-1: review.md: email adapter has no MockEmailSender in adapters/mocks.ts and no email entry in ContainerOverrides, so tests cannot swap it."}, {"text": "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand", "passed": true, "evidence": "without_skill run-1: review.md: client/src/vendor/shared/contracts/invoice.ts is missing dueDate and has drifted from the server contract."}, {"text": "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead", "passed": true, "evidence": "without_skill run-1: review.md: service.ts imports db/schema/invoices and exposes typeof invoices.$inferInsert in create(); recommends a domain/shared input type."}], "summary": {"passed": 3, "failed": 0, "total": 3, "pass_rate": 1.0}, "notes": "4th expectation ('does NOT present repository.ts as a violation') excluded: fixture v1 had repository.insert(values: typeof invoices.$inferInsert), a real leak, so flagging repository.ts was legitimate."}}, {"id": "eval-review-invoices-repo-rules-without_skill-run-2", "prompt": "I'm about to open a PR that adds invoices with an email notification. The files changed in the PR are listed in evals/fixtures/invoices-pr/CHANGED.txt and the whole repo snapshot is under evals/fixtures/invoices-pr/ (treat it as the repo root: both server/ and client/ are there). Please review the PR for architecture problems. For every problem give the file, why it is a problem and how to fix it. Write the review to review.md.", "eval_id": 4, "outputs": [{"name": "review.md", "type": "text", "content": "# Architecture review: invoices + email notification PR\n\n## Problems\n\n### 1. Service imports the DB schema and uses Drizzle types\nFile: `server/src/modules/invoices/service.ts`\nWhy: `import { invoices } from '../../db/schema/invoices.js'` and `typeof invoices.$inferInsert` as the `create()` parameter type. The application layer is coupled to the persistence schema (infrastructure). A column rename or ORM swap changes the service's signature.\nFix: Define a domain/contract input type (e.g. `CreateInvoiceInput` from `@devdigest/shared`) and use it in `service.create`. Keep Drizzle types inside `repository.ts`, which maps input to `InvoiceInsert`.\n\n### 2. Service depends on the whole Container (service locator) and builds its own repository\nFile: `server/src/modules/invoices/service.ts`\nWhy: `InvoiceService` takes `Container`, reaches into `container.db` and `container.email`, and does `new InvoiceRepository(container.db)`. Dependencies are hidden, the service is hard to unit test without a full container, and it knows about the DB handle directly.\nFix: Inject narrow dependencies via the constructor: `constructor(repo: InvoiceRepository (or a port interface), email: EmailSender)`. Compose them in the route or plugin wiring.\n\n### 3. Routes instantiate the service and reach into `app.container`\nFile: `server/src/modules/invoices/routes.ts`\nWhy: `new InvoiceService(app.container)` in the transport layer makes routes the composition root and passes the entire container down.\nFix: Build the service in the composition root/container (or a module factory) and have routes receive a ready `InvoiceService`.\n\n### 4. Route handler builds the domain/DB input and converts types\nFile: `server/src/modules/invoices/routes.ts`\nWhy: The route maps body to the insert shape and does `new Date(body.dueDate)`. This is also what forces the service to take a Drizzle insert type (`dueDate: Date`) while the contract says `dueDate: string`. There is no validation that the date is valid (invalid date gives `Invalid Date`, which then throws at `toISOString()` / DB write as a 500). `parse()` throws a raw ZodError with no error mapping.\nFix: Pass the validated DTO to the service and let the service/repository do the conversion. Validate `dueDate` in the contract (`z.string().datetime()` or `z.coerce.date()`). Use `safeParse` or a shared error handler to return 400.\n\n### 5. Email send is coupled to invoice creation, in the same call path, with no failure isolation\nFile: `server/src/modules/invoices/service.ts`\nWhy: After the DB insert, `await this.container.email.send(...)` runs inline. If SendGrid fails, `create` throws after the invoice has already been persisted, so the client gets a 500 and retries, creating a duplicate invoice. Latency of a third party is also added to the request. Message composition (subject/body) is business/presentation logic hard-coded in the service, and `amountCents / 100` formatting is wrong for non-2-decimal currencies.\nFix: Treat notification as a side effect: catch and log failures (or enqueue via an outbox/event handler), do not fail the create. Move message building into a small notifier/template helper that formats money correctly (e.g. `Intl.NumberFormat`).\n\n### 6. Container directly imports a concrete vendor adapter and reads env inside a getter\nFile: `server/src/platform/container.ts`\nWhy: The email adapter is constructed lazily in a getter with `process.env.SENDGRID_API_KEY ?? ''` and a hard-coded sender `'billing@example.com'`. This is inconsistent with `secrets`, which is built in the constructor and overridable. There is no `email` entry in `ContainerOverrides`, so tests cannot inject a fake (and a `MockEmailSender` was not added to `adapters/mocks.ts`). With an empty key fallback, misconfiguration fails silently at send time instead of at startup. The key bypasses the `SecretsProvider` abstraction already present.\nFix: Add `email?: EmailSender` to `ContainerOverrides`, build it in the constructor, read the API key through `this.secrets.get(...)` and the sender address from config, and fail fast if missing. Add `MockEmailSender` to `server/src/adapters/mocks.ts`.\n\n### 7. Adapter does global SDK configuration in the constructor\nFile: `server/src/adapters/email/sendgrid.ts`\nWhy: `sgMail.setApiKey` mutates a module-level singleton, so multiple instances share/override state and construction has side effects. It also sends only plain `text`, with no error translation (vendor errors leak up to the application layer).\nFix: Use a client instance owned by the adapter (or isolate the singleton setup in one place) and wrap errors in a domain-level error (e.g. `EmailDeliveryError`) so callers do not depend on SendGrid's error shapes.\n\n### 8. Port declared in `adapters.ts` in the shared package\nFile: `server/src/vendor/shared/adapters.ts`\nWhy: This is lower severity, but the `EmailSender` port is placed in the vendor/shared package that is consumed by client, server and others, although it is server-only. This widens the cross-package surface.\nFix: If `shared` is meant to contain only cross-package contracts, keep server-only ports in the server's domain/ports location (acceptable if the repo's convention already puts ports here, as with `SecretsProvider`; confirm the convention).\n\n### 9. Contract mismatch: client copy of invoice contract is out of sync with the server\nFile: `client/src/vendor/shared/contracts/invoice.ts` (and `server/src/vendor/shared/contracts/invoice.ts`)\nWhy: The server contract adds `dueDate` to `Invoice` and `CreateInvoiceBody`; the client copy does not. The client will fail to send required `dueDate` and will strip/ignore it in responses. This file is also not listed in `CHANGED.txt`, so the PR updates one side only. Duplicated contracts invite this drift.\nFix: Update the client copy (or sync from the single source of truth) in the same PR, and add a check that the two copies are identical.\n\n### 10. Repository returns the contract type and takes raw insert type\nFile: `server/src/modules/invoices/repository.ts`\nWhy: `insert(values: InvoiceInsert)` exposes the Drizzle insert shape in the repository's public API (which is what lets the service import the schema). `markPaid` is not idempotent: re-marking overwrites `paidAt`. Mapping rows directly to the transport DTO (`Invoice` from the zod contract) couples persistence to the wire format (e.g. dates as ISO strings).\nFix: Accept a domain input type in `insert`; have the repository return a domain entity and map to the wire shape at the edge. Make `markPaid` conditional on `paidAt IS NULL`.\n\n## Missing from the PR\n- No `server/src/db/schema/invoices.ts` or migration appears in `CHANGED.txt`, yet the repository/service import it (migrations must be generated, not hand-written).\n- `invoiceRoutes` registration and any tests are not in the changed list.\n- No `MockEmailSender` for tests.\n\n## Summary\nTop priorities: remove the Drizzle schema import from the service (1), inject narrow dependencies instead of the Container (2, 3), make email non-fatal to creation (5), make the email adapter overridable and configured via secrets (6), and sync the client contract (9).\n"}], "grading": {"expectations": [{"text": "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests", "passed": true, "evidence": "without_skill run-2: review.md: email adapter has no MockEmailSender in adapters/mocks.ts and no email entry in ContainerOverrides, so tests cannot swap it."}, {"text": "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand", "passed": true, "evidence": "without_skill run-2: review.md: client/src/vendor/shared/contracts/invoice.ts is missing dueDate and has drifted from the server contract."}, {"text": "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead", "passed": true, "evidence": "without_skill run-2: review.md: service.ts imports db/schema/invoices and exposes typeof invoices.$inferInsert in create(); recommends a domain/shared input type."}], "summary": {"passed": 3, "failed": 0, "total": 3, "pass_rate": 1.0}, "notes": "4th expectation ('does NOT present repository.ts as a violation') excluded: fixture v1 had repository.insert(values: typeof invoices.$inferInsert), a real leak, so flagging repository.ts was legitimate."}}, {"id": "eval-review-invoices-repo-rules-without_skill-run-3", "prompt": "I'm about to open a PR that adds invoices with an email notification. The files changed in the PR are listed in evals/fixtures/invoices-pr/CHANGED.txt and the whole repo snapshot is under evals/fixtures/invoices-pr/ (treat it as the repo root: both server/ and client/ are there). Please review the PR for architecture problems. For every problem give the file, why it is a problem and how to fix it. Write the review to review.md.", "eval_id": 4, "outputs": [{"name": "review.md", "type": "text", "content": "# Architecture review: invoices + email notification PR\n\nScope: the 7 files in `CHANGED.txt`, plus two neighbouring files in the snapshot that the PR affects (`client/src/vendor/shared/contracts/invoice.ts`, `server/src/adapters/mocks.ts`).\n\nVerdict: do not merge as is. There are 2 blocking layering violations (1, 2), 1 blocking contract bug (3), and several smaller issues.\n\n## Blocking\n\n### 1. `server/src/modules/invoices/service.ts` imports the Drizzle schema (application layer depends on infrastructure)\n- Problem: line 3 imports `invoices` from `../../db/schema/invoices.js`, and `create()` takes `typeof invoices.$inferInsert` as its input. The service's public API is now the DB table shape. Any column change (nullable, default, rename, snake_case mapping) leaks into the service and the routes. The service cannot be unit-tested without the schema. The repository is meant to be the only module that knows about the schema.\n- Fix: define an application-level input type, for example `CreateInvoiceInput = { customerEmail; amountCents; currency; dueDate: Date }` (or reuse `CreateInvoiceBody` from `@devdigest/shared`). `InvoiceService.create` takes that. `InvoiceRepository.insert` accepts the same domain type and maps it to `$inferInsert` internally. Remove the `db/schema` import from the service.\n\n### 2. `server/src/platform/container.ts` hard-wires the SendGrid adapter and bypasses the secrets port\n- Problem:\n  - The `email` getter does `new SendgridEmailSender(process.env.SENDGRID_API_KEY ?? '', 'billing@example.com')`. It reads `process.env` directly, although the container already exposes `SecretsProvider` for exactly this purpose.\n  - A missing key silently becomes `''` and only fails at send time.\n  - The sender address is hard-coded.\n  - `ContainerOverrides` has no `email` override, so tests cannot inject a fake. Every test that creates an invoice would try to call SendGrid.\n  - The getter is lazy and mutable (`_email ??=`), unlike `secrets`, which is built in the constructor.\n- Fix:\n  - Add `email?: EmailSender` to `ContainerOverrides`.\n  - Add `MockEmailSender` to `server/src/adapters/mocks.ts`, next to `MockSecretsProvider`, which records sent messages.\n  - Build the email sender in the constructor (`overrides.email ?? new SendgridEmailSender(...)`).\n  - Resolve the key via `await secrets.get('SENDGRID_API_KEY')`, which means an async factory or lazy init. Fail fast if it is missing.\n  - Take the from-address from config, not a literal.\n\n### 3. Client and server `Invoice` contracts have drifted (`client/src/vendor/shared/contracts/invoice.ts`)\n- Problem: the server contract (`server/src/vendor/shared/contracts/invoice.ts`) has `dueDate` in both `Invoice` and `CreateInvoiceBody`. The client copy has neither. The client will strip or reject `dueDate`, and `POST /invoices` from the client will fail validation with a 400 because `dueDate` is required. This file is also missing from `CHANGED.txt`, so the PR is incomplete.\n- Fix: update the client copy to match the server, or generate both from a single source. Add a check that the two vendored contracts are identical so they cannot drift again.\n\n## Should fix\n\n### 4. Notification is coupled into the `create` transaction path\n- Problem: `service.create` inserts the row and then awaits `email.send` in the same call. If SendGrid is down or slow, `POST /invoices` returns 500 even though the invoice was already saved. A client retry then creates a duplicate invoice. Email formatting (subject, body, `amountCents / 100`) is also business or presentation logic living inline in the service.\n- Fix: treat the email as a side effect that cannot fail the request. Catch and log the error, or enqueue it (outbox or background job). Move message composition into a small helper or template function (`buildInvoiceEmail(invoice)`) with a currency-aware formatter, instead of dividing by 100 inline. This also helps with currencies that do not have 2 decimals.\n\n### 5. Service locator and manual wiring (`service.ts`, `routes.ts`)\n- Problem: `InvoiceService` receives the whole `Container` and builds its own `InvoiceRepository` in the constructor. `routes.ts` does `new InvoiceService(app.container)`. The service depends on everything in the container, and its dependencies are hidden. Tests must build a full `Container`.\n- Fix: inject only what is needed, e.g. `new InvoiceService({ repo, email })`. Compose in the container or a module-level factory. Routes then only call the service.\n\n### 6. Weak date validation and handling at the edge (`routes.ts`, `contracts/invoice.ts`)\n- Problem: `dueDate: z.string()` accepts any string. `new Date(body.dueDate)` in the route then produces an `Invalid Date` for bad input, which blows up later in the repository or in `toISOString()` and becomes a 500. Parsing and conversion belongs to the validation layer, not the handler.\n- Fix: use `z.string().datetime()` (or `z.coerce.date()` in a transform) in the contract. The route passes the already-validated value on. Return 400 on bad input. Optionally also validate `:id` as a uuid.\n\n## Minor / notes\n\n- `server/src/adapters/email/sendgrid.ts` is correctly placed behind the `EmailSender` port and imports the SDK only in the adapter. Two small points: it calls `sgMail.setApiKey` on a module-global singleton in the constructor (a second instance would override the first), and it sends no HTML, no error mapping and no retry. Wrap SDK errors into a domain error so callers do not depend on SendGrid error shapes.\n- `repository.ts` returns the shared `Invoice` DTO from `toInvoice`, which is fine. Its `insert(values: InvoiceInsert)` leaks the Drizzle type (see 1), and `markPaid` is not idempotent: calling it twice overwrites `paidAt`. Add `isNull(paidAt)` to the where clause or check the state first.\n- The PR imports `db/schema/invoices.js` but no schema file or migration is in `CHANGED.txt`. Confirm both are included, since migrations do not run on boot.\n- No tests are in the change list (service with `MockEmailSender`, route 400/404 cases, contract parity).\n"}], "grading": {"expectations": [{"text": "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests", "passed": true, "evidence": "without_skill run-3: review.md: email adapter has no MockEmailSender in adapters/mocks.ts and no email entry in ContainerOverrides, so tests cannot swap it."}, {"text": "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand", "passed": true, "evidence": "without_skill run-3: review.md: client/src/vendor/shared/contracts/invoice.ts is missing dueDate and has drifted from the server contract."}, {"text": "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead", "passed": true, "evidence": "without_skill run-3: review.md: service.ts imports db/schema/invoices and exposes typeof invoices.$inferInsert in create(); recommends a domain/shared input type."}], "summary": {"passed": 3, "failed": 0, "total": 3, "pass_rate": 1.0}, "notes": "4th expectation ('does NOT present repository.ts as a violation') excluded: fixture v1 had repository.insert(values: typeof invoices.$inferInsert), a real leak, so flagging repository.ts was legitimate."}}, {"id": "eval-review-orders-compliant-trap-with_skill-run-1", "prompt": "Please review the orders PR before I open it. The changed files are listed in evals/fixtures/orders-pr/CHANGED.txt and the repo snapshot is under evals/fixtures/orders-pr/ (treat it as the repo root). Tell me about any architecture problems with file, reason and fix, and write the review to review.md. If it is fine to merge from an architecture standpoint, say so plainly.", "eval_id": 5, "outputs": [{"name": "review.md", "type": "text", "content": "# Architecture review: orders PR\n\nVerdict: **No architecture problems found. Fine to merge from an architecture standpoint.**\n\nFiles reviewed: `orders/constants.ts`, `orders/repository.ts`, `orders/service.ts`, `orders/routes.ts`. I also read `customers/service.ts` and `customers/repository.ts`, because `OrderService` calls into them.\n\n## Checklist results\n\n1. **`service.ts` importing an SDK or db wrapper:** pass. `orders/service.ts` imports only shared types, `Container`, platform errors, `CustomerService`, its own `OrderRepository` and `constants`. There is no `drizzle-orm`, `db/client` or `db/schema/*` import, and there are no Drizzle `$inferSelect` types in its signatures. It only reads `container.db` to hand to its own repository, which matches the existing `service.ts` convention (`customers/service.ts` does the same).\n2. **`routes.ts` reaching past the service:** pass. It imports only `fastify`, `zod` and `OrderService`. Each handler parses the body and calls exactly one service method. The status code (201) is mapped in the route. There is no business branching in the route.\n3. **Drizzle types in service signatures:** pass. `place` and `cancel` return the shared `Order` type.\n4. **Business logic in `routes.ts`:** pass. The item-count and minimum-total rules live in `service.ts`, and the limits live in `constants.ts`. The route only does Zod shape validation.\n5. **New external integration:** not applicable. The PR adds no SDK or API client, so no port, adapter or mock is needed.\n6. **Domain layer depending outward:** not applicable. The PR touches no shared contracts or `reviewer-core`.\n7. **Repository growth:** pass. `OrderRepository` is small and does simple CRUD.\n\n## Points checked that look like violations but are not\n\n- **`OrderService` creating `new CustomerService(this.container)` in `place()`:** this is the sanctioned cross-module pattern (\"call into another module's service means instantiating the callee at the call site with the container\"). A container-level facade is reserved for subsystems with several consumers, and this has a single caller. It also goes through `CustomerService.get`, not the customers repository, so the module boundary is respected.\n- **`OrderRepository` importing `drizzle-orm`, `db/client` and `db/schema/orders`:** this is allowed in `repository.ts`, which is the one place that may use them.\n- **`OrderRepository` returning mapped `Order` objects:** the `toOrder` mapper converts the row to the shared type inside the repository, as the layer map requires. Rows never leak outward.\n- **`OrderService` taking the whole `Container` in its constructor:** this is the required convention.\n- **`constants.ts`:** pure values with no imports.\n- **`orders/` having no `helpers.ts`:** optional, and nothing needs one.\n\n## Findings\n\nNone. No file needs a change for architecture reasons.\n\n## Out of scope (not architecture, optional)\n\n- `PlaceOrderBody` has no `.min`/`.positive` bounds. The service enforces the real limits, so this is fine layering-wise.\n- `customerId: z.string()` is not a uuid check. That is a validation nicety, not a layering concern.\n"}], "grading": {"expectations": [{"text": "review.md concludes the PR has no blocking architecture/layering violation and is fine to merge on that front", "passed": true, "evidence": "with_skill run-1: review.md verdict: no architecture problems, fine to merge."}, {"text": "review.md does NOT report OrderService taking the whole Container in its constructor, or building its repository with new OrderRepository(container.db), as a violation or something that must be changed", "passed": true, "evidence": "with_skill run-1: review.md does not flag whole-Container constructor or new OrderRepository(container.db) as a problem."}, {"text": "review.md does NOT report the cross-module call new CustomerService(this.container) as a violation, and does not demand injecting it through the constructor or a new container getter", "passed": true, "evidence": "with_skill run-1: review.md treats new CustomerService(this.container) as acceptable; at most an optional cosmetic nit about where it is created, no demand for constructor injection or a container getter."}], "summary": {"passed": 3, "failed": 0, "total": 3, "pass_rate": 1.0}}}, {"id": "eval-review-orders-compliant-trap-with_skill-run-2", "prompt": "Please review the orders PR before I open it. The changed files are listed in evals/fixtures/orders-pr/CHANGED.txt and the repo snapshot is under evals/fixtures/orders-pr/ (treat it as the repo root). Tell me about any architecture problems with file, reason and fix, and write the review to review.md. If it is fine to merge from an architecture standpoint, say so plainly.", "eval_id": 5, "outputs": [{"name": "review.md", "type": "text", "content": "# Architecture review: orders PR\n\n**Verdict: no architecture problems. Fine to merge from an architecture standpoint.**\n\nFiles reviewed: `orders/constants.ts`, `orders/repository.ts`, `orders/service.ts`, `orders/routes.ts`. I also read `customers/service.ts` and `customers/repository.ts` to check the cross-module call.\n\n## Checklist (onion-architecture enforcement.md)\n\n1. **`service.ts` imports a concrete SDK or DB?** No. `orders/service.ts` imports only shared types, `Container`, the error classes, `CustomerService`, its own `OrderRepository` and `constants`. It has no `drizzle-orm`, `db/client` or `db/schema/*` import and no SDK.\n2. **`routes.ts` reaches past the service?** No. It imports only `fastify`, `zod` and `./service.js`. Each handler parses the input and makes one service call (`place` or `cancel`). `201` is the only status mapping.\n3. **Drizzle types in a service signature?** No. `OrderRow` (`$inferSelect`) stays inside `repository.ts` and is mapped by `toOrder()` to the shared `Order` type. The service signatures use `Order` only.\n4. **Business logic in `routes.ts`?** No. The item-count and minimum-total checks, the customer-blocked check and the shipped-cancel rule are all in `service.ts`. The Zod body parse is boundary validation, which belongs in routes.\n5. **New external integration?** None added, so no port, adapter or mock is needed.\n6. **Domain depending outward?** No shared contract or `reviewer-core` file is changed.\n7. **Repository interface?** `OrderRepository` is three simple queries. An interface is not needed now. It would only be worth adding if the queries become complex.\n\n## Cross-module call\n\n`OrderService.place` calls the customers module with `new CustomerService(this.container)`. This is the pattern the skill prescribes (decision order 6): construct the callee at the call site with the container. It does not reach into the customers repository or schema, and a container facade is not needed for a single caller.\n\n## Other checks\n\n- `repository.ts` is the only orders file that imports `drizzle-orm`, `db/client` and `db/schema`.\n- `constants.ts` holds the literals, and the role-based file naming is followed.\n- The service takes the whole `Container`, as in `ReviewService` and `RepoService`.\n\n## Non-blocking notes (no action required)\n\n- Like the existing modules, the repository has no port interface. This is a known, accepted gap in the repo.\n- `place` builds a `CustomerService` on every call. This is cosmetic and could be moved to the constructor if you prefer.\n\nNo file, reason or fix entries are needed because there are no findings.\n"}], "grading": {"expectations": [{"text": "review.md concludes the PR has no blocking architecture/layering violation and is fine to merge on that front", "passed": true, "evidence": "with_skill run-2: review.md verdict: no architecture problems, fine to merge."}, {"text": "review.md does NOT report OrderService taking the whole Container in its constructor, or building its repository with new OrderRepository(container.db), as a violation or something that must be changed", "passed": true, "evidence": "with_skill run-2: review.md does not flag whole-Container constructor or new OrderRepository(container.db) as a problem."}, {"text": "review.md does NOT report the cross-module call new CustomerService(this.container) as a violation, and does not demand injecting it through the constructor or a new container getter", "passed": true, "evidence": "with_skill run-2: review.md treats new CustomerService(this.container) as acceptable; at most an optional cosmetic nit about where it is created, no demand for constructor injection or a container getter."}], "summary": {"passed": 3, "failed": 0, "total": 3, "pass_rate": 1.0}}}, {"id": "eval-review-orders-compliant-trap-with_skill-run-3", "prompt": "Please review the orders PR before I open it. The changed files are listed in evals/fixtures/orders-pr/CHANGED.txt and the repo snapshot is under evals/fixtures/orders-pr/ (treat it as the repo root). Tell me about any architecture problems with file, reason and fix, and write the review to review.md. If it is fine to merge from an architecture standpoint, say so plainly.", "eval_id": 5, "outputs": [{"name": "review.md", "type": "text", "content": "# Architecture review: orders PR\n\n**Verdict: no architecture problems. Fine to merge from an architecture standpoint.**\n\nReviewed against the Onion Architecture checklist (enforcement.md). Changed files: `orders/constants.ts`, `repository.ts`, `service.ts`, `routes.ts`. `customers/service.ts` and `customers/repository.ts` are unchanged but were read, because orders calls into them.\n\n## Checklist results\n\n| # | Check | Result |\n|---|---|---|\n| 1 | `service.ts` imports a concrete SDK or `db/*`? | No. `orders/service.ts` imports only shared types, `Container`, platform errors, `CustomerService`, its own repository and constants. |\n| 2 | `routes.ts` reaches past the service? | No. `orders/routes.ts` imports only Fastify, zod and `OrderService`. Each handler parses the body and calls one service method. |\n| 3 | Drizzle `$inferSelect`/`$inferInsert` in a service signature? | No. `OrderRow` stays inside `repository.ts` and is mapped by `toOrder()` to the shared `Order` type. The repository's public methods return `Order`, not the row type. |\n| 4 | Business logic in `routes.ts`? | No. Item-count and minimum-total validation, the blocked-customer check and the shipped-order check are all in `service.ts`. |\n| 5 | New external integration without a port? | Not applicable. No SDK or new integration is added. |\n| 6 | Domain/contracts importing outward? | Not applicable. No contracts changed. |\n| 7 | Repository complexity | Three trivial queries, so an interface is not warranted. |\n\n## Cross-module call\n\n`OrderService.place` does `new CustomerService(this.container)` at the call site. This is the sanctioned pattern (decision order, item 6): there is a single caller, so no container facade is needed. It uses the callee's service, not the customers repository or schema, so no layer is skipped. `OrderService` also takes the whole `Container`, as the convention requires.\n\n## Layer placement\n\n- `constants.ts` holds literals only.\n- `repository.ts` is the only orders file that imports `drizzle-orm`, `db/client` and `db/schema/*`, which is allowed for infrastructure.\n- Files are named by role, as the repo convention requires.\n\n## Non-blocking note (not a violation)\n\nOrders has no repository interface. This is the known repo-wide gap (persistence is not inverted), and the repository here is small. If it grows complex query logic, consider an `IOrderRepository`.\n\nNo changes required.\n"}], "grading": {"expectations": [{"text": "review.md concludes the PR has no blocking architecture/layering violation and is fine to merge on that front", "passed": true, "evidence": "with_skill run-3: review.md verdict: no architecture problems, fine to merge."}, {"text": "review.md does NOT report OrderService taking the whole Container in its constructor, or building its repository with new OrderRepository(container.db), as a violation or something that must be changed", "passed": true, "evidence": "with_skill run-3: review.md does not flag whole-Container constructor or new OrderRepository(container.db) as a problem."}, {"text": "review.md does NOT report the cross-module call new CustomerService(this.container) as a violation, and does not demand injecting it through the constructor or a new container getter", "passed": true, "evidence": "with_skill run-3: review.md treats new CustomerService(this.container) as acceptable; at most an optional cosmetic nit about where it is created, no demand for constructor injection or a container getter."}], "summary": {"passed": 3, "failed": 0, "total": 3, "pass_rate": 1.0}}}, {"id": "eval-review-orders-compliant-trap-without_skill-run-1", "prompt": "Please review the orders PR before I open it. The changed files are listed in evals/fixtures/orders-pr/CHANGED.txt and the repo snapshot is under evals/fixtures/orders-pr/ (treat it as the repo root). Tell me about any architecture problems with file, reason and fix, and write the review to review.md. If it is fine to merge from an architecture standpoint, say so plainly.", "eval_id": 5, "outputs": [{"name": "review.md", "type": "text", "content": "# Architecture review: orders PR\n\n**Verdict: fine to merge from an architecture standpoint. No blocking problems found.**\n\nFiles reviewed: orders/constants.ts, repository.ts, service.ts, routes.ts (plus customers/service.ts and repository.ts for the cross-module call).\n\n## What I checked\n- **Layering (routes -> service -> repository):** routes.ts only parses the body with zod, calls `OrderService`, and shapes the HTTP response. It has no DB access and no business rules. service.ts holds the rules (item count, minimum total, blocked customer, shipped-order cancel) and imports no drizzle, Fastify, or SDK. repository.ts is the only orders file that touches drizzle and the schema.\n- **Cross-module dependency:** orders reaches customers through `CustomerService`, not through `CustomerRepository` or the customers schema. That is the correct boundary.\n- **Types at the boundary:** the repository maps rows to the shared `Order` contract through `toOrder`, so DB row types do not leak into the service.\n- **Constants:** the business limits live in constants.ts, not inline.\n- **Consistency:** the service builds its repository from `container.db`, the same pattern customers/service.ts uses.\n\n## Non-blocking notes (optional)\n- `OrderService` instantiates `CustomerService` inside `place()`. Constructing it once in the constructor, or taking it from the container, would be tidier and easier to test. This is not a boundary violation.\n- The zod body schema in routes.ts does not enforce the item-count or minimum-total bounds. The service enforces them, which is acceptable, but route-level bounds would give earlier 400s.\n- The service throws `ConflictError` and `NotFoundError` from platform/errors, which is fine as long as the error handler maps them to HTTP codes.\n\nNo file needs a required fix.\n"}], "grading": {"expectations": [{"text": "review.md concludes the PR has no blocking architecture/layering violation and is fine to merge on that front", "passed": true, "evidence": "without_skill run-1: review.md verdict: no architecture problems, fine to merge."}, {"text": "review.md does NOT report OrderService taking the whole Container in its constructor, or building its repository with new OrderRepository(container.db), as a violation or something that must be changed", "passed": true, "evidence": "without_skill run-1: review.md does not flag whole-Container constructor or new OrderRepository(container.db) as a problem."}, {"text": "review.md does NOT report the cross-module call new CustomerService(this.container) as a violation, and does not demand injecting it through the constructor or a new container getter", "passed": true, "evidence": "without_skill run-1: review.md treats new CustomerService(this.container) as acceptable; at most an optional cosmetic nit about where it is created, no demand for constructor injection or a container getter."}], "summary": {"passed": 3, "failed": 0, "total": 3, "pass_rate": 1.0}}}, {"id": "eval-review-orders-compliant-trap-without_skill-run-2", "prompt": "Please review the orders PR before I open it. The changed files are listed in evals/fixtures/orders-pr/CHANGED.txt and the repo snapshot is under evals/fixtures/orders-pr/ (treat it as the repo root). Tell me about any architecture problems with file, reason and fix, and write the review to review.md. If it is fine to merge from an architecture standpoint, say so plainly.", "eval_id": 5, "outputs": [{"name": "review.md", "type": "text", "content": "# Architecture review: orders PR\n\nVerdict: no architecture problems found. Fine to merge from an architecture standpoint.\n\nFiles reviewed: orders/constants.ts, orders/repository.ts, orders/service.ts, orders/routes.ts. I also read customers/service.ts and customers/repository.ts for context.\n\n## What I checked\n- routes.ts only validates input with zod, calls the service and sets the status code. It has no DB access and no business rules.\n- service.ts holds the business rules (item count limits, minimum total, customer blocked, shipped orders cannot be cancelled). It imports no drizzle, DB schema or SDK. It reaches the DB only through OrderRepository.\n- repository.ts is the only orders file that touches drizzle and the schema. It maps rows to the shared `Order` type, so DB row types do not leak out.\n- constants.ts is plain constants with no imports.\n- The cross-module dependency goes through `CustomerService`, the customers module's public service. It does not import the customers repository or schema, so there is no module-boundary bypass.\n- The dependency direction is routes -> service -> repository -> db. There are no cycles: customers does not import orders.\n\n## Non-blocking notes (not architecture violations)\n- `OrderService` builds `CustomerService` inline on each `place()` call. This is a small testability nit. Optionally build it once in the constructor, or take it from the container.\n- The route schema allows any int for `itemCount` and `totalCents`. The service enforces the bounds, which is acceptable.\n\nNo fixes are required.\n"}], "grading": {"expectations": [{"text": "review.md concludes the PR has no blocking architecture/layering violation and is fine to merge on that front", "passed": true, "evidence": "without_skill run-2: review.md verdict: no architecture problems, fine to merge."}, {"text": "review.md does NOT report OrderService taking the whole Container in its constructor, or building its repository with new OrderRepository(container.db), as a violation or something that must be changed", "passed": true, "evidence": "without_skill run-2: review.md does not flag whole-Container constructor or new OrderRepository(container.db) as a problem."}, {"text": "review.md does NOT report the cross-module call new CustomerService(this.container) as a violation, and does not demand injecting it through the constructor or a new container getter", "passed": true, "evidence": "without_skill run-2: review.md treats new CustomerService(this.container) as acceptable; at most an optional cosmetic nit about where it is created, no demand for constructor injection or a container getter."}], "summary": {"passed": 3, "failed": 0, "total": 3, "pass_rate": 1.0}}}, {"id": "eval-review-orders-compliant-trap-without_skill-run-3", "prompt": "Please review the orders PR before I open it. The changed files are listed in evals/fixtures/orders-pr/CHANGED.txt and the repo snapshot is under evals/fixtures/orders-pr/ (treat it as the repo root). Tell me about any architecture problems with file, reason and fix, and write the review to review.md. If it is fine to merge from an architecture standpoint, say so plainly.", "eval_id": 5, "outputs": [{"name": "review.md", "type": "text", "content": "# Architecture review: orders PR\n\nFiles reviewed: orders/constants.ts, orders/repository.ts, orders/service.ts, orders/routes.ts\n(plus customers/service.ts and customers/repository.ts for context, not changed).\n\n## Verdict: fine to merge from an architecture standpoint\n\nI found no architecture problems.\n\n## What I checked\n- **Layering.** routes.ts only parses input (zod) and calls OrderService, with no DB or SDK access.\n  service.ts holds the business rules (item-count and minimum-total limits, blocked customer,\n  cannot cancel a shipped order) and talks to persistence only through OrderRepository.\n  repository.ts is the only file importing drizzle-orm and the DB schema, and it maps rows to the\n  shared `Order` type, so DB row shapes do not leak upward.\n- **Cross-module access.** orders/service.ts uses `CustomerService` (the customers module's public\n  service), not the customers repository or schema. That is the right seam.\n- **Dependency direction.** No upward imports (repository does not import service or routes;\n  service does not import routes). No circular dependency between orders and customers\n  (customers does not import orders).\n- **Naming and structure.** Files follow the role-based convention (routes/service/repository/constants).\n  Constants are separated from logic.\n- **External SDKs.** None imported in the service layer.\n\n## Non-blocking nits (optional, not architecture violations)\n- `orders/service.ts:23` creates `new CustomerService(this.container)` on each `place()` call. It\n  works, but building it once in the constructor (or resolving it from the container) is tidier and\n  easier to stub in tests.\n- `orders/routes.ts:5-9` validates `itemCount` and `totalCents` only as integers. The range rules\n  live in the service, which is the right place for business rules, so this is fine as is.\n"}], "grading": {"expectations": [{"text": "review.md concludes the PR has no blocking architecture/layering violation and is fine to merge on that front", "passed": true, "evidence": "without_skill run-3: review.md verdict: no architecture problems, fine to merge."}, {"text": "review.md does NOT report OrderService taking the whole Container in its constructor, or building its repository with new OrderRepository(container.db), as a violation or something that must be changed", "passed": true, "evidence": "without_skill run-3: review.md does not flag whole-Container constructor or new OrderRepository(container.db) as a problem."}, {"text": "review.md does NOT report the cross-module call new CustomerService(this.container) as a violation, and does not demand injecting it through the constructor or a new container getter", "passed": true, "evidence": "without_skill run-3: review.md treats new CustomerService(this.container) as acceptable; at most an optional cosmetic nit about where it is created, no demand for constructor injection or a container getter."}], "summary": {"passed": 3, "failed": 0, "total": 3, "pass_rate": 1.0}}}, {"id": "eval-add-cross-module-call-with_skill-run-1", "prompt": "When a review finishes, record a notification row (channel 'review', title containing the findings count) through the existing notifications module. The project is in evals/fixtures/review-to-notification/ (treat it as the repo root; do not edit it in place). Write every new or changed file into your outputs folder, keeping the same relative paths, and add a short NOTES.md listing which files you created or changed.", "eval_id": 6, "outputs": [{"name": "NOTES.md", "type": "text", "content": "# Notes\n\nChanged:\n- server/src/modules/reviews/service.ts: ReviewService now builds `new NotificationService(container)` (cross-module call at the call site, no container getter) and, after the review is marked completed and the comment posted, calls `record('review', 'Review completed: N findings')`. Best-effort: errors are caught and logged, never failing the review.\n\nCreated: none. The notifications module, container, and adapters are unchanged (no new external integration, so no new port).\n"}], "grading": {"expectations": [{"text": "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)", "passed": true, "evidence": "with_skill run-1: reviews/service.ts: this.notifications = new NotificationService(container) (or default param equal to it)."}, {"text": "No new getter or facade for the notifications service is added to container.ts", "passed": true, "evidence": "with_skill run-1: Only reviews/service.ts (+NOTES.md) was written; container.ts unchanged."}, {"text": "The reviews module does not import NotificationRepository or anything from db/schema for notifications", "passed": true, "evidence": "with_skill run-1: reviews/service.ts imports only NotificationService, no NotificationRepository or db/schema."}, {"text": "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)", "passed": true, "evidence": "with_skill run-1: No adapters.ts, mocks.ts or adapter files were created."}], "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0}}}, {"id": "eval-add-cross-module-call-with_skill-run-2", "prompt": "When a review finishes, record a notification row (channel 'review', title containing the findings count) through the existing notifications module. The project is in evals/fixtures/review-to-notification/ (treat it as the repo root; do not edit it in place). Write every new or changed file into your outputs folder, keeping the same relative paths, and add a short NOTES.md listing which files you created or changed.", "eval_id": 6, "outputs": [{"name": "NOTES.md", "type": "text", "content": "# Notes\n\nChanged:\n- server/src/modules/reviews/service.ts \u00e2\u20ac\u201d after a review completes, calls NotificationService.record('review', 'Review finished: N findings'). The callee is constructed at the call site with `new NotificationService(container)` (no container getter needed for a single caller), and the call is best-effort (errors swallowed).\n\nCreated: none. The notifications module, container and adapters were left untouched.\n"}], "grading": {"expectations": [{"text": "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)", "passed": true, "evidence": "with_skill run-2: reviews/service.ts: this.notifications = new NotificationService(container) (or default param equal to it)."}, {"text": "No new getter or facade for the notifications service is added to container.ts", "passed": true, "evidence": "with_skill run-2: Only reviews/service.ts (+NOTES.md) was written; container.ts unchanged."}, {"text": "The reviews module does not import NotificationRepository or anything from db/schema for notifications", "passed": true, "evidence": "with_skill run-2: reviews/service.ts imports only NotificationService, no NotificationRepository or db/schema."}, {"text": "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)", "passed": true, "evidence": "with_skill run-2: No adapters.ts, mocks.ts or adapter files were created."}], "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0}}}, {"id": "eval-add-cross-module-call-with_skill-run-3", "prompt": "When a review finishes, record a notification row (channel 'review', title containing the findings count) through the existing notifications module. The project is in evals/fixtures/review-to-notification/ (treat it as the repo root; do not edit it in place). Write every new or changed file into your outputs folder, keeping the same relative paths, and add a short NOTES.md listing which files you created or changed.", "eval_id": 6, "outputs": [{"name": "NOTES.md", "type": "text", "content": "# Notes\n\nChanged:\n- server/src/modules/reviews/service.ts: constructs `NotificationService` at the call site (`new NotificationService(container)`, per the onion-architecture cross-module rule) and, after the review is marked completed, calls `record('review', 'Review completed: N findings')`. Best-effort (errors swallowed) so a notification failure never fails the review.\n\nCreated: none. No container facade, port, or new adapter needed (single in-process caller, no new external integration).\n"}], "grading": {"expectations": [{"text": "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)", "passed": true, "evidence": "with_skill run-3: reviews/service.ts: this.notifications = new NotificationService(container) (or default param equal to it)."}, {"text": "No new getter or facade for the notifications service is added to container.ts", "passed": true, "evidence": "with_skill run-3: Only reviews/service.ts (+NOTES.md) was written; container.ts unchanged."}, {"text": "The reviews module does not import NotificationRepository or anything from db/schema for notifications", "passed": true, "evidence": "with_skill run-3: reviews/service.ts imports only NotificationService, no NotificationRepository or db/schema."}, {"text": "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)", "passed": true, "evidence": "with_skill run-3: No adapters.ts, mocks.ts or adapter files were created."}], "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0}}}, {"id": "eval-add-cross-module-call-without_skill-run-1", "prompt": "When a review finishes, record a notification row (channel 'review', title containing the findings count) through the existing notifications module. The project is in evals/fixtures/review-to-notification/ (treat it as the repo root; do not edit it in place). Write every new or changed file into your outputs folder, keeping the same relative paths, and add a short NOTES.md listing which files you created or changed.", "eval_id": 6, "outputs": [{"name": "NOTES.md", "type": "text", "content": "# Notes\n\nChanged:\n- server/src/modules/reviews/service.ts: ReviewService now builds a NotificationService (from the existing notifications module) and, after the review is marked completed and the comment posted, calls `record('review', 'Review completed: N finding(s)')`.\n\nCreated: none other.\n"}], "grading": {"expectations": [{"text": "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)", "passed": true, "evidence": "without_skill run-1: reviews/service.ts: this.notifications = new NotificationService(container) (or default param equal to it)."}, {"text": "No new getter or facade for the notifications service is added to container.ts", "passed": true, "evidence": "without_skill run-1: Only reviews/service.ts (+NOTES.md) was written; container.ts unchanged."}, {"text": "The reviews module does not import NotificationRepository or anything from db/schema for notifications", "passed": true, "evidence": "without_skill run-1: reviews/service.ts imports only NotificationService, no NotificationRepository or db/schema."}, {"text": "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)", "passed": true, "evidence": "without_skill run-1: No adapters.ts, mocks.ts or adapter files were created."}], "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0}}}, {"id": "eval-add-cross-module-call-without_skill-run-2", "prompt": "When a review finishes, record a notification row (channel 'review', title containing the findings count) through the existing notifications module. The project is in evals/fixtures/review-to-notification/ (treat it as the repo root; do not edit it in place). Write every new or changed file into your outputs folder, keeping the same relative paths, and add a short NOTES.md listing which files you created or changed.", "eval_id": 6, "outputs": [{"name": "NOTES.md", "type": "text", "content": "# Notes\n\nChanged:\n- server/src/modules/reviews/service.ts: after the review is marked completed and the comment posted, calls the existing NotificationService.record('review', `Review finished: N findings`).\n\nNo other files created or changed.\n"}], "grading": {"expectations": [{"text": "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)", "passed": true, "evidence": "without_skill run-2: reviews/service.ts: this.notifications = new NotificationService(container) (or default param equal to it)."}, {"text": "No new getter or facade for the notifications service is added to container.ts", "passed": true, "evidence": "without_skill run-2: Only reviews/service.ts (+NOTES.md) was written; container.ts unchanged."}, {"text": "The reviews module does not import NotificationRepository or anything from db/schema for notifications", "passed": true, "evidence": "without_skill run-2: reviews/service.ts imports only NotificationService, no NotificationRepository or db/schema."}, {"text": "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)", "passed": true, "evidence": "without_skill run-2: No adapters.ts, mocks.ts or adapter files were created."}], "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0}}}, {"id": "eval-add-cross-module-call-without_skill-run-3", "prompt": "When a review finishes, record a notification row (channel 'review', title containing the findings count) through the existing notifications module. The project is in evals/fixtures/review-to-notification/ (treat it as the repo root; do not edit it in place). Write every new or changed file into your outputs folder, keeping the same relative paths, and add a short NOTES.md listing which files you created or changed.", "eval_id": 6, "outputs": [{"name": "NOTES.md", "type": "text", "content": "# Notes\n\nChanged:\n- server/src/modules/reviews/service.ts: after a review completes, calls the existing\n  NotificationService.record('review', 'Review finished: N findings') (injectable, defaults to new NotificationService(container)).\n\nCreated: none besides this file.\n"}], "grading": {"expectations": [{"text": "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)", "passed": true, "evidence": "without_skill run-3: reviews/service.ts: this.notifications = new NotificationService(container) (or default param equal to it)."}, {"text": "No new getter or facade for the notifications service is added to container.ts", "passed": true, "evidence": "without_skill run-3: Only reviews/service.ts (+NOTES.md) was written; container.ts unchanged."}, {"text": "The reviews module does not import NotificationRepository or anything from db/schema for notifications", "passed": true, "evidence": "without_skill run-3: reviews/service.ts imports only NotificationService, no NotificationRepository or db/schema."}, {"text": "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)", "passed": true, "evidence": "without_skill run-3: No adapters.ts, mocks.ts or adapter files were created."}], "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0}}}], "previous_feedback": {}, "previous_outputs": {"eval-review-notifications-module-with_skill-run-1": [{"name": "review.md", "type": "text", "content": "# Architecture review: `notifications` module\n\nScope: `server/src/modules/notifications/` (constants.ts, helpers.ts, repository.ts, routes.ts, service.ts).\nRules applied: onion-architecture skill (SKILL.md, layer-map.md, enforcement.md, examples.md).\n\nVerdict: **do not merge as is.** 3 blocking violations, 2 non-blocking notes. `constants.ts`, `helpers.ts` and `repository.ts` are otherwise layered correctly.\n\n## Blocking\n\n### 1. `service.ts` imports and constructs the Octokit SDK directly\n- File: `service.ts`\n- Lines: `import { Octokit } from 'octokit';` (line 1) and `const octokit = new Octokit({ auth: token });` (line 26, in `syncFromGitHub`).\n- Why: the Application layer may depend only on domain types and ports, never on a concrete SDK. This is the single most common onion violation. `new Octokit` inside the service can't be swapped for a mock through `ContainerOverrides`, so `syncFromGitHub` can't be unit-tested without the network. It also bypasses the container's secret handling: the caller has to pass a raw `token` string around.\n- Fix: delete the `octokit` import. Get the existing `GitHubClient` port from the container (`const gh = await this.container.github()`, same as other services) and call it. If the port lacks a \"list notifications\" method, add it to `GitHubClient` in `@devdigest/shared/adapters.ts`, implement it in `server/src/adapters/github/`, and add it to the mock in `server/src/adapters/mocks.ts`. Drop the `token` parameter. `userId` is also unused in that method, so drop it or use it.\n\n### 2. `routes.ts` queries the database directly, skipping service and repository\n- File: `routes.ts`\n- Offending imports: `import { desc, eq } from 'drizzle-orm';` (line 2), `import { db } from '../../db/client.js';` (line 4), `import * as t from '../../db/schema/notifications.js';` (line 5).\n- Offending code: the `GET /notifications/unread` handler (lines 15-23) runs `db.select().from(t.notifications).where(...).orderBy(...)` itself.\n- Why: the Interface layer may import only the module's `service.ts`. Reaching `db/client.js` and `db/schema/*` is the same violation as importing `drizzle-orm`. The handler duplicates `NotificationRepository.listForUser`. It also holds business logic (the `readAt === null` \"unread\" rule, applied with `.filter` after fetching every row), which can't be unit-tested without Fastify `inject()`. Because the handler skips `toNotificationDto`, it returns raw `$inferSelect` rows, so the DB column shape leaks to API clients and the response differs from `GET /notifications`.\n- Fix: remove the three imports. Add `NotificationRepository.listUnreadForUser(userId, limit)` that filters in SQL (`and(eq(userId), isNull(readAt))`, with `desc(createdAt)` and a limit). Add `NotificationService.listUnread(userId)` that maps rows with `toNotificationDto` and returns `Notification[]`. The handler becomes `return service.listUnread(req.user.id)`. `routes.ts` should then import only `fastify` and `./service.js`.\n\n### 3. `service.getLatestRow` leaks a Drizzle row type through the service's public API\n- File: `service.ts`\n- Offending lines: `import { NotificationRepository, type NotificationRow } from './repository.js';` (line 4) and `async getLatestRow(...): Promise<NotificationRow | undefined>` (line 20).\n- Why: `NotificationRow` is `typeof t.notifications.$inferSelect`. The raw row type may exist at the repository-to-service seam, but a public service method must return a shared/domain type (the repos module maps through `toRepoDto` before returning). Any caller of `getLatestRow`, including other modules, is now coupled to the database schema.\n- Fix: return `Promise<Notification | undefined>` and map with `toNotificationDto` (`return rows[0] ? toNotificationDto(rows[0]) : undefined`). Rename it `getLatest`. Then `service.ts` no longer needs the `NotificationRow` import.\n\n## Non-blocking notes\n\n### 4. No repository interface for a new module (advisory)\n- File: `service.ts` line 12: `this.repo = new NotificationRepository(container.db);`\n- Why: matches the existing repos/reviews pattern, which is an accepted gap. The notifications repository is small today, so this is not a violation. The skill asks reviewers to flag rather than silently copy it, and to consider an `INotificationRepository` if the query logic grows (it will with `listUnreadForUser`).\n- Fix: optional. Introduce an interface so the service can be tested with a mock repository.\n\n### 5. `DEFAULT_CHANNEL` used as an unrelated filter value\n- File: `service.ts` line 28: `n.reason !== DEFAULT_CHANNEL`; constant defined in `constants.ts` line 2 as `'review'`.\n- Why: not a layering issue, but it compares a GitHub notification `reason` to the module's internal channel name, so two unrelated concepts share one constant. This is a correctness smell and will surface when fixing #1.\n- Fix: when moving the GitHub call behind the port, define an explicit constant for the reason you want to exclude, or map GitHub notifications to the module's domain type inside the adapter.\n\n## What is correct\n- `repository.ts`: the only file besides routes that touches Drizzle, and it is allowed to. It returns `NotificationRow`, which `helpers.ts` maps to the shared `Notification`.\n- `helpers.ts`: pure mapping, imports only shared types and a type from the repository.\n- `constants.ts`: literals only.\n- `service.ts` takes the whole `Container` in its constructor, as `ReviewService` and `RepoService` do.\n\n## Checklist result\n1. `service.ts` imports a concrete SDK: **fail** (#1)\n2. `routes.ts` reaches past the service into the db: **fail** (#2)\n3. Service signature exposes `$inferSelect`: **fail** (#3)\n4. Business logic in `routes.ts`: **fail** (#2, the unread filter)\n5. New integration has port, adapter, mock and container wiring: **fail** (#1, none exists for GitHub notifications)\n6. Domain imports outward: pass\n7. Repository interface considered: advisory (#4)\n"}], "eval-review-notifications-module-without_skill-run-1": [{"name": "review.md", "type": "text", "content": "# Architecture review: notifications module\n\nScope: `server/src/modules/notifications/` (constants, helpers, repository, routes, service).\nExpected layering: routes -> service -> repository -> DB; external systems behind an adapter/port obtained from the DI container; domain/DTO types in shared contracts.\n\n## Problems\n\n### 1. Route handler queries the database directly (bypasses service and repository)\n- File: `routes.ts`\n- Offending: imports on lines 2, 4, 5 (`drizzle-orm`, `db` from `../../db/client.js`, `* as t from '../../db/schema/notifications.js'`) and the `/notifications/unread` handler (lines 15-23) running `db.select().from(t.notifications)...`.\n- Why: The transport layer depends on the persistence layer and an ORM, skipping the application layer. Business logic (the unread filter) lives in the route, it can't be reused or unit-tested without a DB, and it returns raw rows (including `Date` objects and internal columns) rather than the `Notification` DTO, so the response shape differs from `/notifications`. It also uses the global `db` singleton instead of `app.container.db`, bypassing DI (breaks test substitution and any per-request/transaction wiring). The filter is applied in memory after fetching all rows, with no limit, which is unbounded.\n- Fix: Add `NotificationRepository.listUnreadForUser(userId, limit)` with `and(eq(userId), isNull(readAt))` and a `limit`; add `NotificationService.listUnread(userId)` that maps through `toNotificationDto`; make the route just call `service.listUnread(req.user.id)`. Remove the drizzle and db/schema imports from `routes.ts`.\n\n### 2. Service imports a third-party SDK (Octokit) directly\n- File: `service.ts`\n- Offending: line 1 `import { Octokit } from 'octokit';` and `syncFromGitHub` (lines 25-29) calling `new Octokit({ auth: token })`.\n- Why: The application layer depends on a concrete external SDK and constructs it inline. This couples business logic to GitHub's client, makes it impossible to test without network or module mocking, and bypasses the project's adapter/port + DI container pattern (other modules get GitHub access through the container). The token is passed through the service API as a raw parameter too.\n- Fix: Define a port (e.g. `GitHubNotificationsPort.listNotifications(userId)`) in the shared adapters contracts, implement it in `adapters/github/octokit.ts`, register it (and a mock in `adapters/mocks.ts`) in the container, and have the service use `this.container.github...`. The service only handles mapping/filtering.\n\n### 3. `syncFromGitHub` is incomplete and misuses the channel constant\n- File: `service.ts` (lines 25-29), `constants.ts`\n- Offending: `n.reason !== DEFAULT_CHANNEL` and the unused `userId` parameter; result is only counted, never persisted.\n- Why: `DEFAULT_CHANNEL` ('review') is a notification channel for stored rows, while `n.reason` is a GitHub reason string; comparing them conflates two domain concepts. The method has no persistence, so it doesn't \"sync\" anything, and `userId` is unused. This is a logic/design smell hidden by the SDK coupling.\n- Fix: Map GitHub reasons to the domain channel in a helper/adapter, persist via the repository, and drop unused parameters.\n\n### 4. Repository row type leaks out of the data layer into the service API\n- File: `service.ts` (line 4 import `type NotificationRow`, lines 20-23 `getLatestRow`), `helpers.ts` (line 2)\n- Offending: `getLatestRow(): Promise<NotificationRow | undefined>` returns a Drizzle-inferred row type from a public service method.\n- Why: Callers of the service become coupled to the DB schema shape; the service should expose domain/DTO types (`Notification`), consistent with `list`. Any schema change ripples to consumers.\n- Fix: Return `Notification | undefined` (map through `toNotificationDto`) or remove the method if unused.\n\n### 5. Service constructs its own repository and depends on the whole Container\n- File: `service.ts`\n- Offending: `this.repo = new NotificationRepository(container.db);` and `constructor(private readonly container: Container)`; routes also do `new NotificationService(app.container)`.\n- Why: Hard-wired concrete construction prevents injecting a fake repository in unit tests, and taking the entire container is a service-locator pattern that hides the real dependencies.\n- Fix: Inject narrow dependencies (repository, and the GitHub port) into the service constructor and compose them in the container / module registration, or at minimum accept `{ db }` plus the specific port.\n\n### 6. Helper depends on repository row type (minor)\n- File: `helpers.ts`, line 2 `import type { NotificationRow } from './repository.js';`\n- Why: Acceptable direction (type-only, same module), but it ties the mapper to the repository file; mapper is fine in `helpers.ts`. Consider exporting `NotificationRow` from a types file if more consumers appear. Low severity.\n\n### 7. Route lacks input/output validation (minor, related)\n- File: `routes.ts`, `/notifications/:id/read`\n- Why: `req.params.id` is used unvalidated and no response schema is declared; combined with raw rows returned from `/unread`, response contracts are not enforced.\n- Fix: Add Zod/JSON schemas using shared contracts for params and responses.\n\n## Summary\n\nBlocking: #1 (route -> db/drizzle bypass) and #2 (direct Octokit import in service). Should fix: #3, #4, #5. Minor: #6, #7. The repository itself and the DTO mapper are otherwise cleanly placed.\n"}], "eval-review-summaries-module-with_skill-run-1": [{"name": "review.md", "type": "text", "content": "# Onion architecture review: summaries module\n\nScope (repo root = `evals/fixtures/summaries-pr/`): `server/src/modules/summaries/{routes,service,repository,helpers,constants}.ts` and `server/src/vendor/shared/contracts/summary.ts`.\nChecked against the onion-architecture skill (SKILL.md, layer-map.md, enforcement.md). Verdict: **do not send as is - 5 violations (3 critical, 2 major), 2 minor notes.**\n\n## Critical\n\n### 1. `service.ts` imports the `openai` SDK and constructs it inline\n- File: `server/src/modules/summaries/service.ts` (line 1, lines 20-27)\n- Why wrong: the application layer may depend only on ports, never on a concrete SDK. `new OpenAI({ apiKey: process.env.OPENAI_API_KEY })` inside `summarize()` also reads config from `process.env` in the middle of a business method. It cannot be swapped for a mock via `ContainerOverrides`, so the service cannot be unit-tested without hitting OpenAI. This is the main violation the skill exists to catch.\n- Fix: delete the `openai` import and the `new OpenAI(...)` call. Use the existing `LLMProvider` port from `@devdigest/shared/adapters.ts`, taken from the container (e.g. `this.container.llm`), and call it with the system/user messages and `SUMMARY_MODEL`. The API key stays in the adapter and `container.ts` wiring, not in the service. If `LLMProvider` lacks a simple completion method, extend the port and its adapter and mock (`adapters/mocks.ts`); do not import the SDK here.\n\n### 2. `routes.ts` reaches past the service into the repository\n- File: `server/src/modules/summaries/routes.ts` (lines 4, 9, 17)\n- Why wrong: transport may import only the module's `service.ts`. Importing `SummaryRepository` and passing it `app.container.db` makes the route handler a data-access client, so the layering is `routes -> repository -> db`, skipping the application layer.\n- Fix: remove the `SummaryRepository` import and the `repo` instance from `routes.ts`. Move `countSince` usage into `SummaryService`.\n\n### 3. Business logic written in `routes.ts` (quota, empty-diff rule, date math)\n- File: `server/src/modules/summaries/routes.ts` (lines 15-25)\n- Why wrong: the free-tier daily limit (`req.user.plan === 'free' && used >= FREE_TIER_DAILY_LIMIT`), the start-of-day computation and the empty-diff rule are business policy. A route must parse the request, call exactly one service method and map the result to status/body. As written, this logic can only be tested through Fastify `inject()`.\n- Fix: move the quota check, the start-of-day calculation and the empty-diff check into `SummaryService.summarize` (pass the plan/user in). Have the service signal outcomes with typed domain errors or a result union (e.g. `DailyLimitReached`, `EmptyDiff`), and let the route only map those to 429/422. `FREE_TIER_DAILY_LIMIT` is then used only by the service.\n\n## Major\n\n### 4. `routes.ts` calls the GitHub client directly\n- File: `server/src/modules/summaries/routes.ts` (line 22: `app.container.github.getPullRequestDiff`)\n- Why wrong: the route orchestrates an adapter (fetch diff, then pass it to the service). Fetching the diff is an orchestration step that belongs in the application layer; the route also now needs to know the container's ports. `summarize(userId, req, diff)` has a signature shaped by this leak.\n- Fix: have `SummaryService.summarize(user, req)` fetch the diff through `this.container.github` (the `GitHubClient` port) itself, then apply the empty-diff rule. The route becomes: parse body, call `service.summarize(...)`, map the result.\n\n### 5. The domain contract imports from a module (inward layer depends outward)\n- File: `server/src/vendor/shared/contracts/summary.ts` (line 2 import, line 19 `cacheKeyFor`)\n- Why wrong: `@devdigest/shared/contracts/*` is the domain center and must not import anything from `server/src/modules/*` (shared-contracts-must-not-import-server-or-client rule). It creates a cycle (`helpers.ts` is reached via service, and the contract now depends on it) and breaks the contract's reuse by `client`, `reviewer-core` and `mcp`, which cannot resolve `../../../modules/summaries/helpers.js`. It also drags module code into the manually duplicated `client/src/vendor/shared` copy.\n- Fix: delete the `import` and the `cacheKeyFor` export from the contract file; the contract should contain only the Zod schemas and inferred types. `summaryCacheKey` already lives in `helpers.ts`; if a caller needs a cache key from a `SummaryRequest`, call `summaryCacheKey(req.prId, req.maxWords)` from the service. If the contract change is kept in any form, copy it by hand to `client/src/vendor/shared`.\n\n## Minor / notes\n\n### 6. Repository has no port (known gap, not blocking)\n- File: `server/src/modules/summaries/repository.ts`, `service.ts` line 12\n- `new SummaryRepository(container.db)` matches the existing convention (`RepoRepository`), and the repository correctly maps rows to the shared `Summary` type, so no Drizzle `$inferSelect` type escapes. Per layer-map.md, flag rather than block: once quota/cache logic moves into the service (fixes 3 and 4), the service gets non-trivial logic, so consider an `ISummaryRepository` interface so it can be tested with a mock.\n- Also: the row-to-`Summary` mapping is duplicated in `findByKey` and `insert`; extract a small `toSummaryDto(row)` (in `repository.ts` or `helpers.ts`).\n\n### 7. Config read via `process.env` (covered by fix 1)\n- `service.ts` line 20 reads `OPENAI_API_KEY` directly. After fix 1 this should live only in the LLM adapter/container wiring. The model name (`SUMMARY_MODEL`) and limits are fine in `constants.ts`.\n\n## What is fine\n- `repository.ts` is the only file importing `drizzle-orm` and `db/schema`, and returns the shared `Summary` type rather than raw rows.\n- `helpers.ts` and `constants.ts` are pure (no I/O imports).\n- Module file naming follows the role-based convention.\n\n## Target shape after fixes\n- `routes.ts`: parse `SummaryRequest`, call `SummaryService.summarize(...)`, map `DailyLimitReached` to 429, `EmptyDiff` to 422, success to the body. Imports only `service.js` and shared contracts.\n- `service.ts`: imports only domain types, `Container`, repository, helpers, constants. Uses `container.github` (diff) and `container.llm` (completion) ports; owns the quota and empty-diff rules.\n- `contracts/summary.ts`: Zod schemas and types only.\n"}], "eval-review-summaries-module-without_skill-run-1": [{"name": "review.md", "type": "text", "content": "# Architecture review: summaries module\n\nScope: `server/src/modules/summaries/*` and `server/src/vendor/shared/contracts/summary.ts`.\n\n## Problems\n\n### 1. Shared contract imports from a server module (inward dependency broken)\n- File: `server/src/vendor/shared/contracts/summary.ts` (line 2, 19)\n- Why wrong: `@devdigest/shared` is consumed by client, reviewer-core, mcp and e2e as well as the server. It must be a leaf: only zod and pure types. Importing `modules/summaries/helpers.js` makes the shared package depend on a server module (wrong direction, creates a cycle with `service.ts` -> `@devdigest/shared` -> `helpers.ts`), and drags server code into other packages' builds.\n- Fix: Delete `cacheKeyFor` and the import from the contract; keep only the zod schemas and inferred types. If a cache key is needed outside the module, call `summaryCacheKey` from the module itself.\n\n### 2. Service constructs the OpenAI SDK directly (no port)\n- File: `server/src/modules/summaries/service.ts` (lines 1, 20-27)\n- Why wrong: The application layer imports `openai` and does `new OpenAI(...)`, bypassing the DI container and any port/interface. It couples business logic to a vendor SDK, makes it untestable without network/mocking the module, and reads `process.env.OPENAI_API_KEY` directly in the service instead of via config. Also builds a new client on every call.\n- Fix: Define an `LlmPort` / `SummaryGenerator` interface (e.g. `complete({model, system, user}): Promise<string>`), implement it in an infrastructure adapter (e.g. `platform/llm/openai-llm.ts`) that owns the SDK and env/config, register it on the `Container`, and have the service depend only on the port.\n\n### 3. Route handler contains business logic and talks to the repository\n- File: `server/src/modules/summaries/routes.ts` (lines 4, 9, 15-20)\n- Why wrong: The transport layer instantiates `SummaryRepository` directly, bypassing the service, and implements the free-tier quota rule (start-of-day computation, plan check, limit comparison) inline. Business rules belong in the application layer; routes should only parse input, call the service, and map errors to HTTP codes.\n- Fix: Move the quota check into `SummaryService` (throw a domain error such as `DailyLimitReachedError`), remove the repository from routes, and map the error to 429 in the route/error handler.\n\n### 4. Route fetches from GitHub and applies domain validation itself\n- File: `server/src/modules/summaries/routes.ts` (lines 22-25)\n- Why wrong: Route calls `app.container.github` directly and decides the \"empty diff\" rule. Orchestration (fetch diff -> validate -> summarize) is application logic; the service's `summarize(userId, req, diff)` signature leaks that orchestration to the caller.\n- Fix: Have the service accept only `(userId, req)`, obtain the diff via a GitHub port injected through the container, throw `EmptyDiffError`, and translate to 422 in the route.\n\n### 5. Service depends on the whole Container and builds its own repository\n- File: `server/src/modules/summaries/service.ts` (lines 3, 9-13)\n- Why wrong: Service-locator style: `Container` gives access to everything, and `new SummaryRepository(container.db)` hard-wires the concrete Drizzle repository, so the service cannot be tested with a fake and depends on infrastructure. Routes also construct the service ad hoc (duplicate repo instances in routes and service).\n- Fix: Inject only the needed collaborators via constructor (`SummaryRepository` interface/port, `LlmPort`, `GithubPort`, clock) and wire them once in the container/composition root.\n\n### 6. Repository leaks persistence-shaped mapping and has no port; time-based rule inputs computed outside\n- File: `server/src/modules/summaries/repository.ts`\n- Why wrong: The repository is only a concrete class (no interface in the domain/application layer), and the row -> `Summary` mapping is duplicated in two methods. Returning the shared wire-contract type (`Summary`, with `createdAt` as ISO string) from the persistence layer ties storage to the API DTO.\n- Fix: Declare a repository interface next to the service, add a single private `toDomain(row)` mapper, and keep DTO formatting (ISO strings) at the edge.\n\n### 7. Cache lookup is not scoped to the user; caching key logic spread across layers\n- File: `server/src/modules/summaries/service.ts` (lines 16-18), `repository.ts` (`findByKey`)\n- Why wrong: `findByKey` ignores `userId`, while `insert`/`countSince` are per-user. A cached summary is returned to any user and a cached hit also bypasses nothing in quota, but note the route counts quota before the cache check, so cache hits consume quota. The key derivation also lives in `helpers.ts` yet is exported through the shared contract (see #1).\n- Fix: Decide the intended semantics explicitly; keep key derivation private to the module, and order quota/cache checks in the service.\n\n### 8. Model name and limits as hard-coded constants in the module\n- File: `server/src/modules/summaries/constants.ts`\n- Why wrong (minor): `SUMMARY_MODEL` ('gpt-4o-mini') is a vendor-specific infrastructure detail living in the domain/application module, reinforcing the SDK coupling. `FREE_TIER_DAILY_LIMIT` is fine as a domain rule.\n- Fix: Move the model name to LLM adapter/config; keep the limit constant in the module (used by the service, not the route).\n\n## Layering summary\n\n| File | Current role | Should be |\n|---|---|---|\n| shared/contracts/summary.ts | contract, imports server helper | pure zod schemas only |\n| routes.ts | transport + quota rules + repo + GitHub | parse, call service, map errors |\n| service.ts | orchestration + OpenAI SDK + repo construction | orchestration over ports only |\n| repository.ts | Drizzle adapter | adapter implementing a port |\n| helpers.ts / constants.ts | pure | OK (model constant moves out) |\n"}], "eval-add-slack-integration-with_skill-run-1": [{"name": "NOTES.md", "type": "text", "content": "# Slack notification on review completion\n\nLayering follows onion-architecture: port -> adapter -> mock -> container -> service.\n\nChanged:\n- server/src/vendor/shared/adapters.ts: added `NotificationClient` port.\n- server/src/adapters/mocks.ts: added `MockNotificationClient`.\n- server/src/platform/container.ts: added `notifications` override and async `notifications()` getter; reads `SLACK_WEBHOOK_URL` from the secrets provider, returns null if unset.\n- server/src/modules/reviews/service.ts: after a run completes, calls `NotificationService` (best-effort, errors logged, never fails the run).\n\nCreated:\n- server/src/adapters/notifications/slack.ts: webhook implementation (plain `fetch`, no SDK).\n- server/src/modules/notifications/service.ts: `NotificationService.notifyReviewDone`, depends only on the Container/port.\n\nNote: the shared contract is also duplicated to client/src/vendor/shared per repo convention, but the client does not need this port.\n"}], "eval-add-slack-integration-without_skill-run-1": [{"name": "NOTES.md", "type": "text", "content": "# Notes\n\nCreated:\n- server/src/adapters/slack/webhook.ts - SlackWebhookNotifier; reads SLACK_WEBHOOK_URL from the SecretsProvider, POSTs a short message; no-op if the secret is unset.\n\nChanged:\n- server/src/vendor/shared/adapters.ts - added `Notifier` port and `ReviewNotification` type.\n- server/src/adapters/mocks.ts - added `MockNotifier`.\n- server/src/platform/container.ts - added `notifier` getter/override.\n- server/src/modules/reviews/service.ts - calls `container.notifier` after the review completes (errors logged, not thrown).\n"}], "eval-review-labels-module-clean-with_skill-run-1": [{"name": "review.md", "type": "text", "content": "# Architecture review: labels module\n\nScope: `server/src/modules/labels/` (constants.ts, repository.ts, service.ts, routes.ts), reviewed against the onion-architecture skill checklist.\n\n## Verdict\n\nNo architecture problems found. The module is fine to open as a PR from a layering point of view.\n\n## Checklist results\n\n1. service.ts imports a concrete SDK or db/client or db/schema? No. It imports only shared types, `Container`, platform errors, its own repository and constants. (`import type { Db }` is only in repository.ts.)\n2. routes.ts reaches past the service? No. It parses the body with Zod, calls one `LabelService` method per endpoint and maps the result to a status code.\n3. Drizzle `$inferSelect`/`$inferInsert` type exposed past the repository? No. `LabelRow` is private to repository.ts and is mapped by `toLabel` to the shared `Label` type before returning. Service signatures use only `Label`.\n4. Business logic in routes.ts? No. Name trimming, length validation and the per-repo limit are in service.ts.\n5. New external integration? None added, so no port/adapter/mock/container work is needed.\n6. Domain layer importing outward? Not touched by this module.\n7. Repository interface: see non-blocking note below.\n\n## Non-blocking notes (not violations)\n\n- **Persistence is not behind a port** (`new LabelRepository(container.db)` in service.ts). This matches the existing repos/reviews/agents pattern and the skill treats it as an accepted gap. The repository logic is small, so no interface is needed now.\n- **Not architecture, FYI:** `repository.ts` `countByRepo` loads every row via `listByRepo` just to take `.length`. A `count()` query would be cheaper. Optional.\n"}], "eval-review-labels-module-clean-without_skill-run-1": [{"name": "review.md", "type": "text", "content": "# Review: labels module (server/src/modules/labels/)\n\n## Verdict\n\nNo architecture problems found. The module is clean and can go to PR as far as layering is concerned.\n\n## What I checked\n\n- `routes.ts` (transport): only imports Fastify, zod and `LabelService`. Parses the body, calls the service, maps to HTTP status codes. No DB or SDK access, no business rules.\n- `service.ts` (application): holds the business rules (name trimming/length, per-repo limit) using constants from `constants.ts`. It talks to data only through `LabelRepository`. No `drizzle-orm`, `octokit`, `openai` or `@anthropic-ai/sdk` imports. Errors come from the platform error classes.\n- `repository.ts` (infrastructure): the only file importing `drizzle-orm` and the DB schema. It maps rows to the shared `Label` contract, so row types do not leak upward.\n- `constants.ts`: plain values, no dependencies.\n- Dependencies point inward only: routes -> service -> repository -> db. No cycles, no upward imports. File names follow the role-based convention.\n\n## Non-architectural notes (optional, not blockers)\n\n- `repository.ts` `countByRepo` loads every row just to take `.length`; a `count(*)` query would be cheaper.\n- The limit check in `service.ts` `create` is check-then-insert, so concurrent requests could exceed `MAX_LABELS_PER_REPO` slightly. Likely acceptable.\n- `routes.ts` `CreateLabelBody` has no length or format limits (the service validates name length; `color` is unvalidated).\n\nLimitation: reviewed only these four files, treating the fixture as the repo root; `container.ts`, the schema and the error classes were not present, so their contents were not verified.\n"}]}, "benchmark": {"metadata": {"skill_name": "onion-architecture", "skill_path": "<path/to/skill>", "executor_model": "<model-name>", "analyzer_model": "<model-name>", "timestamp": "2026-10-11T15:56:12Z", "evals_run": [4, 5, 6], "runs_per_configuration": 3}, "runs": [{"eval_id": 6, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 68.2, "tokens": 78535, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)", "passed": true, "evidence": "with_skill run-1: reviews/service.ts: this.notifications = new NotificationService(container) (or default param equal to it)."}, {"text": "No new getter or facade for the notifications service is added to container.ts", "passed": true, "evidence": "with_skill run-1: Only reviews/service.ts (+NOTES.md) was written; container.ts unchanged."}, {"text": "The reviews module does not import NotificationRepository or anything from db/schema for notifications", "passed": true, "evidence": "with_skill run-1: reviews/service.ts imports only NotificationService, no NotificationRepository or db/schema."}, {"text": "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)", "passed": true, "evidence": "with_skill run-1: No adapters.ts, mocks.ts or adapter files were created."}], "notes": []}, {"eval_id": 6, "configuration": "with_skill", "run_number": 2, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 63.4, "tokens": 78314, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)", "passed": true, "evidence": "with_skill run-2: reviews/service.ts: this.notifications = new NotificationService(container) (or default param equal to it)."}, {"text": "No new getter or facade for the notifications service is added to container.ts", "passed": true, "evidence": "with_skill run-2: Only reviews/service.ts (+NOTES.md) was written; container.ts unchanged."}, {"text": "The reviews module does not import NotificationRepository or anything from db/schema for notifications", "passed": true, "evidence": "with_skill run-2: reviews/service.ts imports only NotificationService, no NotificationRepository or db/schema."}, {"text": "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)", "passed": true, "evidence": "with_skill run-2: No adapters.ts, mocks.ts or adapter files were created."}], "notes": []}, {"eval_id": 6, "configuration": "with_skill", "run_number": 3, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 62.0, "tokens": 78726, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)", "passed": true, "evidence": "with_skill run-3: reviews/service.ts: this.notifications = new NotificationService(container) (or default param equal to it)."}, {"text": "No new getter or facade for the notifications service is added to container.ts", "passed": true, "evidence": "with_skill run-3: Only reviews/service.ts (+NOTES.md) was written; container.ts unchanged."}, {"text": "The reviews module does not import NotificationRepository or anything from db/schema for notifications", "passed": true, "evidence": "with_skill run-3: reviews/service.ts imports only NotificationService, no NotificationRepository or db/schema."}, {"text": "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)", "passed": true, "evidence": "with_skill run-3: No adapters.ts, mocks.ts or adapter files were created."}], "notes": []}, {"eval_id": 4, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 3, "failed": 0, "total": 3, "time_seconds": 79.9, "tokens": 91379, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests", "passed": true, "evidence": "with_skill run-1: review.md: email adapter has no MockEmailSender in adapters/mocks.ts and no email entry in ContainerOverrides, so tests cannot swap it."}, {"text": "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand", "passed": true, "evidence": "with_skill run-1: review.md: client/src/vendor/shared/contracts/invoice.ts is missing dueDate and has drifted from the server contract."}, {"text": "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead", "passed": true, "evidence": "with_skill run-1: review.md: service.ts imports db/schema/invoices and exposes typeof invoices.$inferInsert in create(); recommends a domain/shared input type."}], "notes": []}, {"eval_id": 4, "configuration": "with_skill", "run_number": 2, "result": {"pass_rate": 1.0, "passed": 3, "failed": 0, "total": 3, "time_seconds": 79.2, "tokens": 87125, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests", "passed": true, "evidence": "with_skill run-2: review.md: email adapter has no MockEmailSender in adapters/mocks.ts and no email entry in ContainerOverrides, so tests cannot swap it."}, {"text": "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand", "passed": true, "evidence": "with_skill run-2: review.md: client/src/vendor/shared/contracts/invoice.ts is missing dueDate and has drifted from the server contract."}, {"text": "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead", "passed": true, "evidence": "with_skill run-2: review.md: service.ts imports db/schema/invoices and exposes typeof invoices.$inferInsert in create(); recommends a domain/shared input type."}], "notes": []}, {"eval_id": 4, "configuration": "with_skill", "run_number": 3, "result": {"pass_rate": 1.0, "passed": 3, "failed": 0, "total": 3, "time_seconds": 89.1, "tokens": 90453, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests", "passed": true, "evidence": "with_skill run-3: review.md: email adapter has no MockEmailSender in adapters/mocks.ts and no email entry in ContainerOverrides, so tests cannot swap it."}, {"text": "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand", "passed": true, "evidence": "with_skill run-3: review.md: client/src/vendor/shared/contracts/invoice.ts is missing dueDate and has drifted from the server contract."}, {"text": "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead", "passed": true, "evidence": "with_skill run-3: review.md: service.ts imports db/schema/invoices and exposes typeof invoices.$inferInsert in create(); recommends a domain/shared input type."}], "notes": []}, {"eval_id": 5, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 3, "failed": 0, "total": 3, "time_seconds": 77.0, "tokens": 81363, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "review.md concludes the PR has no blocking architecture/layering violation and is fine to merge on that front", "passed": true, "evidence": "with_skill run-1: review.md verdict: no architecture problems, fine to merge."}, {"text": "review.md does NOT report OrderService taking the whole Container in its constructor, or building its repository with new OrderRepository(container.db), as a violation or something that must be changed", "passed": true, "evidence": "with_skill run-1: review.md does not flag whole-Container constructor or new OrderRepository(container.db) as a problem."}, {"text": "review.md does NOT report the cross-module call new CustomerService(this.container) as a violation, and does not demand injecting it through the constructor or a new container getter", "passed": true, "evidence": "with_skill run-1: review.md treats new CustomerService(this.container) as acceptable; at most an optional cosmetic nit about where it is created, no demand for constructor injection or a container getter."}], "notes": []}, {"eval_id": 5, "configuration": "with_skill", "run_number": 2, "result": {"pass_rate": 1.0, "passed": 3, "failed": 0, "total": 3, "time_seconds": 63.0, "tokens": 85764, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "review.md concludes the PR has no blocking architecture/layering violation and is fine to merge on that front", "passed": true, "evidence": "with_skill run-2: review.md verdict: no architecture problems, fine to merge."}, {"text": "review.md does NOT report OrderService taking the whole Container in its constructor, or building its repository with new OrderRepository(container.db), as a violation or something that must be changed", "passed": true, "evidence": "with_skill run-2: review.md does not flag whole-Container constructor or new OrderRepository(container.db) as a problem."}, {"text": "review.md does NOT report the cross-module call new CustomerService(this.container) as a violation, and does not demand injecting it through the constructor or a new container getter", "passed": true, "evidence": "with_skill run-2: review.md treats new CustomerService(this.container) as acceptable; at most an optional cosmetic nit about where it is created, no demand for constructor injection or a container getter."}], "notes": []}, {"eval_id": 5, "configuration": "with_skill", "run_number": 3, "result": {"pass_rate": 1.0, "passed": 3, "failed": 0, "total": 3, "time_seconds": 75.4, "tokens": 84127, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "review.md concludes the PR has no blocking architecture/layering violation and is fine to merge on that front", "passed": true, "evidence": "with_skill run-3: review.md verdict: no architecture problems, fine to merge."}, {"text": "review.md does NOT report OrderService taking the whole Container in its constructor, or building its repository with new OrderRepository(container.db), as a violation or something that must be changed", "passed": true, "evidence": "with_skill run-3: review.md does not flag whole-Container constructor or new OrderRepository(container.db) as a problem."}, {"text": "review.md does NOT report the cross-module call new CustomerService(this.container) as a violation, and does not demand injecting it through the constructor or a new container getter", "passed": true, "evidence": "with_skill run-3: review.md treats new CustomerService(this.container) as acceptable; at most an optional cosmetic nit about where it is created, no demand for constructor injection or a container getter."}], "notes": []}, {"eval_id": 6, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 52.7, "tokens": 72235, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)", "passed": true, "evidence": "without_skill run-1: reviews/service.ts: this.notifications = new NotificationService(container) (or default param equal to it)."}, {"text": "No new getter or facade for the notifications service is added to container.ts", "passed": true, "evidence": "without_skill run-1: Only reviews/service.ts (+NOTES.md) was written; container.ts unchanged."}, {"text": "The reviews module does not import NotificationRepository or anything from db/schema for notifications", "passed": true, "evidence": "without_skill run-1: reviews/service.ts imports only NotificationService, no NotificationRepository or db/schema."}, {"text": "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)", "passed": true, "evidence": "without_skill run-1: No adapters.ts, mocks.ts or adapter files were created."}], "notes": []}, {"eval_id": 6, "configuration": "without_skill", "run_number": 2, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 54.7, "tokens": 72634, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)", "passed": true, "evidence": "without_skill run-2: reviews/service.ts: this.notifications = new NotificationService(container) (or default param equal to it)."}, {"text": "No new getter or facade for the notifications service is added to container.ts", "passed": true, "evidence": "without_skill run-2: Only reviews/service.ts (+NOTES.md) was written; container.ts unchanged."}, {"text": "The reviews module does not import NotificationRepository or anything from db/schema for notifications", "passed": true, "evidence": "without_skill run-2: reviews/service.ts imports only NotificationService, no NotificationRepository or db/schema."}, {"text": "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)", "passed": true, "evidence": "without_skill run-2: No adapters.ts, mocks.ts or adapter files were created."}], "notes": []}, {"eval_id": 6, "configuration": "without_skill", "run_number": 3, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 55.8, "tokens": 72642, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)", "passed": true, "evidence": "without_skill run-3: reviews/service.ts: this.notifications = new NotificationService(container) (or default param equal to it)."}, {"text": "No new getter or facade for the notifications service is added to container.ts", "passed": true, "evidence": "without_skill run-3: Only reviews/service.ts (+NOTES.md) was written; container.ts unchanged."}, {"text": "The reviews module does not import NotificationRepository or anything from db/schema for notifications", "passed": true, "evidence": "without_skill run-3: reviews/service.ts imports only NotificationService, no NotificationRepository or db/schema."}, {"text": "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)", "passed": true, "evidence": "without_skill run-3: No adapters.ts, mocks.ts or adapter files were created."}], "notes": []}, {"eval_id": 4, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 3, "failed": 0, "total": 3, "time_seconds": 131.3, "tokens": 76305, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests", "passed": true, "evidence": "without_skill run-1: review.md: email adapter has no MockEmailSender in adapters/mocks.ts and no email entry in ContainerOverrides, so tests cannot swap it."}, {"text": "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand", "passed": true, "evidence": "without_skill run-1: review.md: client/src/vendor/shared/contracts/invoice.ts is missing dueDate and has drifted from the server contract."}, {"text": "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead", "passed": true, "evidence": "without_skill run-1: review.md: service.ts imports db/schema/invoices and exposes typeof invoices.$inferInsert in create(); recommends a domain/shared input type."}], "notes": []}, {"eval_id": 4, "configuration": "without_skill", "run_number": 2, "result": {"pass_rate": 1.0, "passed": 3, "failed": 0, "total": 3, "time_seconds": 76.9, "tokens": 74581, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests", "passed": true, "evidence": "without_skill run-2: review.md: email adapter has no MockEmailSender in adapters/mocks.ts and no email entry in ContainerOverrides, so tests cannot swap it."}, {"text": "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand", "passed": true, "evidence": "without_skill run-2: review.md: client/src/vendor/shared/contracts/invoice.ts is missing dueDate and has drifted from the server contract."}, {"text": "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead", "passed": true, "evidence": "without_skill run-2: review.md: service.ts imports db/schema/invoices and exposes typeof invoices.$inferInsert in create(); recommends a domain/shared input type."}], "notes": []}, {"eval_id": 4, "configuration": "without_skill", "run_number": 3, "result": {"pass_rate": 1.0, "passed": 3, "failed": 0, "total": 3, "time_seconds": 41.0, "tokens": 77720, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "review.md says the new EmailSender integration is missing its mock in server/src/adapters/mocks.ts and/or a ContainerOverrides entry in container.ts, so it cannot be swapped out in tests", "passed": true, "evidence": "without_skill run-3: review.md: email adapter has no MockEmailSender in adapters/mocks.ts and no email entry in ContainerOverrides, so tests cannot swap it."}, {"text": "review.md says the Invoice contract change (dueDate) was not copied to client/src/vendor/shared/contracts/invoice.ts, which must be kept in sync by hand", "passed": true, "evidence": "without_skill run-3: review.md: client/src/vendor/shared/contracts/invoice.ts is missing dueDate and has drifted from the server contract."}, {"text": "review.md flags InvoiceService.create for exposing the Drizzle type typeof invoices.$inferInsert (imported from db/schema) in its public signature and recommends a shared/domain type instead", "passed": true, "evidence": "without_skill run-3: review.md: service.ts imports db/schema/invoices and exposes typeof invoices.$inferInsert in create(); recommends a domain/shared input type."}], "notes": []}, {"eval_id": 5, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 3, "failed": 0, "total": 3, "time_seconds": 57.5, "tokens": 71910, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "review.md concludes the PR has no blocking architecture/layering violation and is fine to merge on that front", "passed": true, "evidence": "without_skill run-1: review.md verdict: no architecture problems, fine to merge."}, {"text": "review.md does NOT report OrderService taking the whole Container in its constructor, or building its repository with new OrderRepository(container.db), as a violation or something that must be changed", "passed": true, "evidence": "without_skill run-1: review.md does not flag whole-Container constructor or new OrderRepository(container.db) as a problem."}, {"text": "review.md does NOT report the cross-module call new CustomerService(this.container) as a violation, and does not demand injecting it through the constructor or a new container getter", "passed": true, "evidence": "without_skill run-1: review.md treats new CustomerService(this.container) as acceptable; at most an optional cosmetic nit about where it is created, no demand for constructor injection or a container getter."}], "notes": []}, {"eval_id": 5, "configuration": "without_skill", "run_number": 2, "result": {"pass_rate": 1.0, "passed": 3, "failed": 0, "total": 3, "time_seconds": 58.1, "tokens": 71732, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "review.md concludes the PR has no blocking architecture/layering violation and is fine to merge on that front", "passed": true, "evidence": "without_skill run-2: review.md verdict: no architecture problems, fine to merge."}, {"text": "review.md does NOT report OrderService taking the whole Container in its constructor, or building its repository with new OrderRepository(container.db), as a violation or something that must be changed", "passed": true, "evidence": "without_skill run-2: review.md does not flag whole-Container constructor or new OrderRepository(container.db) as a problem."}, {"text": "review.md does NOT report the cross-module call new CustomerService(this.container) as a violation, and does not demand injecting it through the constructor or a new container getter", "passed": true, "evidence": "without_skill run-2: review.md treats new CustomerService(this.container) as acceptable; at most an optional cosmetic nit about where it is created, no demand for constructor injection or a container getter."}], "notes": []}, {"eval_id": 5, "configuration": "without_skill", "run_number": 3, "result": {"pass_rate": 1.0, "passed": 3, "failed": 0, "total": 3, "time_seconds": 70.9, "tokens": 72205, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "review.md concludes the PR has no blocking architecture/layering violation and is fine to merge on that front", "passed": true, "evidence": "without_skill run-3: review.md verdict: no architecture problems, fine to merge."}, {"text": "review.md does NOT report OrderService taking the whole Container in its constructor, or building its repository with new OrderRepository(container.db), as a violation or something that must be changed", "passed": true, "evidence": "without_skill run-3: review.md does not flag whole-Container constructor or new OrderRepository(container.db) as a problem."}, {"text": "review.md does NOT report the cross-module call new CustomerService(this.container) as a violation, and does not demand injecting it through the constructor or a new container getter", "passed": true, "evidence": "without_skill run-3: review.md treats new CustomerService(this.container) as acceptable; at most an optional cosmetic nit about where it is created, no demand for constructor injection or a container getter."}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 73.0222, "stddev": 9.3756, "min": 62.0, "max": 89.1}, "tokens": {"mean": 83976.2222, "stddev": 5073.7668, "min": 78314, "max": 91379}}, "without_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 66.5444, "stddev": 26.3925, "min": 41.0, "max": 131.3}, "tokens": {"mean": 73551.5556, "stddev": 2157.4973, "min": 71732, "max": 77720}}, "delta": {"pass_rate": "+0.00", "time_seconds": "+6.5", "tokens": "+10425"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

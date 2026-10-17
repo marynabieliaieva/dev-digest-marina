@@ -21,6 +21,11 @@ import {
   PrMeta,
   BlastRadiusResponse,
   ResolvedPullRef,
+  EvalDashboard,
+  EvalTrendPoint,
+  EvalCompare,
+  EvalCaseDto,
+  FindingRecord,
 } from '@devdigest/shared';
 
 /**
@@ -339,6 +344,121 @@ describe('blast radius contracts', () => {
 
   it('ResolvedPullRef parses { id }', () => {
     expect(ResolvedPullRef.parse({ id: 'x' })).toEqual({ id: 'x' });
+  });
+});
+
+describe('eval pipeline contracts', () => {
+  const batch = {
+    id: 'b1',
+    agent_id: 'a1',
+    agent_name: 'Security Agent',
+    scope: 'set' as const,
+    agent_version: 2,
+    status: 'done' as const,
+    error: null,
+    started_at: '2026-10-15T10:00:00Z',
+    finished_at: '2026-10-15T10:01:00Z',
+    cases_total: 3,
+    cases_done: 3,
+    traces_passed: 2,
+    traces_total: 3,
+    recall: 0.5,
+    precision: 0.75,
+    citation_accuracy: 1,
+    cost_usd: null,
+    duration_ms: 60000,
+  };
+  const dashboard = {
+    owner_kind: 'agent' as const,
+    owner_id: 'a1',
+    cases_total: 0,
+    current: null,
+    delta: { recall: null, precision: null, citation_accuracy: null },
+    trend: [],
+    recent_runs: [],
+    recent_batches: [],
+    running_batch_id: null,
+    alert: null,
+  };
+  const finding = {
+    id: 'f1',
+    review_id: 'r1',
+    accepted_at: null,
+    dismissed_at: null,
+    severity: 'WARNING',
+    category: 'security',
+    title: 't',
+    rationale: 'r',
+    file: 'a.ts',
+    start_line: 1,
+    end_line: 2,
+    confidence: 0.9,
+  };
+
+  it('EvalDashboard parses with current: null', () => {
+    expect(() => EvalDashboard.parse(dashboard)).not.toThrow();
+  });
+
+  it('EvalTrendPoint parses with recall: null', () => {
+    expect(() =>
+      EvalTrendPoint.parse({
+        batch_id: 'b1',
+        agent_version: 1,
+        ran_at: '2026-10-15T10:00:00Z',
+        recall: null,
+        precision: null,
+        citation_accuracy: null,
+        pass_rate: 0,
+        cost_usd: null,
+      }),
+    ).not.toThrow();
+  });
+
+  it('EvalCompare rejects prompt_diff op "mod"', () => {
+    const ok = {
+      base: batch,
+      head: batch,
+      delta: { recall: 0, precision: null, citation_accuracy: 0, cost_usd: null },
+      prompt_diff: [{ op: 'same', text: 'x' }],
+      model_changed: false,
+    };
+    expect(() => EvalCompare.parse(ok)).not.toThrow();
+    expect(() => EvalCompare.parse({ ...ok, prompt_diff: [{ op: 'mod', text: 'x' }] })).toThrow();
+  });
+
+  it('EvalCaseDto parses with last_result: null', () => {
+    expect(() =>
+      EvalCaseDto.parse({
+        id: 'c1',
+        owner_kind: 'agent',
+        owner_id: 'a1',
+        name: 'Must find: x',
+        input_diff: '',
+        input_files: null,
+        input_meta: null,
+        expected_output: {},
+        source_finding_id: null,
+        created_at: '2026-10-15T10:00:00Z',
+        expectation: {
+          type: 'must_find',
+          file: 'a.ts',
+          start_line: 1,
+          end_line: 2,
+          kind: 'finding',
+          severity: 'WARNING',
+          category: 'security',
+          title: 'x',
+          source_finding_id: 'f1',
+        },
+        last_result: null,
+      }),
+    ).not.toThrow();
+  });
+
+  it('FindingRecord parses with and without eval_case_id', () => {
+    expect(() => FindingRecord.parse(finding)).not.toThrow();
+    expect(FindingRecord.parse({ ...finding, eval_case_id: 'c1' }).eval_case_id).toBe('c1');
+    expect(FindingRecord.parse({ ...finding, eval_case_id: null }).eval_case_id).toBeNull();
   });
 });
 

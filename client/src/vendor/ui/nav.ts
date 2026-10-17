@@ -31,6 +31,8 @@ export const NAV: NavGroup[] = [
     items: [
       { key: "skills", label: "Skills", icon: "Sparkles", href: "/skills", gKey: "s" },
       { key: "agents", label: "Agents", icon: "Cpu", href: "/agents", gKey: "a" },
+      // key "eval" matches activeKeyFor("/evals…") so the item highlights on its routes.
+      { key: "eval", label: "Eval Dashboard", icon: "Gauge", href: "/evals" },
       {
         key: "conventions",
         label: "Conventions",

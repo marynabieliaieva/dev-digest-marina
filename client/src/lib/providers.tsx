@@ -39,7 +39,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
           },
         }),
         mutationCache: new MutationCache({
-          onError: (err) => notify.error(errorMessage(err)),
+          // `meta: { silentError: true }` = the caller surfaces this error itself
+          // (e.g. FindingCard maps eval-case error codes to copy) — skip the toast.
+          onError: (err, _vars, _ctx, mutation) => {
+            if (mutation.options.meta?.silentError) return;
+            notify.error(errorMessage(err));
+          },
         }),
       })
   );

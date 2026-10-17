@@ -1,0 +1,18 @@
+name: evals-setup
+description: Install Node + pnpm and the evals/ dependencies (shared by every job in evals.yml).
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4
+      with:
+        version: 10
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: pnpm
+        cache-dependency-path: evals/pnpm-lock.yaml
+    - name: Install evals dependencies
+      shell: bash
+      working-directory: evals
+      run: pnpm install --frozen-lockfile
