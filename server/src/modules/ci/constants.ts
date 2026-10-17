@@ -64,8 +64,10 @@ export const GHA_PERMISSIONS: readonly (readonly [string, 'read' | 'write'])[] =
 export const OPENROUTER_SECRET_EXPR = '${{ secrets.OPENROUTER_API_KEY }}';
 export const GITHUB_TOKEN_SECRET_EXPR = '${{ secrets.GITHUB_TOKEN }}';
 
-/** Condition gating the keyed analysis job so fork PRs never receive the secret (AC-17). */
-export const FORK_GATE_CONDITION = 'github.event.pull_request.head.repo.fork == false';
+/** Condition gating the keyed analysis job so PRs from another repo never receive the secret (AC-17).
+ *  Compares head repo to the base repo instead of checking the `fork` flag: a repo that is itself a
+ *  GitHub fork has fork == true even for its own same-repo PRs, which skipped the job forever. */
+export const FORK_GATE_CONDITION = 'github.event.pull_request.head.repo.full_name == github.repository';
 
 /** GitHub Actions context expressions used in the generated workflow (non-secret). */
 export const PR_HEAD_SHA_EXPR = '${{ github.event.pull_request.head.sha }}';

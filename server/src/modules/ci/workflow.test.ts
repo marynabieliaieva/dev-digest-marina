@@ -49,11 +49,11 @@ describe('buildGhaWorkflowYaml — security invariants', () => {
     expect(tokenLine).toContain('${{ secrets.GITHUB_TOKEN }}');
   });
 
-  it('uses pull_request (never pull_request_target) and gates the job on head.repo.fork == false (AC-17)', () => {
+  it('uses pull_request (never pull_request_target) and gates the job on head repo == base repo (AC-17)', () => {
     const yamlText = buildGhaWorkflowYaml();
     expect(yamlText).toContain('pull_request:');
     expect(yamlText).not.toContain('pull_request_target');
-    expect(yamlText).toContain('if: github.event.pull_request.head.repo.fork == false');
+    expect(yamlText).toContain('if: github.event.pull_request.head.repo.full_name == github.repository');
   });
 
   it('on: is limited to the configured pull_request events, never comment triggers (AC-18)', () => {
