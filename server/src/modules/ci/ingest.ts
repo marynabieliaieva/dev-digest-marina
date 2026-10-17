@@ -1,5 +1,5 @@
 import { inflateRawSync } from 'node:zlib';
-import type { CiRunStatus, Finding, WorkflowRunSummary } from '@devdigest/shared';
+import type { CiRunStatus, Finding, GitHubClient, PrDetail, RepoRef, WorkflowRunSummary } from '@devdigest/shared';
 import { CiResultArtifact } from '@devdigest/shared';
 import { countBlockers, gateTriggered } from '@devdigest/reviewer-core';
 import type { Container } from '../../platform/container.js';
@@ -54,6 +54,8 @@ export async function refreshCiRuns(container: Container, workspaceId: string): 
   let degraded = false;
   const messages: string[] = [];
   const rejected: RefreshResult['rejected'] = [];
+  // One PR lookup per (repo, PR) per refresh — several runs usually share a PR.
+  const prCache: PrLookupCache = new Map();
 
   for (const agent of agents) {
     const installations = (await container.ciRepo.listForAgent(agent.id)).filter(
@@ -119,7 +121,8 @@ export async function refreshCiRuns(container: Container, workspaceId: string): 
 
           // Authenticity (AC-60): runner output is untrusted until it agrees with
           // what GitHub itself reports for this workflow run.
-          const mismatch = crossCheckArtifact(artifact, run, installation.repo);
+          const verifiedRun = await withVerifiedPullRequest(github, repoRef, run, artifact.pr_number, prCache);
+          const mismatch = crossCheckArtifact(artifact, verifiedRun, installation.repo);
           if (mismatch) {
             rejected.push({ github_run_id: run.id, reason: mismatch });
             continue;
@@ -163,6 +166,40 @@ export async function refreshCiRuns(container: Container, workspaceId: string): 
   }
 
   return { degraded, message: messages.length > 0 ? messages.join('; ') : null, rejected };
+}
+
+export type PrLookupCache = Map<string, Promise<PrDetail | null>>;
+
+/**
+ * GitHub only fills a workflow run's `pull_requests` while the PR is open, so a
+ * run whose PR has since been merged/closed comes back with `[]` and would
+ * fail the pr_number cross-check forever. When that list is empty, ask GitHub
+ * for the claimed PR itself and accept it only if the run's head SHA is that
+ * PR's head or one of its commits (an earlier push to the same PR). The PR is
+ * read from the installation repo, so the evidence stays GitHub's, not the
+ * artifact's. Any lookup failure leaves the run unchanged → fails closed.
+ */
+export async function withVerifiedPullRequest(
+  github: Pick<GitHubClient, 'getPullRequest'>,
+  repoRef: RepoRef,
+  run: WorkflowRunSummary,
+  claimedPrNumber: number | null | undefined,
+  cache: PrLookupCache = new Map(),
+): Promise<WorkflowRunSummary> {
+  if ((run.pullRequestNumbers ?? []).length > 0 || claimedPrNumber == null) return run;
+
+  const key = `${repoRef.owner}/${repoRef.name}#${claimedPrNumber}`;
+  let lookup = cache.get(key);
+  if (lookup == null) {
+    lookup = github.getPullRequest(repoRef, claimedPrNumber).catch(() => null);
+    cache.set(key, lookup);
+  }
+  const pr = await lookup;
+  if (pr == null) return run;
+
+  const runSha = run.headSha.toLowerCase();
+  const prShas = [pr.head_sha, ...pr.commits.map((c) => c.sha)].map((sha) => sha.toLowerCase());
+  return prShas.includes(runSha) ? { ...run, pullRequestNumbers: [claimedPrNumber] } : run;
 }
 
 /**

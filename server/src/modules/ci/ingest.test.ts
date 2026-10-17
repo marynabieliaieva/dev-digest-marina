@@ -1,7 +1,7 @@
 import { deflateRawSync } from 'node:zlib';
-import { describe, expect, it } from 'vitest';
-import type { CiResultArtifact, WorkflowRunSummary } from '@devdigest/shared';
-import { MAX_ARTIFACT_BYTES, crossCheckArtifact, readSingleZipEntry } from './ingest.js';
+import { describe, expect, it, vi } from 'vitest';
+import type { CiResultArtifact, PrDetail, WorkflowRunSummary } from '@devdigest/shared';
+import { MAX_ARTIFACT_BYTES, crossCheckArtifact, readSingleZipEntry, withVerifiedPullRequest } from './ingest.js';
 
 const SHA = 'a'.repeat(40);
 
@@ -126,5 +126,83 @@ describe('crossCheckArtifact (AC-60)', () => {
   it('fails closed when GitHub metadata is missing', () => {
     expect(crossCheckArtifact(good, { ...run, repositoryId: undefined } as WorkflowRunSummary, 'acme/demo')).not.toBeNull();
     expect(crossCheckArtifact(good, { ...run, pullRequestNumbers: undefined } as WorkflowRunSummary, 'acme/demo')).not.toBeNull();
+  });
+});
+
+describe('withVerifiedPullRequest (merged PR → empty pull_requests)', () => {
+  const repoRef = { owner: 'acme', name: 'demo' };
+  const OLDER_SHA = 'c'.repeat(40);
+  // What GitHub returns for a run once its PR is merged: no pull_requests.
+  const mergedRun = {
+    id: 1,
+    headSha: SHA,
+    repositoryId: 42,
+    repositoryFullName: 'acme/demo',
+    pullRequestNumbers: [],
+  } as unknown as WorkflowRunSummary;
+  const artifact = {
+    findings_count: 0,
+    cost_usd: null,
+    agent: 'A',
+    agent_slug: 'a',
+    repository: 'acme/demo',
+    repository_id: 42,
+    head_sha: SHA,
+    pr_number: 7,
+  } as CiResultArtifact;
+
+  function githubWithPr(pr: Partial<PrDetail> | Error) {
+    const getPullRequest = vi.fn(async () => {
+      if (pr instanceof Error) throw pr;
+      return { head_sha: SHA, commits: [], ...pr } as PrDetail;
+    });
+    return { getPullRequest };
+  }
+
+  it('without the fallback the merged-PR run is rejected on pr_number', () => {
+    expect(crossCheckArtifact(artifact, mergedRun, 'acme/demo')).toContain('pr_number');
+  });
+
+  it('accepts the run when the claimed PR head SHA matches the run head SHA', async () => {
+    const github = githubWithPr({ head_sha: SHA.toUpperCase() });
+    const verified = await withVerifiedPullRequest(github, repoRef, mergedRun, 7);
+    expect(github.getPullRequest).toHaveBeenCalledWith(repoRef, 7);
+    expect(verified.pullRequestNumbers).toEqual([7]);
+    expect(crossCheckArtifact(artifact, verified, 'acme/demo')).toBeNull();
+  });
+
+  it('accepts a run for an earlier push to the same PR (SHA among its commits)', async () => {
+    const github = githubWithPr({ head_sha: 'd'.repeat(40), commits: [{ sha: SHA } as PrDetail['commits'][number]] });
+    const verified = await withVerifiedPullRequest(github, repoRef, mergedRun, 7);
+    expect(crossCheckArtifact(artifact, verified, 'acme/demo')).toBeNull();
+  });
+
+  it('keeps rejecting when the claimed PR does not contain the run SHA', async () => {
+    const github = githubWithPr({ head_sha: OLDER_SHA, commits: [{ sha: OLDER_SHA } as PrDetail['commits'][number]] });
+    const verified = await withVerifiedPullRequest(github, repoRef, mergedRun, 7);
+    expect(verified).toBe(mergedRun);
+    expect(crossCheckArtifact(artifact, verified, 'acme/demo')).toContain('pr_number');
+  });
+
+  it('fails closed when the PR lookup throws', async () => {
+    const github = githubWithPr(new Error('404'));
+    const verified = await withVerifiedPullRequest(github, repoRef, mergedRun, 7);
+    expect(crossCheckArtifact(artifact, verified, 'acme/demo')).toContain('pr_number');
+  });
+
+  it('does not call GitHub when the run already lists PRs or no PR is claimed', async () => {
+    const github = githubWithPr({});
+    const openRun = { ...mergedRun, pullRequestNumbers: [7] } as WorkflowRunSummary;
+    expect(await withVerifiedPullRequest(github, repoRef, openRun, 7)).toBe(openRun);
+    expect(await withVerifiedPullRequest(github, repoRef, mergedRun, null)).toBe(mergedRun);
+    expect(github.getPullRequest).not.toHaveBeenCalled();
+  });
+
+  it('looks each PR up once per refresh via the shared cache', async () => {
+    const github = githubWithPr({});
+    const cache = new Map();
+    await withVerifiedPullRequest(github, repoRef, mergedRun, 7, cache);
+    await withVerifiedPullRequest(github, repoRef, { ...mergedRun, id: 2 } as WorkflowRunSummary, 7, cache);
+    expect(github.getPullRequest).toHaveBeenCalledTimes(1);
   });
 });
