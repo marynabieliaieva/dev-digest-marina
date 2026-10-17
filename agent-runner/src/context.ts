@@ -37,6 +37,8 @@ export interface PrContext {
   repositoryId: number | null;
   /** PR head commit SHA from the event payload, or null when absent. */
   headSha: string | null;
+  /** PR base commit SHA from the event payload, or null when absent. */
+  baseSha: string | null;
 }
 
 interface PullRequestEventPayload {
@@ -45,6 +47,7 @@ interface PullRequestEventPayload {
     title?: string;
     body?: string | null;
     head?: { sha?: string; repo?: { fork?: boolean } | null };
+    base?: { sha?: string };
   };
 }
 
@@ -100,6 +103,11 @@ export function resolvePrContext(
     repository,
     repositoryId: /^\d+$/.test(env.GITHUB_REPOSITORY_ID ?? '') ? Number(env.GITHUB_REPOSITORY_ID) : null,
     // The PR head commit (NOT the merge SHA) — what the studio cross-checks.
-    headSha: /^[0-9a-f]{40}$/i.test(pr?.head?.sha ?? '') ? (pr?.head?.sha as string).toLowerCase() : null,
+    headSha: asSha(pr?.head?.sha),
+    baseSha: asSha(pr?.base?.sha),
   };
+}
+
+function asSha(value: string | undefined): string | null {
+  return /^[0-9a-f]{40}$/i.test(value ?? '') ? (value as string).toLowerCase() : null;
 }

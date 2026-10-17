@@ -37,11 +37,23 @@ export async function fetchPrDiff(
     headers: authHeaders(token, 'application/vnd.github.v3.diff'),
   });
   if (!res.ok) {
-    throw new RunnerError(
-      `GitHub API error fetching PR diff (${url}): ${res.status} ${await res.text().catch(() => '')}`,
-    );
+    const text = await res.text().catch(() => '');
+    // GitHub refuses the diff media type past 300 files / 20k lines (406
+    // `too_large`) — a distinct error so `runCi` can fall back to a local git diff.
+    if (res.status === 406 && text.includes('too_large')) {
+      throw new DiffTooLargeError(`GitHub refused the PR diff as too large (${url}): ${text}`);
+    }
+    throw new RunnerError(`GitHub API error fetching PR diff (${url}): ${res.status} ${text}`);
   }
   return res.text();
+}
+
+/** The PR diff exceeds what GitHub's diff media type will return. */
+export class DiffTooLargeError extends RunnerError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'DiffTooLargeError';
+  }
 }
 
 /** Post a full review (body + event + optional inline comments) — `post_as: 'github_review'`. */

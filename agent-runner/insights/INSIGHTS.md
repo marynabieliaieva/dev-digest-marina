@@ -27,6 +27,8 @@ See also: `insights/gotchas.md` for known quirks at project start.
 
 2026-07-08 — `if (result.error) {...} else { result.artifact.findings_count }` does NOT narrow a discriminated union (`RunCiSuccess | RunCiFailure`) in TypeScript when the discriminant property (`error`) is typed `string` on the failure branch and `undefined` on the success branch (not a shared literal). `tsc` correctly refuses to narrow on truthiness here (a failure could theoretically carry `error: ''`). Discriminate on a property with a real type difference instead — `result.artifact === null` (`CiResultArtifact | null`) narrows cleanly both ways. ref: agent-runner/src/index.ts:52
 
+2026-10-17 — GitHub's `application/vnd.github.v3.diff` returns 406 `too_large` for any PR over 300 files, so the runner died in ~10s with no artifact on big PRs (e.g. a branch carrying unmerged earlier lessons). `run.ts` now catches `DiffTooLargeError` and runs `git diff base...head` locally (`git.ts`); the workflow's `fetch-depth: 0` makes both SHAs available. Such diffs are MBs (863 files ≈ 3.8 MB) — `execFileSync`'s 1 MB default `maxBuffer` would throw. ref: agent-runner/src/git.ts
+
 ## Session Notes
 
 2026-07-08 — T7: scaffolded `agent-runner/` (`package.json`, `tsconfig.json`, `src/index.ts` placeholder importing `groundingSummary` from reviewer-core + `AgentManifest` from shared, `vitest.config.ts`). Hit the cross-package `node_modules` resolution gotcha (see What Doesn't Work) — resolved by installing `reviewer-core`'s own deps. `pnpm typecheck`, `pnpm build` (ncc, single bundle, zero external imports), and `pnpm test` (no test files, passWithNoTests) all pass. Files: agent-runner/package.json, agent-runner/tsconfig.json, agent-runner/src/index.ts, agent-runner/vitest.config.ts.

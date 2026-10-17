@@ -6,7 +6,8 @@ import { findManifestPaths, loadAgentManifest } from './manifest.js';
 import { loadSkillBodies } from './skills.js';
 import { resolvePrContext, type CiEnv } from './context.js';
 import { parseUnifiedDiff, stripIgnoredFiles } from './diff.js';
-import { fetchPrDiff, postGithubReview, postPrComment, type FetchLike } from './github.js';
+import { DiffTooLargeError, fetchPrDiff, postGithubReview, postPrComment, type FetchLike } from './github.js';
+import { localPrDiff, type ExecGit } from './git.js';
 import { buildResultArtifact } from './artifact.js';
 import { RunnerError } from './errors.js';
 
@@ -59,6 +60,8 @@ export interface RunCiDeps {
     token: string,
     fetchImpl: FetchLike,
   ) => Promise<string>;
+  /** Override the `git` call behind the too-large-diff fallback (tests never spawn git). */
+  execGit?: ExecGit;
 }
 
 /** Per-agent outcome — one entry per manifest under `.devdigest/agents/`. */
@@ -119,7 +122,12 @@ export async function runCi(deps: RunCiDeps): Promise<RunCiResult> {
     //    workflow) BEFORE parse: the minified runner bundle would otherwise fail
     //    the whole review with a GitHub 422 "diff too large", and reviewing our
     //    own config is noise.
-    const rawDiff = await fetchDiffImpl(ctx, githubToken ?? '', fetchImpl);
+    //    GitHub won't serve the diff of a PR past 300 files (406 too_large) —
+    //    then diff the PR locally from the job's full-history checkout.
+    const rawDiff = await fetchDiffImpl(ctx, githubToken ?? '', fetchImpl).catch((err: unknown) => {
+      if (!(err instanceof DiffTooLargeError)) throw err;
+      return localPrDiff(ctx, deps.execGit);
+    });
     const diff = parseUnifiedDiff(stripIgnoredFiles(rawDiff));
 
     // 4. Run each reviewer through the SAME engine the studio uses. Reviews are
