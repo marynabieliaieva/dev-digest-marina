@@ -20347,6 +20347,14 @@ const RunRequest = objectType({
     agentId: stringType().optional(),
     all: booleanType().optional(),
 });
+/** Body of POST /pulls/:id/multi-agent-run: 1–5 unique agent ids. */
+const MultiAgentRunRequest = objectType({
+    agentIds: arrayType(stringType().min(1)).min(1).max(5),
+})
+    .refine((v) => new Set(v.agentIds).size === v.agentIds.length, {
+    message: 'agentIds must be unique',
+    path: ['agentIds'],
+});
 // ---- Structured API error envelope (returned by the API; UX taxonomy is FE) ----
 const ApiErrorBody = objectType({
     error: objectType({
@@ -20787,40 +20795,55 @@ const AgentColumnFinding = objectType({
     title: stringType(),
     file: stringType(),
     start_line: numberType().int(),
+    end_line: numberType().int().nullable(),
     kind: stringType().nullish(),
 });
 /** One agent's result column in the multi-agent review. */
 const AgentColumn = objectType({
     run_id: stringType(),
-    agent_id: stringType(),
-    agent_name: stringType(),
+    /** Null when the agent was deleted after the run. */
+    agent_id: stringType().nullable(),
+    agent_name: stringType().nullable(),
     provider: stringType().nullable(),
     model: stringType().nullable(),
-    status: enumType(['done', 'failed', 'running']),
+    status: enumType(['done', 'failed', 'running', 'cancelled']),
+    error: stringType().nullable(),
     verdict: stringType().nullable(),
     score: numberType().int().nullable(),
     summary: stringType().nullable(),
     duration_ms: numberType().int().nullable(),
     cost_usd: numberType().nullable(),
+    tokens_in: numberType().int().nullable(),
+    tokens_out: numberType().int().nullable(),
+    findings_count: numberType().int().nullable(),
     findings: arrayType(AgentColumnFinding),
 });
 /** One agent's stance on a contended file:line. */
 const ConflictTake = objectType({
-    agent_id: stringType(),
-    persona: stringType(),
-    /** Severity if the agent flagged it, or 'ignored' when it did not. */
-    verdict: unionType([Severity, literalType('ignored')]),
+    run_id: stringType(),
+    agent_id: stringType().nullable(),
+    persona: stringType().nullable(),
+    /**
+     * Severity if the agent flagged it, 'ignored' when it did not, or
+     * 'failed' / 'cancelled' when its run never produced a verdict.
+     */
+    verdict: unionType([Severity, literalType('ignored'), literalType('failed'), literalType('cancelled')]),
     note: stringType(),
+    /** Ids of this agent's findings in the group (empty for non-flagging takes). */
+    finding_ids: arrayType(stringType()),
 });
 /**
- * A conflict = a file:line that at least one agent flagged and at least one
- * other agent (that also reviewed) did NOT, OR where agents assigned divergent
- * severities. Computed from persisted findings; not stored.
+ * A conflict group = findings from different agents on nearby lines of a file.
+ * `Conflict` holds EVERY match group; `is_conflict` marks the disagreements
+ * (at least one agent flagged and one ignored it, or divergent severities).
+ * Computed from persisted findings; not stored.
  */
 const Conflict = objectType({
     file: stringType(),
     line: numberType().int(),
+    end_line: numberType().int(),
     title: stringType(),
+    is_conflict: booleanType(),
     takes: arrayType(ConflictTake),
 });
 /** Response of POST /pulls/:id/multi-agent-run and GET /pulls/:id/multi-agent. */
@@ -20829,12 +20852,23 @@ const MultiAgentRun = objectType({
     pr_id: stringType(),
     pr_number: numberType().int().nullish(),
     ran_at: stringType(),
+    status: enumType(['running', 'done']),
     agent_count: numberType().int(),
     total_duration_ms: numberType().int(),
     total_cost_usd: numberType().nullable(),
+    total_tokens_in: numberType().int().nullable(),
+    total_tokens_out: numberType().int().nullable(),
     columns: arrayType(AgentColumn),
     conflicts: arrayType(Conflict),
 });
+/** One enabled agent's run estimate (GET /agents/run-estimates). */
+const AgentRunEstimate = objectType({
+    agent_id: stringType(),
+    est_duration_ms: numberType().nullable(),
+    est_cost_usd: numberType().nullable(),
+    sample_size: numberType().int().min(0).max(10),
+});
+const AgentRunEstimates = arrayType(AgentRunEstimate);
 // ---------------------------------------------------------------------------
 // Per-agent Stats (GET /agents/:id/stats)
 // ---------------------------------------------------------------------------
