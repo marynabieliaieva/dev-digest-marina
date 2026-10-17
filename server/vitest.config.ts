@@ -6,6 +6,9 @@ export default defineConfig({
     alias: {
       '@devdigest/shared': path.resolve(__dirname, 'src/vendor/shared'),
       '@devdigest/reviewer-core': path.resolve(__dirname, '../reviewer-core/src'),
+      // The parity test imports the client's contract mirror; CI does not install
+      // client deps, so make its `zod` import resolve to the server's copy.
+      zod: path.resolve(__dirname, 'node_modules/zod'),
     },
   },
   test: {

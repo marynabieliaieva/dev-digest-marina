@@ -9,7 +9,22 @@
     "replyToAuthor": "Reply to author",
     "replyPlaceholder": "Reply to the author about this finding…",
     "sendReply": "Send reply",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "evalCase": {
+      "action": "Turn into eval case",
+      "inSet": "In eval set",
+      "undecidedHint": "Accept or dismiss the finding first",
+      "created": "Eval case created for {agent}",
+      "createdGeneric": "Eval case created",
+      "errors": {
+        "already_eval_case": "Already an eval case",
+        "finding_undecided": "Accept or dismiss the finding first",
+        "agent_missing": "The agent that produced this finding was deleted",
+        "file_not_in_diff": "File is not in the PR diff",
+        "diff_too_large": "Diff section is too large",
+        "generic": "Could not create the eval case"
+      }
+    }
   },
   "trifecta": {
     "lethal": "LETHAL TRIFECTA — ALL 3 PRESENT",

@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { Verdict, Finding } from './findings.js';
-import { EvalRun, EvalOwnerKind, Conformance, Provider, CiFailOn } from './knowledge.js';
+import { Verdict, Finding, FindingKind } from './findings.js';
+import { EvalRun, EvalCase, EvalOwnerKind, Conformance, Provider, CiFailOn } from './knowledge.js';
 
 /**
  * A4 — Eval / CI / Compose / Conformance API contracts (L06).
@@ -29,11 +29,86 @@ export const EvalCaseInput = z.object({
 });
 export type EvalCaseInput = z.infer<typeof EvalCaseInput>;
 
+/** What an eval case expects (stored as `eval_cases.expected_output`). */
+export const EvalExpectation = z.object({
+  type: z.enum(['must_find', 'must_not_flag']),
+  file: z.string(),
+  start_line: z.number().int(),
+  end_line: z.number().int(),
+  kind: FindingKind,
+  severity: z.string(),
+  category: z.string(),
+  title: z.string(),
+  source_finding_id: z.string(),
+});
+export type EvalExpectation = z.infer<typeof EvalExpectation>;
+
+/** The latest result of a case (either batch scope), as shown in the Evals tab. */
+export const EvalCaseLastResult = z.object({
+  pass: z.boolean().nullable(),
+  error: z.string().nullable(),
+  ran_at: z.string(),
+  actual_count: z.number().int(),
+  matched_count: z.number().int(),
+});
+export type EvalCaseLastResult = z.infer<typeof EvalCaseLastResult>;
+
+/** An eval case in API form. */
+export const EvalCaseDto = EvalCase.extend({
+  source_finding_id: z.string().nullable(),
+  created_at: z.string(),
+  expectation: EvalExpectation,
+  last_result: EvalCaseLastResult.nullable(),
+});
+export type EvalCaseDto = z.infer<typeof EvalCaseDto>;
+
+export const EvalBatchStatus = z.enum(['running', 'done', 'failed']);
+export type EvalBatchStatus = z.infer<typeof EvalBatchStatus>;
+
+export const EvalBatchScope = z.enum(['set', 'case']);
+export type EvalBatchScope = z.infer<typeof EvalBatchScope>;
+
+/** The agent config frozen when a batch starts (what the run actually used). */
+export const EvalConfigSnapshot = z.object({
+  provider: z.string(),
+  model: z.string(),
+  system_prompt: z.string(),
+  strategy: z.string(),
+  skills: z.array(z.object({ name: z.string(), body: z.string() })),
+});
+export type EvalConfigSnapshot = z.infer<typeof EvalConfigSnapshot>;
+
+/** One `eval_batches` row in API form. `config_snapshot` only on single-batch/compare responses. */
+export const EvalBatch = z.object({
+  id: z.string(),
+  agent_id: z.string(),
+  agent_name: z.string(),
+  scope: EvalBatchScope,
+  agent_version: z.number().int(),
+  status: EvalBatchStatus,
+  error: z.string().nullable(),
+  started_at: z.string(),
+  finished_at: z.string().nullable(),
+  cases_total: z.number().int(),
+  cases_done: z.number().int(),
+  traces_passed: z.number().int().nullable(),
+  traces_total: z.number().int().nullable(),
+  recall: z.number().nullable(),
+  precision: z.number().nullable(),
+  citation_accuracy: z.number().nullable(),
+  cost_usd: z.number().nullable(),
+  duration_ms: z.number().int().nullable(),
+  config_snapshot: EvalConfigSnapshot.optional(),
+});
+export type EvalBatch = z.infer<typeof EvalBatch>;
+
 /** A persisted eval run row (one execution of a case), returned by the API. */
 export const EvalRunRecord = z.object({
   id: z.string(),
   case_id: z.string(),
+  batch_id: z.string(),
   case_name: z.string().nullish(),
+  error: z.string().nullable(),
   ran_at: z.string(),
   actual_output: z.unknown(),
   pass: z.boolean().nullable(),
@@ -53,12 +128,45 @@ export const EvalRunResult = z.object({
 });
 export type EvalRunResult = z.infer<typeof EvalRunResult>;
 
-/** One point on the dashboard trend (per run, chronological). */
+/** A batch with its per-case runs and frozen config (`GET /eval-runs/:batchId`). */
+export const EvalBatchDetail = EvalBatch.extend({
+  runs: z.array(EvalRunRecord),
+  config_snapshot: EvalConfigSnapshot,
+});
+export type EvalBatchDetail = z.infer<typeof EvalBatchDetail>;
+
+/** What the model actually produced for a case (`eval_runs.actual_output`). */
+export const EvalActualOutput = z.object({
+  findings: z.array(Finding),
+  dropped: z.array(z.object({ finding: Finding, reason: z.string() })),
+  matched_finding_ids: z.array(z.string()),
+});
+export type EvalActualOutput = z.infer<typeof EvalActualOutput>;
+
+/** Response of the run-starting POSTs (202). */
+export const EvalRunStarted = z.object({ batch_id: z.string() });
+export type EvalRunStarted = z.infer<typeof EvalRunStarted>;
+
+/** Response of `POST /eval-runs/all`. */
+export const EvalRunAllResult = z.object({
+  started: z.array(z.object({ agent_id: z.string(), batch_id: z.string() })),
+  skipped: z.array(
+    z.object({
+      agent_id: z.string(),
+      reason: z.enum(['running', 'no_cases', 'disabled']),
+    }),
+  ),
+});
+export type EvalRunAllResult = z.infer<typeof EvalRunAllResult>;
+
+/** One point on the dashboard trend (per done set batch, chronological). */
 export const EvalTrendPoint = z.object({
+  batch_id: z.string(),
+  agent_version: z.number().int(),
   ran_at: z.string(),
-  recall: z.number(),
-  precision: z.number(),
-  citation_accuracy: z.number(),
+  recall: z.number().nullable(),
+  precision: z.number().nullable(),
+  citation_accuracy: z.number().nullable(),
   pass_rate: z.number(),
   cost_usd: z.number().nullable(),
 });
@@ -69,24 +177,64 @@ export const EvalDashboard = z.object({
   owner_kind: EvalOwnerKind.nullable(),
   owner_id: z.string().nullable(),
   cases_total: z.number().int(),
-  current: z.object({
-    recall: z.number(),
-    precision: z.number(),
-    citation_accuracy: z.number(),
-    traces_passed: z.number().int(),
-    traces_total: z.number().int(),
-    cost_usd: z.number().nullable(),
-  }),
+  // null = no `done` set batch yet
+  current: z
+    .object({
+      recall: z.number().nullable(),
+      precision: z.number().nullable(),
+      citation_accuracy: z.number().nullable(),
+      traces_passed: z.number().int(),
+      traces_total: z.number().int(),
+      cost_usd: z.number().nullable(),
+    })
+    .nullable(),
   delta: z.object({
-    recall: z.number(),
-    precision: z.number(),
-    citation_accuracy: z.number(),
+    recall: z.number().nullable(),
+    precision: z.number().nullable(),
+    citation_accuracy: z.number().nullable(),
   }),
   trend: z.array(EvalTrendPoint),
   recent_runs: z.array(EvalRunRecord),
+  recent_batches: z.array(EvalBatch),
+  running_batch_id: z.string().nullable(),
   alert: z.string().nullable(),
 });
 export type EvalDashboard = z.infer<typeof EvalDashboard>;
+
+/** One agent row on the workspace Eval Dashboard. */
+export const AgentEvalSummary = z.object({
+  agent_id: z.string(),
+  agent_name: z.string(),
+  model: z.string(),
+  enabled: z.boolean(),
+  cases_total: z.number().int(),
+  last_batch: EvalBatch.nullable(),
+  sparkline: z.array(z.number()),
+  running_batch_id: z.string().nullable(),
+});
+export type AgentEvalSummary = z.infer<typeof AgentEvalSummary>;
+
+/** `GET /eval-dashboard`. */
+export const EvalWorkspaceDashboard = z.object({
+  agents: z.array(AgentEvalSummary),
+  recent_batches: z.array(EvalBatch),
+});
+export type EvalWorkspaceDashboard = z.infer<typeof EvalWorkspaceDashboard>;
+
+/** `GET /eval-runs/compare?base=&head=`. */
+export const EvalCompare = z.object({
+  base: EvalBatch,
+  head: EvalBatch,
+  delta: z.object({
+    recall: z.number().nullable(),
+    precision: z.number().nullable(),
+    citation_accuracy: z.number().nullable(),
+    cost_usd: z.number().nullable(),
+  }),
+  prompt_diff: z.array(z.object({ op: z.enum(['same', 'add', 'del']), text: z.string() })),
+  model_changed: z.boolean(),
+});
+export type EvalCompare = z.infer<typeof EvalCompare>;
 
 // ===========================================================================
 // Compose Review

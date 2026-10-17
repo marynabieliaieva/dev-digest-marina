@@ -115,6 +115,26 @@ export async function deleteReview(
   return rows.length > 0;
 }
 
+/**
+ * Finding id -> agent-owned eval case id, for the findings that have one.
+ * Empty input => empty map without touching the DB.
+ */
+export async function evalCaseIdsForFindings(
+  db: Db,
+  findingIds: string[],
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (findingIds.length === 0) return out;
+  const rows = await db
+    .select({ id: t.evalCases.id, sourceFindingId: t.evalCases.sourceFindingId })
+    .from(t.evalCases)
+    .where(and(eq(t.evalCases.ownerKind, 'agent'), inArray(t.evalCases.sourceFindingId, findingIds)));
+  for (const r of rows) {
+    if (r.sourceFindingId) out.set(r.sourceFindingId, r.id);
+  }
+  return out;
+}
+
 // ---- finding actions ------------------------------------------------------
 
 export async function getFinding(db: Db, findingId: string): Promise<FindingRow | undefined> {

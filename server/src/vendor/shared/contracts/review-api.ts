@@ -17,6 +17,8 @@ export const FindingRecord = Finding.extend({
   review_id: z.string(),
   accepted_at: z.string().nullable(),
   dismissed_at: z.string().nullable(),
+  // Eval case created from this finding, if any (server always sends it explicitly).
+  eval_case_id: z.string().nullish(),
 });
 export type FindingRecord = z.infer<typeof FindingRecord>;
 

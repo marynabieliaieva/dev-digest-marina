@@ -1,0 +1,52 @@
+import type { CSSProperties } from "react";
+
+export const s = {
+  page: { padding: "28px 40px", maxWidth: 1200 } satisfies CSSProperties,
+  header: {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  } satisfies CSSProperties,
+  row: {
+    display: "flex",
+    alignItems: "center",
+    gap: 24,
+    width: "100%",
+    padding: "18px 22px",
+    background: "var(--bg-elevated)",
+    border: "1px solid var(--border)",
+    borderRadius: 10,
+    color: "inherit",
+    cursor: "pointer",
+  } satisfies CSSProperties,
+  rowIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    display: "grid",
+    placeItems: "center",
+    color: "var(--accent)",
+    background: "var(--bg-hover)",
+  } satisfies CSSProperties,
+  rowSub: {
+    display: "block",
+    marginTop: 4,
+    fontSize: 13,
+    color: "var(--text-muted)",
+  } satisfies CSSProperties,
+  metric: { display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 60 } satisfies CSSProperties,
+  metricLabel: { fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", color: "var(--text-muted)" } satisfies CSSProperties,
+  metricValue: { fontSize: 22, fontWeight: 700 } satisfies CSSProperties,
+  recentList: {
+    listStyle: "none",
+    margin: 0,
+    padding: 0,
+    background: "var(--bg-elevated)",
+    border: "1px solid var(--border)",
+    borderRadius: 10,
+  } satisfies CSSProperties,
+  recentItem: { padding: "12px 20px", borderBottom: "1px solid var(--border)" } satisfies CSSProperties,
+  recentHead: { display: "flex", alignItems: "center", gap: 24, fontSize: 14 } satisfies CSSProperties,
+  bars: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 } satisfies CSSProperties,
+};
