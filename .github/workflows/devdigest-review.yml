@@ -16,7 +16,7 @@ jobs:
     # does not run for them (AC-17). The workflow uses the standard
     # 'pull_request' event, never the base-repo-privileged variant that would
     # run with base-repo secrets/permissions against untrusted fork code.
-    if: github.event.pull_request.head.repo.fork == false
+    if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout PR head
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
