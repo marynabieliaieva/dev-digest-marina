@@ -1,0 +1,21 @@
+{
+  "name": "Multi-agent review: sidebar entry, configure screen and PR-page picker",
+  "description": "Reachability of the multi-agent review UI without starting a run (the e2e stack has no deterministic LLM, so 'Run multi-agent review' is never clicked). From the PR list, open the sidebar 'Multi-Agent Review' entry and confirm the Configure screen shows its empty state ('Pick a pull request first'). Then go back to Pull Requests, open PR #482 and open the Run Review picker ('Pick agents to run'). Read-only seeded data. Assumes a freshly-seeded DB where acme/payments-api (PR #482) is the first repo.",
+  "steps": [
+    { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
+    { "cmd": ["wait", "--url", "/pulls"], "label": "land on the PR list" },
+    { "cmd": ["wait", "--text", "Multi-Agent Review"], "label": "sidebar entry is rendered" },
+    { "cmd": ["find", "text", "Multi-Agent Review", "click"], "label": "open the multi-agent screen from the sidebar" },
+    { "cmd": ["wait", "--url", "/multi-agent"], "label": "navigate to the multi-agent route" },
+    { "cmd": ["wait", "--text", "Pick a pull request first"], "label": "configure screen shows the no-PR empty state" },
+    { "cmd": ["wait", "--text", "Pull Requests"], "label": "sidebar Pull Requests entry is rendered" },
+    { "cmd": ["find", "text", "Pull Requests", "click"], "label": "back to the PR list" },
+    { "cmd": ["wait", "--url", "/pulls"], "label": "land on the PR list again" },
+    { "cmd": ["wait", "--text", "Add rate limiting to public API endpoints"], "label": "wait until the PR row has rendered" },
+    { "cmd": ["find", "text", "Add rate limiting to public API endpoints", "click"], "label": "open PR #482" },
+    { "cmd": ["wait", "--url", "/pulls/482"], "label": "navigate to the PR detail route" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "PR detail data settles" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Run Review"], "label": "open the Run Review picker" },
+    { "cmd": ["wait", "--text", "Pick agents to run"], "label": "the multi-agent picker panel is open (no run started)" }
+  ]
+}

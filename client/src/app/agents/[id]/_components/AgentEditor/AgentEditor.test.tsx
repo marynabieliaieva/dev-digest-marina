@@ -11,6 +11,8 @@ vi.mock("../../../../../lib/hooks/agents", () => ({
   useProviderModels: () => ({ data: [{ id: "gpt-4.1", provider: "openai" }] }),
 }));
 
+vi.mock("./_components/CiTab", () => ({ CiTab: () => <div>CI-TAB-CONTENT</div> }));
+
 import { AgentEditor } from "./AgentEditor";
 import { VALID_TABS } from "./constants";
 
@@ -52,6 +54,13 @@ describe("A2 Agent Editor (smoke)", () => {
     const labels = screen.getAllByRole("button").map((b) => b.textContent);
     const tabLabels = labels.filter((l) => ["Config", "Skills", "Context", "Evals"].includes(l ?? ""));
     expect(tabLabels).toEqual(["Config", "Skills", "Context", "Evals"]);
+  });
+
+  it("renders ONLY the CI tab content on tab=ci (not the Config form underneath)", () => {
+    renderWithIntl(<AgentEditor agent={AGENT} tab="ci" onTab={() => {}} />);
+    expect(screen.getByText("CI-TAB-CONTENT")).toBeInTheDocument();
+    expect(screen.queryByText("Configuration")).not.toBeInTheDocument();
+    expect(screen.queryByText("Save agent")).not.toBeInTheDocument();
   });
 
   it("accepts evals as a valid ?tab= value", () => {

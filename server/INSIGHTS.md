@@ -43,6 +43,12 @@ non-obvious; never rewritten, only appended to.
   **skip silently and report green**. A passing integration run is only
   meaningful if the output shows the test count — check for `skipped` before
   believing it, and just re-run.
+- 2026-10-17: GitHub's workflow-run API returns `pull_requests: []` once the PR
+  is merged/closed (and always for fork PRs). Cross-checking a CI artifact's
+  `pr_number` against it rejected every post-merge run, and the CI Runs page
+  stayed empty — the reason only shows in `POST /ci/refresh` → `rejected`. Check
+  that first when CI runs "don't appear". `ci/ingest.ts::withVerifiedPullRequest`
+  now falls back to the PR itself (run head SHA = PR head or one of its commits).
 
 ## Decisions
 

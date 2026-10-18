@@ -120,6 +120,20 @@
       "when": 1792081649839,
       "tag": "0016_reflective_franklin_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792246361066,
+      "tag": "0017_fresh_shotgun",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792251839082,
+      "tag": "0018_worthless_johnny_storm",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,53 @@
+import type { CSSProperties } from "react";
+
+export const s = {
+  root: {
+    padding: "28px 32px",
+    display: "flex",
+    flexDirection: "column",
+    gap: 16,
+    maxWidth: 820,
+    margin: "0 auto",
+  },
+  h1: { fontSize: 20, fontWeight: 600, color: "var(--text-primary)", margin: 0 },
+  toolbar: { display: "flex", alignItems: "center", gap: 12 },
+  hint: { fontSize: 12, color: "var(--text-muted)" },
+  cards: { display: "flex", flexDirection: "column", gap: 8 },
+  card: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    padding: "10px 12px",
+    border: "1px solid var(--border)",
+    borderRadius: 8,
+    background: "var(--bg-elevated)",
+  },
+  cardBlocked: { opacity: 0.5, pointerEvents: "none" },
+  cardBody: { display: "flex", flexDirection: "column", gap: 2, minWidth: 0 },
+  cardName: {
+    fontSize: 14,
+    fontWeight: 500,
+    color: "var(--text-primary)",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  cardDesc: {
+    fontSize: 12,
+    color: "var(--text-secondary)",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  cardEst: { fontSize: 12, color: "var(--text-muted)", flexShrink: 0 },
+  footer: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    paddingTop: 8,
+    borderTop: "1px solid var(--border)",
+  },
+  footerText: { fontSize: 13, color: "var(--text-secondary)" },
+} satisfies Record<string, CSSProperties>;
