@@ -12,6 +12,7 @@ vi.mock("../../../../../lib/hooks/agents", () => ({
 }));
 
 import { AgentEditor } from "./AgentEditor";
+import { VALID_TABS } from "./constants";
 
 afterEach(cleanup);
 
@@ -44,5 +45,16 @@ describe("A2 Agent Editor (smoke)", () => {
     expect(screen.getByText("Config")).toBeInTheDocument();
     expect(screen.getByText("Configuration")).toBeInTheDocument();
     expect(screen.getByText("Save agent")).toBeInTheDocument();
+  });
+
+  it("renders tabs Config · Skills · Context · Evals in order", () => {
+    renderWithIntl(<AgentEditor agent={AGENT} tab="config" onTab={() => {}} />);
+    const labels = screen.getAllByRole("button").map((b) => b.textContent);
+    const tabLabels = labels.filter((l) => ["Config", "Skills", "Context", "Evals"].includes(l ?? ""));
+    expect(tabLabels).toEqual(["Config", "Skills", "Context", "Evals"]);
+  });
+
+  it("accepts evals as a valid ?tab= value", () => {
+    expect(VALID_TABS).toContain("evals");
   });
 });

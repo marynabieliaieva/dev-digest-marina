@@ -119,6 +119,11 @@ export class ReviewRepository {
 
   // ---- finding actions ----------------------------------------------------
 
+  /** Finding id -> eval case id for findings that were turned into eval cases. */
+  evalCaseIdsForFindings(findingIds: string[]): Promise<Map<string, string>> {
+    return reviewRepo.evalCaseIdsForFindings(this.db, findingIds);
+  }
+
   getFinding(findingId: string): Promise<FindingRow | undefined> {
     return reviewRepo.getFinding(this.db, findingId);
   }

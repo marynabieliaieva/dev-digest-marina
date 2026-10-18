@@ -6,6 +6,13 @@ import messages from "../../../../../../../../messages/en/prReview.json";
 
 vi.mock("../../../../../../../lib/hooks/reviews", () => ({
   useFindingAction: () => ({ mutate: vi.fn(), isPending: false }),
+  usePrReviews: () => ({
+    data: [{ id: "r1", agent_id: "a1", agent_name: "Security Agent", findings: [] }],
+  }),
+}));
+
+vi.mock("../../../../../../../lib/hooks/evals", () => ({
+  useCreateEvalCase: () => ({ mutateAsync: vi.fn() }),
 }));
 
 import { FindingsPanel } from "./FindingsPanel";
@@ -46,6 +53,17 @@ describe("FindingsPanel (smoke)", () => {
     renderWithIntl(<FindingsPanel findings={FINDINGS} prId="pr1" />);
     expect(screen.getByText("Hide low confidence")).toBeInTheDocument();
     expect(screen.getByText("Hardcoded secret")).toBeInTheDocument();
+  });
+
+  it("offers an enabled 'Turn into eval case' for a decided finding", () => {
+    const decided = [{ ...FINDINGS[0]!, accepted_at: "2026-10-15T10:00:00Z" }];
+    renderWithIntl(<FindingsPanel findings={decided} prId="pr1" />);
+    expect(screen.getByRole("button", { name: "Turn into eval case" })).toBeEnabled();
+  });
+
+  it("disables 'Turn into eval case' for an undecided finding", () => {
+    renderWithIntl(<FindingsPanel findings={FINDINGS} prId="pr1" />);
+    expect(screen.getByRole("button", { name: "Turn into eval case" })).toBeDisabled();
   });
 
   it("shows the empty state when nothing matches", () => {
