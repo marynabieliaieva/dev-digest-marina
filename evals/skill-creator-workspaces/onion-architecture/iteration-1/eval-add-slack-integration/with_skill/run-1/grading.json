@@ -1,0 +1,35 @@
+{
+  "expectations": [
+    {
+      "text": "A new Slack-related interface (port) is added to server/src/vendor/shared/adapters.ts",
+      "passed": true,
+      "evidence": "adapters.ts: new NotificationClient port interface."
+    },
+    {
+      "text": "The concrete implementation (the code that performs the HTTP call to the webhook) lives in a new file in its own new directory under server/src/adapters/<name>/",
+      "passed": true,
+      "evidence": "Concrete code in server/src/adapters/notifications/slack.ts (own new adapters/<name>/ directory, contains the fetch)."
+    },
+    {
+      "text": "A mock implementation of the new port is added to server/src/adapters/mocks.ts",
+      "passed": true,
+      "evidence": "mocks.ts: MockNotificationClient implements NotificationClient."
+    },
+    {
+      "text": "container.ts registers the new adapter with a getter and a ContainerOverrides entry",
+      "passed": true,
+      "evidence": "container.ts: ContainerOverrides.notifications plus async notifications() accessor that reads SLACK_WEBHOOK_URL from secrets (async method instead of a getter, same role)."
+    },
+    {
+      "text": "ReviewService reaches the notifier only through this.container and contains no fetch/axios/Slack SDK call or import of the concrete adapter",
+      "passed": true,
+      "evidence": "ReviewService only calls NotificationService, which uses await this.container.notifications(); no fetch or concrete adapter import in either service."
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  }
+}

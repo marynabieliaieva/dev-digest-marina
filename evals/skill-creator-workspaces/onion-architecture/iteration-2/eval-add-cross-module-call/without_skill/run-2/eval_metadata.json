@@ -1,0 +1,11 @@
+{
+  "eval_id": 6,
+  "eval_name": "add-cross-module-call",
+  "prompt": "When a review finishes, record a notification row (channel 'review', title containing the findings count) through the existing notifications module. The project is in evals/fixtures/review-to-notification/ (treat it as the repo root; do not edit it in place). Write every new or changed file into your outputs folder, keeping the same relative paths, and add a short NOTES.md listing which files you created or changed.",
+  "assertions": [
+    "ReviewService obtains the notifications module through new NotificationService(this.container) at the call site (in the constructor or the method)",
+    "No new getter or facade for the notifications service is added to container.ts",
+    "The reviews module does not import NotificationRepository or anything from db/schema for notifications",
+    "No new port, adapter or mock is added for this feature (it is an in-process module call, not an external integration)"
+  ]
+}

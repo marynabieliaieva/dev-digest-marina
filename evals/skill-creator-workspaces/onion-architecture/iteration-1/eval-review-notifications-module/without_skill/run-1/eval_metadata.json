@@ -1,0 +1,11 @@
+{
+  "eval_id": 0,
+  "eval_name": "review-notifications-module",
+  "prompt": "I'm about to open a PR that adds a notifications module to our backend. The module lives in evals/fixtures/notifications-pr/server/src/modules/notifications/ (treat evals/fixtures/notifications-pr/ as the repo root). Please review it for architecture problems. For every problem give the file, the offending line or import, why it is a problem and how to fix it. Write the review to review.md.",
+  "assertions": [
+    "review.md flags routes.ts for querying the database directly (the db client / drizzle-orm imports and the /notifications/unread handler) instead of calling the service",
+    "review.md flags service.ts for importing and constructing octokit directly, and recommends using the GitHubClient port obtained through the container",
+    "review.md flags the Drizzle row type NotificationRow (typeof ...$inferSelect) leaking out of service.ts via getLatestRow, and recommends returning a shared/domain type mapped in repository.ts or helpers.ts",
+    "review.md does NOT report repository.ts or helpers.ts importing drizzle-orm / the schema as a violation"
+  ]
+}

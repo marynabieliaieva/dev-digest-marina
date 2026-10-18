@@ -1,0 +1,35 @@
+{
+  "expectations": [
+    {
+      "text": "A missing ticket is reported by throwing NotFoundError imported from platform/errors.ts",
+      "passed": true,
+      "evidence": "new_skill run-1: service throws NotFoundError."
+    },
+    {
+      "text": "A closed ticket is rejected by throwing an AppError subclass from platform/errors.ts (for example ValidationError) in the service, not a bare Error and not a hand-built reply",
+      "passed": true,
+      "evidence": "new_skill run-1: service throws ValidationError/ConflictError for a closed ticket."
+    },
+    {
+      "text": "routes.ts contains no hand-built 4xx/5xx reply body (no reply.code(4xx/5xx).send / reply.status(4xx/5xx).send) and no try/catch that remaps errors",
+      "passed": true,
+      "evidence": "new_skill run-1: routes.ts has no reply.code/try/catch."
+    },
+    {
+      "text": "A GitHub failure is wrapped in ExternalServiceError (in the adapter or the service) instead of letting the Octokit exception escape",
+      "passed": true,
+      "evidence": "new_skill run-1: ExternalServiceError wrapping in adapter issues.ts and service.ts."
+    },
+    {
+      "text": "No new or changed file contains a bare throw new Error(...)",
+      "passed": true,
+      "evidence": "new_skill run-1: no 'throw new Error(' in new/changed files."
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "eval_id": 11,
+  "eval_name": "add-ticket-assign-errors",
+  "prompt": "Add POST /tickets/:id/assign with body { assignee }. It must assign the ticket in our database and on GitHub. Return a 404 if the ticket does not exist, reject the request if the ticket is already closed, and make sure a GitHub failure surfaces as an error to the caller. The project is in evals/fixtures/tickets-scaffold/ (treat it as the repo root; do not edit it in place). Write every new or changed file into your outputs folder, keeping the same relative paths, and add a short NOTES.md listing which files you created or changed.",
+  "assertions": [
+    "A missing ticket is reported by throwing NotFoundError imported from platform/errors.ts",
+    "A closed ticket is rejected by throwing an AppError subclass from platform/errors.ts (for example ValidationError) in the service, not a bare Error and not a hand-built reply",
+    "routes.ts contains no hand-built 4xx/5xx reply body (no reply.code(4xx/5xx).send / reply.status(4xx/5xx).send) and no try/catch that remaps errors",
+    "A GitHub failure is wrapped in ExternalServiceError (in the adapter or the service) instead of letting the Octokit exception escape",
+    "No new or changed file contains a bare throw new Error(...)"
+  ]
+}

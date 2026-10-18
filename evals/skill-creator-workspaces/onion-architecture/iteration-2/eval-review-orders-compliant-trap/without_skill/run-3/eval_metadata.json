@@ -1,0 +1,10 @@
+{
+  "eval_id": 5,
+  "eval_name": "review-orders-compliant-trap",
+  "prompt": "Please review the orders PR before I open it. The changed files are listed in evals/fixtures/orders-pr/CHANGED.txt and the repo snapshot is under evals/fixtures/orders-pr/ (treat it as the repo root). Tell me about any architecture problems with file, reason and fix, and write the review to review.md. If it is fine to merge from an architecture standpoint, say so plainly.",
+  "assertions": [
+    "review.md concludes the PR has no blocking architecture/layering violation and is fine to merge on that front",
+    "review.md does NOT report OrderService taking the whole Container in its constructor, or building its repository with new OrderRepository(container.db), as a violation or something that must be changed",
+    "review.md does NOT report the cross-module call new CustomerService(this.container) as a violation, and does not demand injecting it through the constructor or a new container getter"
+  ]
+}

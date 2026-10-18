@@ -31,6 +31,12 @@ one library is used. Covers `server/` (`@devdigest/api`) and `reviewer-core/`
   optional `dependency-cruiser` config sketch, and the review checklist.
 - [examples.md](examples.md) — before/after code for each rule below.
 
+When **reviewing**, don't stop at greps of a single file: follow the
+"Searching for Indirect Violations" procedure in
+[enforcement.md](enforcement.md) — most leaks sit one import hop away
+(a helper, a `lib/` wrapper, a type alias, another module's repository, a
+module cycle).
+
 ## Relationship to sibling skills
 
 - **fastify-best-practices**, **drizzle-orm-patterns**, **zod**,
@@ -104,6 +110,18 @@ dev-digest's own files.
    getter (like `container.repoIntel`) for a subsystem with several
    independent consumers — a single caller doesn't need one. See
    [examples.md](examples.md) for a worked example.
+
+7. **A failure path** (not found, invalid state, upstream outage) → throw an
+   `AppError` subclass from `server/src/platform/errors.ts` (`NotFoundError`,
+   `ValidationError`, `ExternalServiceError`, ...) — from `service.ts`, and from
+   `routes.ts` for a missing resource. The single `app.setErrorHandler` in
+   `server/src/app.ts` turns it into the `{ error: { code, message, details } }`
+   envelope with the right status, so clients get one stable error shape.
+   `routes.ts` never builds a 4xx/5xx body by hand
+   (`reply.code(404).send({ error: ... })`), never catches an error only to
+   remap it, and never throws a bare `Error`. An adapter that wraps an SDK
+   failure throws `ExternalServiceError` rather than leaking the vendor's
+   exception type. See the error example in [examples.md](examples.md).
 
 For what to flag when this ordering was skipped, go to
 [enforcement.md](enforcement.md).

@@ -1,0 +1,9 @@
+{
+  "eval_id": 3,
+  "eval_name": "review-labels-module-clean",
+  "prompt": "Can you review the labels module before I open the PR? It is in evals/fixtures/labels-pr/server/src/modules/labels/ (treat evals/fixtures/labels-pr/ as the repo root). List any architecture problems with file, reason and fix, and write the review to review.md. If you find nothing wrong, say so plainly.",
+  "assertions": [
+    "review.md concludes that the module has no architecture/layering violations (it does not present any finding as a blocking problem)",
+    "review.md does NOT claim that routes.ts, service.ts or repository.ts imports a forbidden SDK or breaks the dependency direction"
+  ]
+}
